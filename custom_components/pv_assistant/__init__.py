@@ -4,19 +4,30 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from homeassistant.components import panel_custom
+import voluptuous as vol
+
+from homeassistant.components import panel_custom, websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN, PANEL_ELEMENT, PANEL_URL, STATIC_URL
 
 PLATFORMS: list[str] = []
 
 
+@websocket_api.websocket_command({vol.Required("type"): "pv_assistant/config"})
+@callback
+def _ws_config(hass: HomeAssistant, connection, msg: dict) -> None:
+    """Hand the configured sensor selection to the panel."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    connection.send_result(msg["id"], dict(entries[0].data) if entries else {})
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up PV Assistant from a config entry."""
     if not hass.data.get(DOMAIN, {}).get("panel"):
+        websocket_api.async_register_command(hass, _ws_config)
         await hass.http.async_register_static_paths(
             [
                 StaticPathConfig(
