@@ -1,7 +1,7 @@
 """Config flow for PV Assistant.
 
-Step 1: production energy sensors (several), power sensors (several),
-feed-in energy sensor (exactly one).
+Step 1 (all energy sensors): production (several), feed-in (exactly one),
+storage in / storage out (several, optional).
 """
 
 from __future__ import annotations
@@ -19,7 +19,15 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import CONF_FEED_IN_ENERGY, CONF_POWER, CONF_PRODUCTION_ENERGY, DOMAIN
+from .const import (
+    CONF_FEED_IN_ENERGY,
+    CONF_PRODUCTION_ENERGY,
+    CONF_STORAGE_IN_ENERGY,
+    CONF_STORAGE_OUT_ENERGY,
+    DOMAIN,
+)
+
+_OPTIONAL = (CONF_STORAGE_IN_ENERGY, CONF_STORAGE_OUT_ENERGY)
 
 
 def _sensor(device_class: str, multiple: bool) -> selector.EntitySelector:
@@ -37,8 +45,9 @@ def _schema(d: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(CONF_PRODUCTION_ENERGY, description=sv(CONF_PRODUCTION_ENERGY)): _sensor("energy", True),
-            vol.Required(CONF_POWER, description=sv(CONF_POWER)): _sensor("power", True),
             vol.Required(CONF_FEED_IN_ENERGY, description=sv(CONF_FEED_IN_ENERGY)): _sensor("energy", False),
+            vol.Optional(CONF_STORAGE_IN_ENERGY, description=sv(CONF_STORAGE_IN_ENERGY)): _sensor("energy", True),
+            vol.Optional(CONF_STORAGE_OUT_ENERGY, description=sv(CONF_STORAGE_OUT_ENERGY)): _sensor("energy", True),
         }
     )
 
@@ -70,9 +79,11 @@ class PVAssistantOptionsFlow(OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is not None:
-            self.hass.config_entries.async_update_entry(
-                self.config_entry, data={**self.config_entry.data, **user_input}
-            )
+            data = {**self.config_entry.data, **user_input}
+            for key in _OPTIONAL:  # cleared optional fields must be dropped
+                if key not in user_input:
+                    data.pop(key, None)
+            self.hass.config_entries.async_update_entry(self.config_entry, data=data)
             return self.async_create_entry(data={})
         return self.async_show_form(
             step_id="init", data_schema=_schema(dict(self.config_entry.data))

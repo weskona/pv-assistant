@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration mit eigenem Sidebar-Panel für PV-Energiefluss.
 
-Konfiguration (Schritt 1): Erzeugungssensoren (Energie, mehrere), Leistungssensoren (Power, mehrere), Einspeisesensor (Energie, einer).
+Konfiguration (Schritt 1): Erzeugungssensoren (Energie, mehrere), Einspeisesensor (Energie, einer), optional Speichersensoren rein/raus (Energie, mehrere).
 
 ## Installation
 1. Ordner `custom_components/pv_assistant` nach `config/custom_components/` kopieren (oder per HACS als Custom Repository).

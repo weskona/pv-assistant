@@ -3,11 +3,12 @@
     "step": {
       "user": {
         "title": "Sensors",
-        "description": "Select energy (kWh) and power (W) sensors. Production energy and power sensors: as many as you like. Feed-in: exactly one.",
+        "description": "Select energy (kWh) sensors. Production and storage: as many as you like. Feed-in: exactly one.",
         "data": {
           "production_energy_sensors": "Production sensors (energy)",
-          "power_sensors": "Power sensors (power)",
-          "feed_in_energy_sensor": "Feed-in sensor (energy)"
+          "feed_in_energy_sensor": "Feed-in sensor (energy)",
+          "storage_in_energy_sensors": "Into storage (energy, optional)",
+          "storage_out_energy_sensors": "From storage (energy, optional)"
         }
       }
     },
@@ -19,11 +20,12 @@
     "step": {
       "init": {
         "title": "Sensors",
-        "description": "Select energy (kWh) and power (W) sensors. Production energy and power sensors: as many as you like. Feed-in: exactly one.",
+        "description": "Select energy (kWh) sensors. Production and storage: as many as you like. Feed-in: exactly one.",
         "data": {
           "production_energy_sensors": "Production sensors (energy)",
-          "power_sensors": "Power sensors (power)",
-          "feed_in_energy_sensor": "Feed-in sensor (energy)"
+          "feed_in_energy_sensor": "Feed-in sensor (energy)",
+          "storage_in_energy_sensors": "Into storage (energy, optional)",
+          "storage_out_energy_sensors": "From storage (energy, optional)"
         }
       }
     }

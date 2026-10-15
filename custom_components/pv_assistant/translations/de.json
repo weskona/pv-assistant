@@ -3,11 +3,12 @@
     "step": {
       "user": {
         "title": "Sensoren",
-        "description": "Wähle Energie- (kWh) und Leistungssensoren (W). Erzeugungs- und Leistungssensoren: beliebig viele. Einspeisung: genau einer.",
+        "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer.",
         "data": {
           "production_energy_sensors": "Erzeugungssensoren (Energie)",
-          "power_sensors": "Leistungssensoren (Power)",
-          "feed_in_energy_sensor": "Einspeisesensor (Energie)"
+          "feed_in_energy_sensor": "Einspeisesensor (Energie)",
+          "storage_in_energy_sensors": "In Speicher (Energie, optional)",
+          "storage_out_energy_sensors": "Aus Speicher (Energie, optional)"
         }
       }
     },
@@ -19,11 +20,12 @@
     "step": {
       "init": {
         "title": "Sensoren",
-        "description": "Wähle Energie- (kWh) und Leistungssensoren (W). Erzeugungs- und Leistungssensoren: beliebig viele. Einspeisung: genau einer.",
+        "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer.",
         "data": {
           "production_energy_sensors": "Erzeugungssensoren (Energie)",
-          "power_sensors": "Leistungssensoren (Power)",
-          "feed_in_energy_sensor": "Einspeisesensor (Energie)"
+          "feed_in_energy_sensor": "Einspeisesensor (Energie)",
+          "storage_in_energy_sensors": "In Speicher (Energie, optional)",
+          "storage_out_energy_sensors": "Aus Speicher (Energie, optional)"
         }
       }
     }
