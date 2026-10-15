@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Sensoren",
+        "title": "Energiesensoren",
         "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer.",
         "data": {
           "production_energy_sensors": "Erzeugungssensoren (Energie)",
@@ -11,6 +11,18 @@
           "storage_out_energy_sensors": "Aus Speicher (Energie, optional)",
           "storage_combined_energy_sensors": "Kombi-Speichersensoren (rein und raus, Energie, optional)",
           "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+        }
+      },
+      "power": {
+        "title": "Leistungssensoren",
+        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.",
+        "data": {
+          "production_power_sensors": "Erzeugungssensoren (Power)",
+          "feed_in_power_sensor": "Einspeisesensor (Power)",
+          "storage_in_power_sensors": "In Speicher (Power, optional)",
+          "storage_out_power_sensors": "Aus Speicher (Power, optional)",
+          "storage_combined_power_sensors": "Kombi-Speichersensoren (rein und raus, Power, optional)",
+          "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
         }
       }
     },
@@ -21,7 +33,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Sensoren",
+        "title": "Energiesensoren",
         "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer.",
         "data": {
           "production_energy_sensors": "Erzeugungssensoren (Energie)",
@@ -30,6 +42,18 @@
           "storage_out_energy_sensors": "Aus Speicher (Energie, optional)",
           "storage_combined_energy_sensors": "Kombi-Speichersensoren (rein und raus, Energie, optional)",
           "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+        }
+      },
+      "power": {
+        "title": "Leistungssensoren",
+        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.",
+        "data": {
+          "production_power_sensors": "Erzeugungssensoren (Power)",
+          "feed_in_power_sensor": "Einspeisesensor (Power)",
+          "storage_in_power_sensors": "In Speicher (Power, optional)",
+          "storage_out_power_sensors": "Aus Speicher (Power, optional)",
+          "storage_combined_power_sensors": "Kombi-Speichersensoren (rein und raus, Power, optional)",
+          "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
         }
       }
     }
