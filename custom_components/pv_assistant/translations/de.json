@@ -7,12 +7,8 @@
         "data": {
           "production_sensors": "Erzeugungssensoren",
           "feed_in_sensor": "Einspeisesensor",
-          "battery_in_sensors": "In Speicher (Laden)",
-          "battery_out_sensors": "Aus Speicher (Entladen)",
           "grid_combined_sensor": "Kombi-Netzsensor (Alternative zum Einspeisesensor)",
-          "invert_grid": "Kombi-Netzsensor: positiv = Einspeisung (Standard: positiv = Bezug)",
-          "battery_combined_sensors": "Kombi-Speichersensoren (rein und raus)",
-          "invert_battery": "Kombi-Speichersensoren: positiv = Entladen (Standard: positiv = Laden)"
+          "invert_grid": "Kombi-Netzsensor: positiv = Einspeisung (Standard: positiv = Bezug)"
         }
       },
       "prices": {
@@ -40,12 +36,8 @@
         "data": {
           "production_sensors": "Erzeugungssensoren",
           "feed_in_sensor": "Einspeisesensor",
-          "battery_in_sensors": "In Speicher (Laden)",
-          "battery_out_sensors": "Aus Speicher (Entladen)",
           "grid_combined_sensor": "Kombi-Netzsensor (Alternative zum Einspeisesensor)",
-          "invert_grid": "Kombi-Netzsensor: positiv = Einspeisung (Standard: positiv = Bezug)",
-          "battery_combined_sensors": "Kombi-Speichersensoren (rein und raus)",
-          "invert_battery": "Kombi-Speichersensoren: positiv = Entladen (Standard: positiv = Laden)"
+          "invert_grid": "Kombi-Netzsensor: positiv = Einspeisung (Standard: positiv = Bezug)"
         }
       },
       "prices": {
@@ -71,13 +63,54 @@
         "name": "Einspeisung"
       },
       "battery_in": {
-        "name": "In Speicher"
+        "name": "Speicher gesamt Laden"
       },
       "battery_out": {
-        "name": "Aus Speicher"
+        "name": "Speicher gesamt Entladen"
       },
       "self_consumption": {
         "name": "Eigenverbrauchsquote"
+      },
+      "storage_charge": {
+        "name": "Laden"
+      },
+      "storage_discharge": {
+        "name": "Entladen"
+      }
+    }
+  },
+  "config_subentries": {
+    "storage": {
+      "entry_type": "Speicher",
+      "initiate_flow": {
+        "user": "Speicher hinzufügen",
+        "reconfigure": "Speicher bearbeiten"
+      },
+      "step": {
+        "user": {
+          "title": "Speicher",
+          "description": "Gib dem Speicher einen Namen. Optional ein Gerät wählen: Im nächsten Schritt werden dann nur dessen Leistungssensoren angeboten.",
+          "data": {
+            "name": "Name",
+            "device_id": "Gerät (optional)"
+          }
+        },
+        "sensors": {
+          "title": "Speichersensoren",
+          "description": "Leistungssensoren dieses Speichers. Kombisensoren enthalten rein und raus.",
+          "data": {
+            "battery_in_sensors": "In Speicher (Laden)",
+            "battery_out_sensors": "Aus Speicher (Entladen)",
+            "battery_combined_sensors": "Kombisensoren (rein und raus)",
+            "invert_battery": "Kombisensoren: positiv = Entladen (Standard: positiv = Laden)"
+          }
+        }
+      },
+      "error": {
+        "storage_sensor_required": "Bitte mindestens einen Sensor wählen."
+      },
+      "abort": {
+        "reconfigure_successful": "Gespeichert."
       }
     }
   }

@@ -7,12 +7,8 @@
         "data": {
           "production_sensors": "Production sensors",
           "feed_in_sensor": "Feed-in sensor",
-          "battery_in_sensors": "Into storage (battery charge)",
-          "battery_out_sensors": "From storage (battery discharge)",
           "grid_combined_sensor": "Combined grid sensor (alternative to feed-in sensor)",
-          "invert_grid": "Combined grid sensor: positive = feed-in (default: positive = import)",
-          "battery_combined_sensors": "Combined storage sensors (in and out)",
-          "invert_battery": "Combined storage sensors: positive = discharging (default: positive = charging)"
+          "invert_grid": "Combined grid sensor: positive = feed-in (default: positive = import)"
         }
       },
       "prices": {
@@ -40,12 +36,8 @@
         "data": {
           "production_sensors": "Production sensors",
           "feed_in_sensor": "Feed-in sensor",
-          "battery_in_sensors": "Into storage (battery charge)",
-          "battery_out_sensors": "From storage (battery discharge)",
           "grid_combined_sensor": "Combined grid sensor (alternative to feed-in sensor)",
-          "invert_grid": "Combined grid sensor: positive = feed-in (default: positive = import)",
-          "battery_combined_sensors": "Combined storage sensors (in and out)",
-          "invert_battery": "Combined storage sensors: positive = discharging (default: positive = charging)"
+          "invert_grid": "Combined grid sensor: positive = feed-in (default: positive = import)"
         }
       },
       "prices": {
@@ -71,13 +63,54 @@
         "name": "Feed-in"
       },
       "battery_in": {
-        "name": "Into storage"
+        "name": "Storage total charge"
       },
       "battery_out": {
-        "name": "From storage"
+        "name": "Storage total discharge"
       },
       "self_consumption": {
         "name": "Self-consumption"
+      },
+      "storage_charge": {
+        "name": "Charge"
+      },
+      "storage_discharge": {
+        "name": "Discharge"
+      }
+    }
+  },
+  "config_subentries": {
+    "storage": {
+      "entry_type": "Storage",
+      "initiate_flow": {
+        "user": "Add storage",
+        "reconfigure": "Reconfigure storage"
+      },
+      "step": {
+        "user": {
+          "title": "Storage",
+          "description": "Name the storage. Optionally pick its device: the next step then only offers that device's power sensors.",
+          "data": {
+            "name": "Name",
+            "device_id": "Device (optional)"
+          }
+        },
+        "sensors": {
+          "title": "Storage sensors",
+          "description": "Power sensors of this storage. Combined sensors carry in and out.",
+          "data": {
+            "battery_in_sensors": "Into storage (charge)",
+            "battery_out_sensors": "From storage (discharge)",
+            "battery_combined_sensors": "Combined sensors (in and out)",
+            "invert_battery": "Combined sensors: positive = discharging (default: positive = charging)"
+          }
+        }
+      },
+      "error": {
+        "storage_sensor_required": "Select at least one sensor."
+      },
+      "abort": {
+        "reconfigure_successful": "Saved."
       }
     }
   }

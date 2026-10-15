@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import PERCENTAGE, STATE_UNAVAILABLE, STATE_UNKNOWN, UnitOfPower
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -102,62 +102,126 @@ def _split(hass: HomeAssistant, ids: list[str], invert: bool) -> tuple[float, fl
     return pos, neg
 
 
-def compute(hass: HomeAssistant, cfg: dict[str, Any]) -> dict[str, float] | None:
-    """Return production/feed_in/battery_in/battery_out in W, or None if a source is unavailable.
+def compute_storage(hass: HomeAssistant, data: dict[str, Any]) -> tuple[float, float] | None:
+    """(charge W, discharge W) of one storage, or None if a source is unavailable.
 
-    Combined sensors, default sign: grid + = import (- = feed-in),
-    battery + = charging (- = discharging). The invert switches flip that.
+    Combined sensors, default sign: + = charging, - = discharging.
     """
+    b_in = _sum(hass, _ids(data, CONF_BATTERY_IN))
+    b_out = _sum(hass, _ids(data, CONF_BATTERY_OUT))
+    bat = _split(hass, _ids(data, CONF_BATTERY_COMBINED), bool(data.get(CONF_INVERT_BATTERY)))
+    if None in (b_in, b_out, bat):
+        return None
+    return max(b_in, 0.0) + bat[0], max(b_out, 0.0) + bat[1]
+
+
+def compute(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, float] | None:
+    """Totals in W (production, feed_in, battery_in, battery_out) or None.
+
+    Combined grid sensor, default sign: + = import (- = feed-in); the invert
+    switch flips it. Storage totals sum over all storage subentries.
+    """
+    cfg = entry.data
     prod = _sum(hass, _ids(cfg, CONF_PRODUCTION))
     feed = _sum(hass, _ids(cfg, CONF_FEED_IN))
-    b_in = _sum(hass, _ids(cfg, CONF_BATTERY_IN))
-    b_out = _sum(hass, _ids(cfg, CONF_BATTERY_OUT))
     grid = _split(hass, _ids(cfg, CONF_GRID_COMBINED), bool(cfg.get(CONF_INVERT_GRID)))
-    bat = _split(hass, _ids(cfg, CONF_BATTERY_COMBINED), bool(cfg.get(CONF_INVERT_BATTERY)))
-    if None in (prod, feed, b_in, b_out, grid, bat):
+    if None in (prod, feed, grid):
         return None
+    b_in = b_out = 0.0
+    for sub in entry.subentries.values():
+        r = compute_storage(hass, dict(sub.data))
+        if r is None:
+            return None
+        b_in += r[0]
+        b_out += r[1]
     return {
         "production": max(prod, 0.0),
         "feed_in": max(feed, 0.0) + grid[1],
-        "battery_in": max(b_in, 0.0) + bat[0],
-        "battery_out": max(b_out, 0.0) + bat[1],
+        "battery_in": b_in,
+        "battery_out": b_out,
     }
 
 
-_BATTERY_KEYS = (CONF_BATTERY_IN, CONF_BATTERY_OUT, CONF_BATTERY_COMBINED)
-_ALL_SOURCES = (
-    CONF_PRODUCTION, CONF_FEED_IN, CONF_GRID_COMBINED,
-    CONF_BATTERY_IN, CONF_BATTERY_OUT, CONF_BATTERY_COMBINED,
-)
+def _source_ids(entry: ConfigEntry) -> list[str]:
+    keys = (CONF_PRODUCTION, CONF_FEED_IN, CONF_GRID_COMBINED)
+    ids = [i for k in keys for i in _ids(entry.data, k)]
+    for sub in entry.subentries.values():
+        ids += [i for k in (CONF_BATTERY_IN, CONF_BATTERY_OUT, CONF_BATTERY_COMBINED) for i in _ids(sub.data, k)]
+    return ids
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    cfg = dict(entry.data)
-    has_battery = any(_ids(cfg, k) for k in _BATTERY_KEYS)
+    has_storage = bool(entry.subentries)
     async_add_entities(
-        PVSensor(entry, cfg, d)
+        PVSensor(entry, d)
         for d in DESCRIPTIONS
-        if has_battery or not d.key.startswith("battery")
+        if has_storage or not d.key.startswith("battery")
     )
+    for sub in entry.subentries.values():
+        async_add_entities(
+            [StorageSensor(entry, sub, "charge"), StorageSensor(entry, sub, "discharge")],
+            config_subentry_id=sub.subentry_id,
+        )
 
 
 class PVSensor(SensorEntity):
+    """Totals across all configured sources."""
+
     _attr_has_entity_name = True
     _attr_should_poll = False
     entity_description: PVDescription
 
-    def __init__(self, entry: ConfigEntry, cfg: dict[str, Any], description: PVDescription) -> None:
+    def __init__(self, entry: ConfigEntry, description: PVDescription) -> None:
+        self._entry = entry
         self.entity_description = description
-        self._cfg = cfg
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)}, name="PV Assistant"
         )
 
     async def async_added_to_hass(self) -> None:
-        ids = [i for s in _ALL_SOURCES for i in _ids(self._cfg, s)]
+        @callback
+        def _changed(_: Event) -> None:
+            self._recalc()
+            self.async_write_ha_state()
+
+        self.async_on_remove(
+            async_track_state_change_event(self.hass, _source_ids(self._entry), _changed)
+        )
+        self._recalc()
+
+    def _recalc(self) -> None:
+        values = compute(self.hass, self._entry)
+        self._attr_native_value = (
+            None if values is None else self.entity_description.value_fn(values)
+        )
+
+
+class StorageSensor(SensorEntity):
+    """Charge / discharge power of a single storage (its own device)."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, entry: ConfigEntry, sub: ConfigSubentry, kind: str) -> None:
+        self._sub = sub
+        self._kind = kind
+        self._attr_translation_key = f"storage_{kind}"
+        self._attr_unique_id = f"{sub.subentry_id}_{kind}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, sub.subentry_id)},
+            name=sub.title,
+            via_device=(DOMAIN, entry.entry_id),
+        )
+
+    async def async_added_to_hass(self) -> None:
+        data = dict(self._sub.data)
+        ids = [i for k in (CONF_BATTERY_IN, CONF_BATTERY_OUT, CONF_BATTERY_COMBINED) for i in _ids(data, k)]
 
         @callback
         def _changed(_: Event) -> None:
@@ -168,7 +232,7 @@ class PVSensor(SensorEntity):
         self._recalc()
 
     def _recalc(self) -> None:
-        values = compute(self.hass, self._cfg)
+        r = compute_storage(self.hass, dict(self._sub.data))
         self._attr_native_value = (
-            None if values is None else self.entity_description.value_fn(values)
+            None if r is None else round(r[0] if self._kind == "charge" else r[1])
         )
