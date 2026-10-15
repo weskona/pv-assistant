@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PV Assistant",
+        "description": "Select your power sensors.",
+        "data": {
+          "pv_power": "PV production (power)",
+          "grid_power": "Grid power",
+          "invert_grid": "Grid sensor: negative = import",
+          "battery_power": "Battery power (optional)",
+          "invert_battery": "Battery sensor: negative = charging"
+        }
+      }
+    },
+    "abort": { "already_configured": "PV Assistant is already set up." }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "pv_power": "PV production (power)",
+          "grid_power": "Grid power",
+          "invert_grid": "Grid sensor: negative = import",
+          "battery_power": "Battery power (optional)",
+          "invert_battery": "Battery sensor: negative = charging"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "consumption": { "name": "House consumption" },
+      "grid_import": { "name": "Grid import" },
+      "grid_export": { "name": "Grid export" },
+      "autarky": { "name": "Autarky" },
+      "self_consumption": { "name": "Self-consumption" }
+    }
+  }
+}

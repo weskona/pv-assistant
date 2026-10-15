@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PV Assistant",
+        "description": "Wähle deine Leistungssensoren.",
+        "data": {
+          "pv_power": "PV-Erzeugung (Leistung)",
+          "grid_power": "Netzleistung",
+          "invert_grid": "Netzsensor: negativ = Bezug",
+          "battery_power": "Batterieleistung (optional)",
+          "invert_battery": "Batteriesensor: negativ = Laden"
+        }
+      }
+    },
+    "abort": { "already_configured": "PV Assistant ist bereits eingerichtet." }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "pv_power": "PV-Erzeugung (Leistung)",
+          "grid_power": "Netzleistung",
+          "invert_grid": "Netzsensor: negativ = Bezug",
+          "battery_power": "Batterieleistung (optional)",
+          "invert_battery": "Batteriesensor: negativ = Laden"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "consumption": { "name": "Hausverbrauch" },
+      "grid_import": { "name": "Netzbezug" },
+      "grid_export": { "name": "Netzeinspeisung" },
+      "autarky": { "name": "Autarkie" },
+      "self_consumption": { "name": "Eigenverbrauchsquote" }
+    }
+  }
+}
