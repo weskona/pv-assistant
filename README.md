@@ -10,4 +10,4 @@ Konfiguration in zwei Schritten mit gleichem Aufbau: (1) Energiesensoren (kWh), 
 3. Einstellungen → Geräte & Dienste → Integration hinzufügen → **PV Assistant**.
 4. Sensoren auswählen.
 
-Das Panel erscheint danach in der Seitenleiste.
+Das Panel erscheint danach in der Seitenleiste und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
