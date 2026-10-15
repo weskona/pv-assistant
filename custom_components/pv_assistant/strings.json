@@ -10,7 +10,7 @@
           "storage_in_energy_sensors": "Into storage (energy, optional)",
           "storage_out_energy_sensors": "From storage (energy, optional)",
           "storage_combined_energy_sensors": "Combined storage sensors (in and out, energy, optional)",
-          "invert_storage_combined": "Combined storage sensors: positive = from storage (default: positive = into storage)"
+          "invert_storage_combined": "Combined storage sensors: positive = into storage (default: positive = from storage)"
         }
       }
     },
@@ -29,7 +29,7 @@
           "storage_in_energy_sensors": "Into storage (energy, optional)",
           "storage_out_energy_sensors": "From storage (energy, optional)",
           "storage_combined_energy_sensors": "Combined storage sensors (in and out, energy, optional)",
-          "invert_storage_combined": "Combined storage sensors: positive = from storage (default: positive = into storage)"
+          "invert_storage_combined": "Combined storage sensors: positive = into storage (default: positive = from storage)"
         }
       }
     }

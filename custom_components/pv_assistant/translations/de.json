@@ -10,7 +10,7 @@
           "storage_in_energy_sensors": "In Speicher (Energie, optional)",
           "storage_out_energy_sensors": "Aus Speicher (Energie, optional)",
           "storage_combined_energy_sensors": "Kombi-Speichersensoren (rein und raus, Energie, optional)",
-          "invert_storage_combined": "Kombi-Speichersensoren: positiv = aus Speicher (Standard: positiv = in Speicher)"
+          "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
         }
       }
     },
@@ -29,7 +29,7 @@
           "storage_in_energy_sensors": "In Speicher (Energie, optional)",
           "storage_out_energy_sensors": "Aus Speicher (Energie, optional)",
           "storage_combined_energy_sensors": "Kombi-Speichersensoren (rein und raus, Energie, optional)",
-          "invert_storage_combined": "Kombi-Speichersensoren: positiv = aus Speicher (Standard: positiv = in Speicher)"
+          "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
         }
       }
     }

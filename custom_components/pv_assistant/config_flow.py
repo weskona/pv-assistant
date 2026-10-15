@@ -2,7 +2,7 @@
 
 Step 1 (all energy sensors): production (several), feed-in (exactly one),
 storage in / storage out / combined storage (several, optional;
-combined sign switchable, default positive = into storage).
+combined sign switchable, default positive = from storage).
 """
 
 from __future__ import annotations
