@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, PANEL_ELEMENT, PANEL_URL, STATIC_URL
 
-PLATFORMS = ["sensor"]
+PLATFORMS: list[str] = []
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
