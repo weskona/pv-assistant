@@ -29,7 +29,7 @@ jobs:
           # Previous release tag (highest v* tag below the current one), for the changelog.
           prev=$(git tag --list 'v*' --sort=-v:refname | grep -vx "$tag" | head -n1 || true)
           {
-            echo "## Änderungen"
+            echo "## Changes"
             echo
             if [ -n "$prev" ]; then
               git log "${prev}..${GITHUB_SHA}" --no-merges --pretty='- %s'
@@ -38,7 +38,7 @@ jobs:
             fi
             if [ -n "$prev" ]; then
               echo
-              echo "**Vollständiger Verlauf:** https://github.com/${GITHUB_REPOSITORY}/compare/${prev}...${tag}"
+              echo "**Full changelog:** https://github.com/${GITHUB_REPOSITORY}/compare/${prev}...${tag}"
             fi
           } > release-notes.md
           (cd custom_components/pv_assistant && zip -qr "$GITHUB_WORKSPACE/pv_assistant.zip" .)

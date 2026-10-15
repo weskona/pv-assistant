@@ -6,5 +6,5 @@
 - Config Flow in Schritten aufbauen; Sensoren sind Energie (kWh) bzw. Leistung (W) je nach Feld.
 - Jeder PR muss `version` in `custom_components/pv_assistant/manifest.json` erhöhen (Workflow `validate`
   prüft das). Nach dem Merge erstellt der Workflow `release` automatisch das Release `v<version>`.
-- Changelog-Texte auf Deutsch: Das Release wird aus den PR-Titeln (Squash-Commit-Betreff) erzeugt.
-  PR-Titel daher immer auf Deutsch und aussagekräftig formulieren.
+- Changelog-Texte auf Englisch: Das Release wird aus den PR-Titeln (Squash-Commit-Betreff) erzeugt.
+  PR-Titel daher immer auf Englisch und aussagekräftig formulieren. Chat und Doku mit dem Nutzer bleiben Deutsch.
