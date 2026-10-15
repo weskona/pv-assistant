@@ -2,39 +2,67 @@
   "config": {
     "step": {
       "user": {
-        "title": "PV Assistant",
-        "description": "Wähle deine Leistungssensoren.",
+        "title": "Leistungssensoren",
+        "description": "Nur Leistungssensoren (Power). Beliebig viele hinzufügbar, außer dem Einspeisesensor (genau einer).",
         "data": {
-          "pv_power": "PV-Erzeugung (Leistung)",
-          "grid_power": "Netzleistung",
-          "invert_grid": "Netzsensor: negativ = Bezug",
-          "battery_power": "Batterieleistung (optional)",
-          "invert_battery": "Batteriesensor: negativ = Laden"
+          "production_sensors": "Erzeugungssensoren",
+          "feed_in_sensor": "Einspeisesensor",
+          "battery_in_sensors": "In Speicher (Laden)",
+          "battery_out_sensors": "Aus Speicher (Entladen)"
+        }
+      },
+      "prices": {
+        "title": "Preise",
+        "description": "Sensor oder input_number mit dem Preis pro kWh.",
+        "data": {
+          "price_grid_import": "Netzbezug (Preis)",
+          "price_feed_in": "Einspeisevergütung"
         }
       }
     },
-    "abort": { "already_configured": "PV Assistant ist bereits eingerichtet." }
+    "abort": {
+      "already_configured": "PV Assistant ist bereits eingerichtet."
+    }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Leistungssensoren",
+        "description": "Nur Leistungssensoren (Power). Beliebig viele hinzufügbar, außer dem Einspeisesensor (genau einer).",
         "data": {
-          "pv_power": "PV-Erzeugung (Leistung)",
-          "grid_power": "Netzleistung",
-          "invert_grid": "Netzsensor: negativ = Bezug",
-          "battery_power": "Batterieleistung (optional)",
-          "invert_battery": "Batteriesensor: negativ = Laden"
+          "production_sensors": "Erzeugungssensoren",
+          "feed_in_sensor": "Einspeisesensor",
+          "battery_in_sensors": "In Speicher (Laden)",
+          "battery_out_sensors": "Aus Speicher (Entladen)"
+        }
+      },
+      "prices": {
+        "title": "Preise",
+        "description": "Sensor oder input_number mit dem Preis pro kWh.",
+        "data": {
+          "price_grid_import": "Netzbezug (Preis)",
+          "price_feed_in": "Einspeisevergütung"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "consumption": { "name": "Hausverbrauch" },
-      "grid_import": { "name": "Netzbezug" },
-      "grid_export": { "name": "Netzeinspeisung" },
-      "autarky": { "name": "Autarkie" },
-      "self_consumption": { "name": "Eigenverbrauchsquote" }
+      "production": {
+        "name": "Erzeugung"
+      },
+      "feed_in": {
+        "name": "Einspeisung"
+      },
+      "battery_in": {
+        "name": "In Speicher"
+      },
+      "battery_out": {
+        "name": "Aus Speicher"
+      },
+      "self_consumption": {
+        "name": "Eigenverbrauchsquote"
+      }
     }
   }
 }

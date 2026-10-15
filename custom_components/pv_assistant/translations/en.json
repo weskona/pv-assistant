@@ -2,39 +2,67 @@
   "config": {
     "step": {
       "user": {
-        "title": "PV Assistant",
-        "description": "Select your power sensors.",
+        "title": "Power sensors",
+        "description": "Select power sensors only. You can add as many as you like, except the feed-in sensor (exactly one).",
         "data": {
-          "pv_power": "PV production (power)",
-          "grid_power": "Grid power",
-          "invert_grid": "Grid sensor: negative = import",
-          "battery_power": "Battery power (optional)",
-          "invert_battery": "Battery sensor: negative = charging"
+          "production_sensors": "Production sensors",
+          "feed_in_sensor": "Feed-in sensor",
+          "battery_in_sensors": "Into storage (battery charge)",
+          "battery_out_sensors": "From storage (battery discharge)"
+        }
+      },
+      "prices": {
+        "title": "Prices",
+        "description": "Sensor or input_number holding the price per kWh.",
+        "data": {
+          "price_grid_import": "Grid import price",
+          "price_feed_in": "Feed-in tariff"
         }
       }
     },
-    "abort": { "already_configured": "PV Assistant is already set up." }
+    "abort": {
+      "already_configured": "PV Assistant is already set up."
+    }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Power sensors",
+        "description": "Select power sensors only. You can add as many as you like, except the feed-in sensor (exactly one).",
         "data": {
-          "pv_power": "PV production (power)",
-          "grid_power": "Grid power",
-          "invert_grid": "Grid sensor: negative = import",
-          "battery_power": "Battery power (optional)",
-          "invert_battery": "Battery sensor: negative = charging"
+          "production_sensors": "Production sensors",
+          "feed_in_sensor": "Feed-in sensor",
+          "battery_in_sensors": "Into storage (battery charge)",
+          "battery_out_sensors": "From storage (battery discharge)"
+        }
+      },
+      "prices": {
+        "title": "Prices",
+        "description": "Sensor or input_number holding the price per kWh.",
+        "data": {
+          "price_grid_import": "Grid import price",
+          "price_feed_in": "Feed-in tariff"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "consumption": { "name": "House consumption" },
-      "grid_import": { "name": "Grid import" },
-      "grid_export": { "name": "Grid export" },
-      "autarky": { "name": "Autarky" },
-      "self_consumption": { "name": "Self-consumption" }
+      "production": {
+        "name": "Production"
+      },
+      "feed_in": {
+        "name": "Feed-in"
+      },
+      "battery_in": {
+        "name": "Into storage"
+      },
+      "battery_out": {
+        "name": "From storage"
+      },
+      "self_consumption": {
+        "name": "Self-consumption"
+      }
     }
   }
 }
