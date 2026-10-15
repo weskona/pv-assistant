@@ -15,7 +15,7 @@
       },
       "power": {
         "title": "Leistungssensoren",
-        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.",
+        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.\n\nHinweis: Hast du mehrere Strings (z. B. mit unterschiedlicher Ausrichtung wie Ost/West), wähle hier die einzelnen String-Sensoren. Nimm keinen Gesamtsensor, der Strings mit unterschiedlicher Ausrichtung zusammenfasst, sonst lassen sie sich nicht mehr unterscheiden.",
         "data": {
           "production_power_sensors": "Erzeugungssensoren (Power)",
           "feed_in_power_sensor": "Einspeisesensor (Power)",
@@ -23,6 +23,9 @@
           "storage_out_power_sensors": "Aus Speicher (Power, optional)",
           "storage_combined_power_sensors": "Kombi-Speichersensoren (rein und raus, Power, optional)",
           "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+        },
+        "data_description": {
+          "production_power_sensors": "Pro String einen Sensor wählen, keinen Gesamtsensor über unterschiedliche Ausrichtungen."
         }
       }
     },
@@ -46,7 +49,7 @@
       },
       "power": {
         "title": "Leistungssensoren",
-        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.",
+        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.\n\nHinweis: Hast du mehrere Strings (z. B. mit unterschiedlicher Ausrichtung wie Ost/West), wähle hier die einzelnen String-Sensoren. Nimm keinen Gesamtsensor, der Strings mit unterschiedlicher Ausrichtung zusammenfasst, sonst lassen sie sich nicht mehr unterscheiden.",
         "data": {
           "production_power_sensors": "Erzeugungssensoren (Power)",
           "feed_in_power_sensor": "Einspeisesensor (Power)",
@@ -54,6 +57,9 @@
           "storage_out_power_sensors": "Aus Speicher (Power, optional)",
           "storage_combined_power_sensors": "Kombi-Speichersensoren (rein und raus, Power, optional)",
           "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+        },
+        "data_description": {
+          "production_power_sensors": "Pro String einen Sensor wählen, keinen Gesamtsensor über unterschiedliche Ausrichtungen."
         }
       }
     }
