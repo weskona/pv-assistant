@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PV Assistant",
+        "description": "PV Assistant einrichten."
+      }
+    },
+    "abort": {
+      "already_configured": "PV Assistant ist bereits eingerichtet."
+    }
+  }
+}

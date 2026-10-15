@@ -1,0 +1,12 @@
+{
+  "domain": "pv_assistant",
+  "name": "PV Assistant",
+  "codeowners": ["@weskona"],
+  "config_flow": true,
+  "documentation": "https://github.com/weskona/pv-assistant",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/weskona/pv-assistant/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

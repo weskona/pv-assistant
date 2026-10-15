@@ -13,5 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changelog following Keep a Changelog.
   <br>*Changelog nach Keep a Changelog.*
+- HACS-compliant Home Assistant custom integration skeleton (`custom_components/pv_assistant`, `hacs.json`, config flow, EN/DE translations).
+  <br>*HACS-konformes Grundgerüst einer Home-Assistant-Custom-Integration (`custom_components/pv_assistant`, `hacs.json`, Config Flow, EN/DE-Übersetzungen).*
+- GitHub Actions workflow running hassfest and HACS validation.
+  <br>*GitHub-Actions-Workflow für hassfest- und HACS-Validierung.*
 
 [Unreleased]: https://github.com/weskona/pv-assistant/commits/main
