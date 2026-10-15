@@ -1,7 +1,8 @@
 """Config flow for PV Assistant.
 
 Step 1 (all energy sensors): production (several), feed-in (exactly one),
-storage in / storage out (several, optional).
+storage in / storage out / combined storage (several, optional;
+combined sign switchable, default positive = into storage).
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_INVERT_STORAGE_COMBINED,
+    CONF_STORAGE_COMBINED_ENERGY,
     CONF_FEED_IN_ENERGY,
     CONF_PRODUCTION_ENERGY,
     CONF_STORAGE_IN_ENERGY,
@@ -27,7 +30,7 @@ from .const import (
     DOMAIN,
 )
 
-_OPTIONAL = (CONF_STORAGE_IN_ENERGY, CONF_STORAGE_OUT_ENERGY)
+_OPTIONAL = (CONF_STORAGE_IN_ENERGY, CONF_STORAGE_OUT_ENERGY, CONF_STORAGE_COMBINED_ENERGY)
 
 
 def _sensor(device_class: str, multiple: bool) -> selector.EntitySelector:
@@ -48,6 +51,8 @@ def _schema(d: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_FEED_IN_ENERGY, description=sv(CONF_FEED_IN_ENERGY)): _sensor("energy", False),
             vol.Optional(CONF_STORAGE_IN_ENERGY, description=sv(CONF_STORAGE_IN_ENERGY)): _sensor("energy", True),
             vol.Optional(CONF_STORAGE_OUT_ENERGY, description=sv(CONF_STORAGE_OUT_ENERGY)): _sensor("energy", True),
+            vol.Optional(CONF_STORAGE_COMBINED_ENERGY, description=sv(CONF_STORAGE_COMBINED_ENERGY)): _sensor("energy", True),
+            vol.Required(CONF_INVERT_STORAGE_COMBINED, default=d.get(CONF_INVERT_STORAGE_COMBINED, False)): bool,
         }
     )
 

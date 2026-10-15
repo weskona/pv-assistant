@@ -8,7 +8,9 @@
           "production_energy_sensors": "Production sensors (energy)",
           "feed_in_energy_sensor": "Feed-in sensor (energy)",
           "storage_in_energy_sensors": "Into storage (energy, optional)",
-          "storage_out_energy_sensors": "From storage (energy, optional)"
+          "storage_out_energy_sensors": "From storage (energy, optional)",
+          "storage_combined_energy_sensors": "Combined storage sensors (in and out, energy, optional)",
+          "invert_storage_combined": "Combined storage sensors: positive = from storage (default: positive = into storage)"
         }
       }
     },
@@ -25,7 +27,9 @@
           "production_energy_sensors": "Production sensors (energy)",
           "feed_in_energy_sensor": "Feed-in sensor (energy)",
           "storage_in_energy_sensors": "Into storage (energy, optional)",
-          "storage_out_energy_sensors": "From storage (energy, optional)"
+          "storage_out_energy_sensors": "From storage (energy, optional)",
+          "storage_combined_energy_sensors": "Combined storage sensors (in and out, energy, optional)",
+          "invert_storage_combined": "Combined storage sensors: positive = from storage (default: positive = into storage)"
         }
       }
     }
