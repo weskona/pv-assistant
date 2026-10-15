@@ -3,14 +3,18 @@
     "step": {
       "user": {
         "title": "Energiesensoren",
-        "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer.",
+        "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer. Jeder bekommt eine bereinigte Kopie, die kurze Abstürze auf 0 ignoriert; nutze sie als Quelle für utility_meter.",
         "data": {
           "production_energy_sensors": "Erzeugungssensoren (Energie)",
           "feed_in_energy_sensor": "Einspeisesensor (Energie)",
           "storage_in_energy_sensors": "In Speicher (Energie, optional)",
           "storage_out_energy_sensors": "Aus Speicher (Energie, optional)",
           "storage_combined_energy_sensors": "Kombi-Speichersensoren (rein und raus, Energie, optional)",
-          "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+          "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)",
+          "reset_confirm_minutes": "Reset-Bestätigung (Minuten)"
+        },
+        "data_description": {
+          "reset_confirm_minutes": "Minuten, die ein niedrigerer Wert bestehen muss, bevor er als echter Reset zählt. Kürzere Abstürze werden ignoriert."
         }
       },
       "power": {
@@ -37,14 +41,18 @@
     "step": {
       "init": {
         "title": "Energiesensoren",
-        "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer.",
+        "description": "Wähle Energiesensoren (kWh). Erzeugung und Speicher: beliebig viele. Einspeisung: genau einer. Jeder bekommt eine bereinigte Kopie, die kurze Abstürze auf 0 ignoriert; nutze sie als Quelle für utility_meter.",
         "data": {
           "production_energy_sensors": "Erzeugungssensoren (Energie)",
           "feed_in_energy_sensor": "Einspeisesensor (Energie)",
           "storage_in_energy_sensors": "In Speicher (Energie, optional)",
           "storage_out_energy_sensors": "Aus Speicher (Energie, optional)",
           "storage_combined_energy_sensors": "Kombi-Speichersensoren (rein und raus, Energie, optional)",
-          "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+          "invert_storage_combined": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)",
+          "reset_confirm_minutes": "Reset-Bestätigung (Minuten)"
+        },
+        "data_description": {
+          "reset_confirm_minutes": "Minuten, die ein niedrigerer Wert bestehen muss, bevor er als echter Reset zählt. Kürzere Abstürze werden ignoriert."
         }
       },
       "power": {

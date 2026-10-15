@@ -91,8 +91,10 @@ class PVAssistantPanel extends HTMLElement {
   _fmt(n) { return n.toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 2 }); }
 
   _read(id) {
-    const s = this._hass.states[id];
-    const name = s?.attributes.friendly_name || id;
+    // Energy sensors: show the glitch-filtered copy when it exists.
+    const src = this._hass.states[id];
+    const s = this._hass.states[this._cfg.filtered?.[id]] || src;
+    const name = src?.attributes.friendly_name || id;
     const n = s ? parseFloat(s.state) : NaN;
     const unit = s?.attributes.unit_of_measurement || "";
     return { id, name, unit, value: n, base: isNaN(n) ? NaN : n * (FACTOR[unit] ?? 1) };
