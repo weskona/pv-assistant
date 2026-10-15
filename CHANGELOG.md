@@ -19,5 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   <br>*GitHub-Actions-Workflow für hassfest- und HACS-Validierung.*
 - GitHub Actions workflow that creates a tag and release from the manifest version on every push to `main`.
   <br>*GitHub-Actions-Workflow, der bei jedem Push auf `main` aus der Manifest-Version Tag und Release erstellt.*
+- Placeholder brand icon for the integration (`custom_components/pv_assistant/brand`).
+  <br>*Platzhalter-Icon für die Integration (`custom_components/pv_assistant/brand`).*
 
 [Unreleased]: https://github.com/weskona/pv-assistant/commits/main
