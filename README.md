@@ -11,3 +11,6 @@ Konfiguration in zwei Schritten mit gleichem Aufbau: (1) Energiesensoren (kWh), 
 4. Sensoren auswählen.
 
 Das Panel erscheint danach in der Seitenleiste und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
+
+## Bereinigte Energiesensoren
+Zu jedem Erzeugungs-, Einspeise- und Speicher-Energiesensor (kWh) legt die Integration eine bereinigte Kopie an (`… bereinigt`). Kurze Abstürze auf 0 oder `unavailable` werden ignoriert; ein niedrigerer Wert gilt erst als echter Reset, wenn er die eingestellte Zeit (Standard 10 Minuten) besteht. Diese Sensoren als Quelle für `utility_meter` verwenden. Kombi-Speichersensoren (Netto) werden nicht gefiltert.

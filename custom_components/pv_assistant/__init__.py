@@ -10,10 +10,12 @@ from homeassistant.components import panel_custom, websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN, PANEL_ELEMENT, PANEL_URL, STATIC_URL
+from .sensor import filtered_unique_id, source_entity_ids
 
-PLATFORMS: list[str] = []
+PLATFORMS = ["sensor"]
 
 
 @websocket_api.websocket_command({vol.Required("type"): "pv_assistant/config"})
@@ -21,7 +23,17 @@ PLATFORMS: list[str] = []
 def _ws_config(hass: HomeAssistant, connection, msg: dict) -> None:
     """Hand the configured sensor selection to the panel."""
     entries = hass.config_entries.async_entries(DOMAIN)
-    connection.send_result(msg["id"], dict(entries[0].data) if entries else {})
+    if not entries:
+        connection.send_result(msg["id"], {})
+        return
+    entry = entries[0]
+    reg = er.async_get(hass)
+    filtered = {}
+    for src in source_entity_ids(dict(entry.data)):
+        eid = reg.async_get_entity_id("sensor", DOMAIN, filtered_unique_id(entry.entry_id, src))
+        if eid:
+            filtered[src] = eid
+    connection.send_result(msg["id"], {**entry.data, "filtered": filtered})
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

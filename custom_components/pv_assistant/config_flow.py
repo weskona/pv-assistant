@@ -1,5 +1,8 @@
 """Config flow for PV Assistant.
 
+Step 1 additionally has the reset confirmation time (minutes) of the energy filter:
+a lower value is only accepted as a real reset if it persists that long.
+
 Step 1 (energy sensors, kWh) and step 2 (power sensors, W) have the same layout:
 production (several), feed-in (exactly one), storage in / out / combined
 (several, optional; combined sign switchable, default positive = from storage).
@@ -21,6 +24,8 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_RESET_CONFIRM_MINUTES,
+    DEFAULT_RESET_CONFIRM_MINUTES,
     CONF_FEED_IN_ENERGY,
     CONF_FEED_IN_POWER,
     CONF_INVERT_STORAGE_COMBINED,
@@ -80,6 +85,22 @@ def _schema(device_class: str, d: dict[str, Any]) -> vol.Schema:
             vol.Optional(s_out, description=sv(s_out)): _sensor(device_class, True),
             vol.Optional(s_comb, description=sv(s_comb)): _sensor(device_class, True),
             vol.Required(invert, default=d.get(invert, False)): bool,
+            **(
+                {
+                    vol.Required(
+                        CONF_RESET_CONFIRM_MINUTES,
+                        default=d.get(CONF_RESET_CONFIRM_MINUTES, DEFAULT_RESET_CONFIRM_MINUTES),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1, max=120, step=1,
+                            mode=selector.NumberSelectorMode.BOX,
+                            unit_of_measurement="min",
+                        )
+                    )
+                }
+                if device_class == "energy"
+                else {}
+            ),
         }
     )
 

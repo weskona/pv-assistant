@@ -16,6 +16,9 @@ CONF_STORAGE_OUT_POWER = "storage_out_power_sensors"  # list, optional, power fr
 CONF_STORAGE_COMBINED_POWER = "storage_combined_power_sensors"  # list, optional, in and out in one sensor
 CONF_INVERT_STORAGE_COMBINED_POWER = "invert_storage_combined_power"  # default: + = from storage, - = into storage
 
+CONF_RESET_CONFIRM_MINUTES = "reset_confirm_minutes"  # energy filter: minutes a lower value must persist
+DEFAULT_RESET_CONFIRM_MINUTES = 10
+
 PANEL_URL = "pv-assistant"
 PANEL_ELEMENT = "pv-assistant-panel"
 STATIC_URL = "/pv_assistant_static"

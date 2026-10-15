@@ -3,19 +3,23 @@
     "step": {
       "user": {
         "title": "Energy sensors",
-        "description": "Select energy (kWh) sensors. Production and storage: as many as you like. Feed-in: exactly one.",
+        "description": "Select energy (kWh) sensors. Production and storage: as many as you like. Feed-in: exactly one. Each of them gets a filtered copy that ignores short drops to 0; use it as source for utility_meter.",
         "data": {
           "production_energy_sensors": "Production sensors (energy)",
           "feed_in_energy_sensor": "Feed-in sensor (energy)",
           "storage_in_energy_sensors": "Into storage (energy, optional)",
           "storage_out_energy_sensors": "From storage (energy, optional)",
           "storage_combined_energy_sensors": "Combined storage sensors (in and out, energy, optional)",
-          "invert_storage_combined": "Combined storage sensors: positive = into storage (default: positive = from storage)"
+          "invert_storage_combined": "Combined storage sensors: positive = into storage (default: positive = from storage)",
+          "reset_confirm_minutes": "Reset confirmation (minutes)"
+        },
+        "data_description": {
+          "reset_confirm_minutes": "Minutes a lower value must persist before it counts as a real reset. Shorter drops are ignored."
         }
       },
       "power": {
         "title": "Power sensors",
-        "description": "Select power (W) sensors, same layout as the previous step.",
+        "description": "Select power (W) sensors, same layout as the previous step.\n\nNote: if your system has several strings (e.g. different orientations such as east/west), select the individual string sensors here. Do not pick a total sensor that sums strings with different orientations, otherwise they cannot be told apart.",
         "data": {
           "production_power_sensors": "Production sensors (power)",
           "feed_in_power_sensor": "Feed-in sensor (power)",
@@ -23,6 +27,9 @@
           "storage_out_power_sensors": "From storage (power, optional)",
           "storage_combined_power_sensors": "Combined storage sensors (in and out, power, optional)",
           "invert_storage_combined_power": "Combined storage sensors: positive = into storage (default: positive = from storage)"
+        },
+        "data_description": {
+          "production_power_sensors": "Select one sensor per string, not a total across different orientations."
         }
       }
     },
@@ -34,19 +41,23 @@
     "step": {
       "init": {
         "title": "Energy sensors",
-        "description": "Select energy (kWh) sensors. Production and storage: as many as you like. Feed-in: exactly one.",
+        "description": "Select energy (kWh) sensors. Production and storage: as many as you like. Feed-in: exactly one. Each of them gets a filtered copy that ignores short drops to 0; use it as source for utility_meter.",
         "data": {
           "production_energy_sensors": "Production sensors (energy)",
           "feed_in_energy_sensor": "Feed-in sensor (energy)",
           "storage_in_energy_sensors": "Into storage (energy, optional)",
           "storage_out_energy_sensors": "From storage (energy, optional)",
           "storage_combined_energy_sensors": "Combined storage sensors (in and out, energy, optional)",
-          "invert_storage_combined": "Combined storage sensors: positive = into storage (default: positive = from storage)"
+          "invert_storage_combined": "Combined storage sensors: positive = into storage (default: positive = from storage)",
+          "reset_confirm_minutes": "Reset confirmation (minutes)"
+        },
+        "data_description": {
+          "reset_confirm_minutes": "Minutes a lower value must persist before it counts as a real reset. Shorter drops are ignored."
         }
       },
       "power": {
         "title": "Power sensors",
-        "description": "Select power (W) sensors, same layout as the previous step.",
+        "description": "Select power (W) sensors, same layout as the previous step.\n\nNote: if your system has several strings (e.g. different orientations such as east/west), select the individual string sensors here. Do not pick a total sensor that sums strings with different orientations, otherwise they cannot be told apart.",
         "data": {
           "production_power_sensors": "Production sensors (power)",
           "feed_in_power_sensor": "Feed-in sensor (power)",
@@ -54,6 +65,9 @@
           "storage_out_power_sensors": "From storage (power, optional)",
           "storage_combined_power_sensors": "Combined storage sensors (in and out, power, optional)",
           "invert_storage_combined_power": "Combined storage sensors: positive = into storage (default: positive = from storage)"
+        },
+        "data_description": {
+          "production_power_sensors": "Select one sensor per string, not a total across different orientations."
         }
       }
     }
