@@ -17,5 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   <br>*HACS-konformes Grundgerüst einer Home-Assistant-Custom-Integration (`custom_components/pv_assistant`, `hacs.json`, Config Flow, EN/DE-Übersetzungen).*
 - GitHub Actions workflow running hassfest and HACS validation.
   <br>*GitHub-Actions-Workflow für hassfest- und HACS-Validierung.*
+- GitHub Actions workflow that creates a tag and release from the manifest version on every push to `main`.
+  <br>*GitHub-Actions-Workflow, der bei jedem Push auf `main` aus der Manifest-Version Tag und Release erstellt.*
 
 [Unreleased]: https://github.com/weskona/pv-assistant/commits/main

@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from manifest
+        id: version
+        run: |
+          version=$(jq -r '.version' custom_components/pv_assistant/manifest.json)
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether the tag already exists
+        id: check
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          # Take the section of the current version; fall back to Unreleased.
+          awk -v v="${{ steps.version.outputs.version }}" '
+            $0 ~ "^## \\[" v "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            awk '/^## \[Unreleased\]/ { found=1; next } found && /^## \[/ { exit } found { print }' CHANGELOG.md > notes.md
+          fi
+
+      - name: Create tag and release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -s notes.md ]; then
+            gh release create "${{ steps.version.outputs.tag }}" \
+              --target "${{ github.sha }}" \
+              --title "${{ steps.version.outputs.tag }}" \
+              --notes-file notes.md
+          else
+            gh release create "${{ steps.version.outputs.tag }}" \
+              --target "${{ github.sha }}" \
+              --title "${{ steps.version.outputs.tag }}" \
+              --generate-notes
+          fi
