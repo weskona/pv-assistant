@@ -3,12 +3,16 @@
     "step": {
       "user": {
         "title": "Leistungssensoren",
-        "description": "Nur Leistungssensoren (Power). Beliebig viele hinzufügbar, außer dem Einspeisesensor (genau einer).",
+        "description": "Nur Leistungssensoren, beliebig viele. Netz: GENAU EINEN wählen, entweder Einspeisesensor oder Kombi-Netzsensor.",
         "data": {
           "production_sensors": "Erzeugungssensoren",
           "feed_in_sensor": "Einspeisesensor",
           "battery_in_sensors": "In Speicher (Laden)",
-          "battery_out_sensors": "Aus Speicher (Entladen)"
+          "battery_out_sensors": "Aus Speicher (Entladen)",
+          "grid_combined_sensor": "Kombi-Netzsensor (Alternative zum Einspeisesensor)",
+          "invert_grid": "Kombi-Netzsensor: positiv = Einspeisung (Standard: positiv = Bezug)",
+          "battery_combined_sensors": "Kombi-Speichersensoren (rein und raus)",
+          "invert_battery": "Kombi-Speichersensoren: positiv = Entladen (Standard: positiv = Laden)"
         }
       },
       "prices": {
@@ -22,18 +26,26 @@
     },
     "abort": {
       "already_configured": "PV Assistant ist bereits eingerichtet."
+    },
+    "error": {
+      "grid_conflict": "Bitte entweder Einspeisesensor oder Kombi-Netzsensor wählen, nicht beide.",
+      "grid_required": "Bitte Einspeisesensor oder Kombi-Netzsensor wählen."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Leistungssensoren",
-        "description": "Nur Leistungssensoren (Power). Beliebig viele hinzufügbar, außer dem Einspeisesensor (genau einer).",
+        "description": "Nur Leistungssensoren, beliebig viele. Netz: GENAU EINEN wählen, entweder Einspeisesensor oder Kombi-Netzsensor.",
         "data": {
           "production_sensors": "Erzeugungssensoren",
           "feed_in_sensor": "Einspeisesensor",
           "battery_in_sensors": "In Speicher (Laden)",
-          "battery_out_sensors": "Aus Speicher (Entladen)"
+          "battery_out_sensors": "Aus Speicher (Entladen)",
+          "grid_combined_sensor": "Kombi-Netzsensor (Alternative zum Einspeisesensor)",
+          "invert_grid": "Kombi-Netzsensor: positiv = Einspeisung (Standard: positiv = Bezug)",
+          "battery_combined_sensors": "Kombi-Speichersensoren (rein und raus)",
+          "invert_battery": "Kombi-Speichersensoren: positiv = Entladen (Standard: positiv = Laden)"
         }
       },
       "prices": {
@@ -44,6 +56,10 @@
           "price_feed_in": "Einspeisevergütung"
         }
       }
+    },
+    "error": {
+      "grid_conflict": "Bitte entweder Einspeisesensor oder Kombi-Netzsensor wählen, nicht beide.",
+      "grid_required": "Bitte Einspeisesensor oder Kombi-Netzsensor wählen."
     }
   },
   "entity": {

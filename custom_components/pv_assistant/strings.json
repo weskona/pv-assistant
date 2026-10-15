@@ -3,12 +3,16 @@
     "step": {
       "user": {
         "title": "Power sensors",
-        "description": "Select power sensors only. You can add as many as you like, except the feed-in sensor (exactly one).",
+        "description": "Power sensors only, as many as you like. Grid: choose EXACTLY ONE of feed-in sensor or combined grid sensor.",
         "data": {
           "production_sensors": "Production sensors",
           "feed_in_sensor": "Feed-in sensor",
           "battery_in_sensors": "Into storage (battery charge)",
-          "battery_out_sensors": "From storage (battery discharge)"
+          "battery_out_sensors": "From storage (battery discharge)",
+          "grid_combined_sensor": "Combined grid sensor (alternative to feed-in sensor)",
+          "invert_grid": "Combined grid sensor: positive = feed-in (default: positive = import)",
+          "battery_combined_sensors": "Combined storage sensors (in and out)",
+          "invert_battery": "Combined storage sensors: positive = discharging (default: positive = charging)"
         }
       },
       "prices": {
@@ -22,18 +26,26 @@
     },
     "abort": {
       "already_configured": "PV Assistant is already set up."
+    },
+    "error": {
+      "grid_conflict": "Choose either a feed-in sensor or a combined grid sensor, not both.",
+      "grid_required": "Choose a feed-in sensor or a combined grid sensor."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Power sensors",
-        "description": "Select power sensors only. You can add as many as you like, except the feed-in sensor (exactly one).",
+        "description": "Power sensors only, as many as you like. Grid: choose EXACTLY ONE of feed-in sensor or combined grid sensor.",
         "data": {
           "production_sensors": "Production sensors",
           "feed_in_sensor": "Feed-in sensor",
           "battery_in_sensors": "Into storage (battery charge)",
-          "battery_out_sensors": "From storage (battery discharge)"
+          "battery_out_sensors": "From storage (battery discharge)",
+          "grid_combined_sensor": "Combined grid sensor (alternative to feed-in sensor)",
+          "invert_grid": "Combined grid sensor: positive = feed-in (default: positive = import)",
+          "battery_combined_sensors": "Combined storage sensors (in and out)",
+          "invert_battery": "Combined storage sensors: positive = discharging (default: positive = charging)"
         }
       },
       "prices": {
@@ -44,6 +56,10 @@
           "price_feed_in": "Feed-in tariff"
         }
       }
+    },
+    "error": {
+      "grid_conflict": "Choose either a feed-in sensor or a combined grid sensor, not both.",
+      "grid_required": "Choose a feed-in sensor or a combined grid sensor."
     }
   },
   "entity": {

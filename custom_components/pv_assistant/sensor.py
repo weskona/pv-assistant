@@ -20,9 +20,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import (
+    CONF_BATTERY_COMBINED,
     CONF_BATTERY_IN,
     CONF_BATTERY_OUT,
     CONF_FEED_IN,
+    CONF_GRID_COMBINED,
+    CONF_INVERT_BATTERY,
+    CONF_INVERT_GRID,
     CONF_PRODUCTION,
     DOMAIN,
 )
@@ -30,15 +34,14 @@ from .const import (
 
 @dataclass(frozen=True, kw_only=True)
 class PVDescription(SensorEntityDescription):
-    sources: tuple[str, ...]
     value_fn: Callable[[dict[str, float]], float | None]
 
 
 def _self_consumption(v: dict[str, float]) -> float | None:
-    if v[CONF_PRODUCTION] <= 0:
+    if v["production"] <= 0:
         return None
-    exported = min(v[CONF_FEED_IN], v[CONF_PRODUCTION])
-    return round(100 * (v[CONF_PRODUCTION] - exported) / v[CONF_PRODUCTION], 1)
+    exported = min(v["feed_in"], v["production"])
+    return round(100 * (v["production"] - exported) / v["production"], 1)
 
 
 _W = dict(
@@ -47,14 +50,19 @@ _W = dict(
     state_class=SensorStateClass.MEASUREMENT,
 )
 
+
+def _w(key: str, **kw: Any) -> PVDescription:
+    return PVDescription(key=key, translation_key=key, value_fn=lambda v: round(v[key]), **_W, **kw)
+
+
 DESCRIPTIONS = (
-    PVDescription(key="production", translation_key="production", sources=(CONF_PRODUCTION,), value_fn=lambda v: round(v[CONF_PRODUCTION]), **_W),
-    PVDescription(key="feed_in", translation_key="feed_in", sources=(CONF_FEED_IN,), value_fn=lambda v: round(v[CONF_FEED_IN]), **_W),
-    PVDescription(key="battery_in", translation_key="battery_in", sources=(CONF_BATTERY_IN,), value_fn=lambda v: round(v[CONF_BATTERY_IN]), **_W),
-    PVDescription(key="battery_out", translation_key="battery_out", sources=(CONF_BATTERY_OUT,), value_fn=lambda v: round(v[CONF_BATTERY_OUT]), **_W),
+    _w("production"),
+    _w("feed_in"),
+    _w("battery_in"),
+    _w("battery_out"),
     PVDescription(
         key="self_consumption", translation_key="self_consumption",
-        sources=(CONF_PRODUCTION, CONF_FEED_IN), value_fn=_self_consumption,
+        value_fn=_self_consumption,
         native_unit_of_measurement=PERCENTAGE, state_class=SensorStateClass.MEASUREMENT,
     ),
 )
@@ -65,29 +73,73 @@ def _ids(cfg: dict[str, Any], key: str) -> list[str]:
     return [v] if isinstance(v, str) else list(v)
 
 
-def _sum_watts(hass: HomeAssistant, entity_ids: list[str]) -> float | None:
-    total = 0.0
-    for eid in entity_ids:
-        st = hass.states.get(eid)
-        if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+def _watts(hass: HomeAssistant, entity_id: str) -> float | None:
+    st = hass.states.get(entity_id)
+    if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+        return None
+    try:
+        val = float(st.state)
+    except ValueError:
+        return None
+    return val * {"kW": 1000, "MW": 1e6}.get(st.attributes.get("unit_of_measurement"), 1)
+
+
+def _sum(hass: HomeAssistant, ids: list[str]) -> float | None:
+    vals = [_watts(hass, i) for i in ids]
+    return None if None in vals else sum(vals)  # type: ignore[arg-type]
+
+
+def _split(hass: HomeAssistant, ids: list[str], invert: bool) -> tuple[float, float] | None:
+    """Combined sensors: (positive part, negative part as positive number)."""
+    pos = neg = 0.0
+    for i in ids:
+        w = _watts(hass, i)
+        if w is None:
             return None
-        try:
-            val = float(st.state)
-        except ValueError:
-            return None
-        unit = st.attributes.get("unit_of_measurement")
-        total += val * {"kW": 1000, "MW": 1e6}.get(unit, 1)
-    return total
+        w = -w if invert else w
+        pos += max(w, 0.0)
+        neg += max(-w, 0.0)
+    return pos, neg
+
+
+def compute(hass: HomeAssistant, cfg: dict[str, Any]) -> dict[str, float] | None:
+    """Return production/feed_in/battery_in/battery_out in W, or None if a source is unavailable.
+
+    Combined sensors, default sign: grid + = import (- = feed-in),
+    battery + = charging (- = discharging). The invert switches flip that.
+    """
+    prod = _sum(hass, _ids(cfg, CONF_PRODUCTION))
+    feed = _sum(hass, _ids(cfg, CONF_FEED_IN))
+    b_in = _sum(hass, _ids(cfg, CONF_BATTERY_IN))
+    b_out = _sum(hass, _ids(cfg, CONF_BATTERY_OUT))
+    grid = _split(hass, _ids(cfg, CONF_GRID_COMBINED), bool(cfg.get(CONF_INVERT_GRID)))
+    bat = _split(hass, _ids(cfg, CONF_BATTERY_COMBINED), bool(cfg.get(CONF_INVERT_BATTERY)))
+    if None in (prod, feed, b_in, b_out, grid, bat):
+        return None
+    return {
+        "production": max(prod, 0.0),
+        "feed_in": max(feed, 0.0) + grid[1],
+        "battery_in": max(b_in, 0.0) + bat[0],
+        "battery_out": max(b_out, 0.0) + bat[1],
+    }
+
+
+_BATTERY_KEYS = (CONF_BATTERY_IN, CONF_BATTERY_OUT, CONF_BATTERY_COMBINED)
+_ALL_SOURCES = (
+    CONF_PRODUCTION, CONF_FEED_IN, CONF_GRID_COMBINED,
+    CONF_BATTERY_IN, CONF_BATTERY_OUT, CONF_BATTERY_COMBINED,
+)
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     cfg = dict(entry.data)
+    has_battery = any(_ids(cfg, k) for k in _BATTERY_KEYS)
     async_add_entities(
         PVSensor(entry, cfg, d)
         for d in DESCRIPTIONS
-        if all(_ids(cfg, s) for s in d.sources)
+        if has_battery or not d.key.startswith("battery")
     )
 
 
@@ -105,7 +157,7 @@ class PVSensor(SensorEntity):
         )
 
     async def async_added_to_hass(self) -> None:
-        ids = [i for s in self.entity_description.sources for i in _ids(self._cfg, s)]
+        ids = [i for s in _ALL_SOURCES for i in _ids(self._cfg, s)]
 
         @callback
         def _changed(_: Event) -> None:
@@ -116,11 +168,7 @@ class PVSensor(SensorEntity):
         self._recalc()
 
     def _recalc(self) -> None:
-        values: dict[str, float] = {}
-        for s in self.entity_description.sources:
-            total = _sum_watts(self.hass, _ids(self._cfg, s))
-            if total is None:
-                self._attr_native_value = None
-                return
-            values[s] = max(total, 0.0)
-        self._attr_native_value = self.entity_description.value_fn(values)
+        values = compute(self.hass, self._cfg)
+        self._attr_native_value = (
+            None if values is None else self.entity_description.value_fn(values)
+        )
