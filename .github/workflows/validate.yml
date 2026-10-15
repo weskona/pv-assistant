@@ -1,0 +1,64 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+          ignore: brands
+
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Python syntax
+        run: python3 -m compileall -q custom_components
+      - name: Panel JavaScript syntax
+        run: node --check custom_components/pv_assistant/frontend/pv-assistant-panel.js
+      - name: JSON files
+        run: |
+          for f in hacs.json custom_components/pv_assistant/manifest.json \
+                   custom_components/pv_assistant/strings.json \
+                   custom_components/pv_assistant/translations/*.json; do
+            jq empty "$f" || { echo "Invalid JSON: $f"; exit 1; }
+          done
+      - name: Translations cover all config flow fields
+        run: |
+          # every key of strings.json must exist in every translation file
+          for t in custom_components/pv_assistant/translations/*.json; do
+            diff <(jq -S '[paths(scalars)|map(tostring)|join(".")]' custom_components/pv_assistant/strings.json) \
+                 <(jq -S '[paths(scalars)|map(tostring)|join(".")]' "$t") \
+              || { echo "Keys differ in $t"; exit 1; }
+          done
+      - name: Version must be bumped (pull requests only)
+        if: github.event_name == 'pull_request'
+        run: |
+          new=$(jq -r .version custom_components/pv_assistant/manifest.json)
+          latest=$(git tag --list 'v*' --sort=-v:refname | head -n1 | sed 's/^v//')
+          echo "manifest version: $new, latest release: ${latest:-none}"
+          if [ -n "$latest" ]; then
+            top=$(printf '%s\n%s\n' "$latest" "$new" | sort -V | tail -n1)
+            if [ "$new" = "$latest" ] || [ "$top" != "$new" ]; then
+              echo "::error::Bump \"version\" in manifest.json above $latest (needed for the release)."
+              exit 1
+            fi
+          fi

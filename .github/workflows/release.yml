@@ -1,0 +1,29 @@
+name: Release
+
+# Runs when a PR is merged (= push to main). Creates the release v<manifest version>
+# if it does not exist yet; the PR check guarantees the version was bumped.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(jq -r .version custom_components/pv_assistant/manifest.json)
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists, nothing to do."
+            exit 0
+          fi
+          (cd custom_components/pv_assistant && zip -qr "$GITHUB_WORKSPACE/pv_assistant.zip" .)
+          gh release create "$tag" pv_assistant.zip \
+            --target "$GITHUB_SHA" --title "$tag" --generate-notes
