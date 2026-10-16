@@ -15,6 +15,7 @@ const T = {
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
+    powerTab: "Leistung", ofMax: "von max.", pwrNote: "Maximum = höchste je gemessene Leistung des Strings (Langzeitstatistik, mindestens der aktuelle Wert).", noString: "Keine Erzeugungs-Leistungssensoren konfiguriert.",
     fcGroup: "Prognose (kWh)", fcToday: "Prognose heute", fcTomorrow: "Prognose morgen", fcRemaining: "Prognose Rest heute",
     fcReached: "Von Prognose erreicht", directShare: "Anteil an Erzeugung",
     storage: "Speicher", storageNet: "Speicher (+ Entladen / − Laden)", loading: "Lade …", noData: "Keine Daten im Zeitraum.",
@@ -34,6 +35,7 @@ const T = {
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
+    powerTab: "Power", ofMax: "of max.", pwrNote: "Maximum = highest power ever measured for the string (long-term statistics, at least the current value).", noString: "No production power sensors configured.",
     fcGroup: "Forecast (kWh)", fcToday: "Forecast today", fcTomorrow: "Forecast tomorrow", fcRemaining: "Forecast rest of today",
     fcReached: "Of forecast reached", directShare: "Share of production",
     storage: "Storage", storageNet: "Storage (+ discharge / − charge)", loading: "Loading …", noData: "No data in this range.",
@@ -143,11 +145,16 @@ class PVAssistantPanel extends HTMLElement {
           .yearnav select { font:inherit; color:var(--primary-text-color); background:var(--card-background-color);
                   border:1px solid var(--divider-color); border-radius:8px; padding:4px 8px; }
           .note { color:var(--secondary-text-color); font-size:.85em; margin:0 0 16px; }
+          .grid + .note { margin-top:16px; }
+          .gauge { height:10px; border-radius:5px; background:var(--divider-color); overflow:hidden; margin:10px 0 6px; }
+          .gauge i { display:block; height:100%; border-radius:5px; background:var(--pva-prod); }
+          .pw-val { font-size:2em; font-weight:500; }
+          .pw-sub { color:var(--secondary-text-color); font-size:.9em; display:flex; justify-content:space-between; gap:8px; }
           p.empty { color:var(--secondary-text-color); margin:16px 0; }
         </style>
         <header><span id="menu"></span><span id="title"></span></header>
         <nav id="tabs" role="tablist"></nav>
-        <main><div id="now" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div></main>`;
+        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div></main>`;
       const menu = document.createElement("ha-menu-button");
       this._root.getElementById("menu").appendChild(menu);
       this._menu = menu;
@@ -157,7 +164,7 @@ class PVAssistantPanel extends HTMLElement {
       this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); });
     });
     this._ro.observe(this);
-    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); }, 5 * 60 * 1000);
+    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); this._loadPowerMax(); }, 5 * 60 * 1000);
     this._load();
   }
 
@@ -180,6 +187,7 @@ class PVAssistantPanel extends HTMLElement {
     this._render();
     this._loadHistory();
     this._loadYears();
+    this._loadPowerMax();
   }
 
   set hass(hass) {
@@ -248,6 +256,7 @@ class PVAssistantPanel extends HTMLElement {
     if (fc) html += `<h2>${esc(this._t("fcGroup"))}</h2><div class="grid">${fc}</div>`;
     if (!html) html = `<p class="muted">${esc(this._t("none"))}</p>`;
     if (html !== this._last) { this._last = html; this._root.getElementById("now").innerHTML = html; }
+    this._renderPower();
   }
 
   // ---------------------------------------------------------------- history
@@ -570,6 +579,7 @@ class PVAssistantPanel extends HTMLElement {
 
   _buildTabs() {
     const list = [["now", "now", "now"]];
+    if (this._keys().P.prod.length) list.push(["powerTab", "pwr", "power"]);
     if (this._hist) list.push(["history", "hist", "history"]);
     if (this._yearsOn) list.push(["years", "yearsec", "years"]);
     this._tabs = list;
@@ -607,6 +617,53 @@ class PVAssistantPanel extends HTMLElement {
     // charts measure their container; hidden tabs have no width, so draw once visible
     if (id === "history") this._draw();
     if (id === "years") this._drawYears();
+  }
+
+  // ---------------------------------------------------------------- power per string
+
+  async _loadPowerMax() {
+    const ids = this._keys().P.prod;
+    if (!ids.length || !this._hass) return;
+    const start = new Date(); start.setFullYear(start.getFullYear() - 15, 0, 1); start.setHours(0, 0, 0, 0);
+    let res = {};
+    try {
+      res = await this._hass.callWS({
+        type: "recorder/statistics_during_period",
+        start_time: start.toISOString(), end_time: new Date().toISOString(),
+        statistic_ids: ids, period: "month", types: ["max"], units: { power: "W" },
+      });
+    } catch (e) { res = {}; }
+    const max = {};
+    for (const id of ids) {
+      const vals = (res[id] || []).map((r) => r.max).filter((v) => v != null && !isNaN(v));
+      if (vals.length) max[id] = Math.max(...vals);
+    }
+    this._pmax = max;
+    this._renderPower();
+  }
+
+  _renderPower() {
+    if (!this._root || !this._cfg || !this._hass) return;
+    const box = this._root.getElementById("pwr");
+    const ids = this._keys().P.prod;
+    if (!ids.length) return;
+    const cards = ids.map((id) => {
+      const r = this._read(id);
+      const cur = isNaN(r.base) ? null : Math.max(r.base, 0);
+      const stat = this._pmax?.[id];
+      const max = cur == null ? stat : Math.max(stat ?? 0, cur);
+      const pct = cur != null && max > 0 ? Math.min(100, (cur / max) * 100) : 0;
+      const val = cur == null ? `<span class="muted">${esc(this._t("missing"))}</span>` : `${esc(this._fmt(cur))} W`;
+      const sub = max != null
+        ? `<span>${esc(this._t("ofMax"))} ${esc(this._fmt(max))} W</span><span>${esc(String(Math.round(pct)))} %</span>`
+        : `<span class="muted">–</span>`;
+      return `<div class="card"><h3><span title="${esc(id)}">${esc(r.name)}</span></h3>
+        <div class="pw-val">${val}</div>
+        <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct.toFixed(1)}%"></i></div>
+        <div class="pw-sub">${sub}</div></div>`;
+    }).join("");
+    const html = `<div class="grid">${cards}</div><p class="note">${esc(this._t("pwrNote"))}</p>`;
+    if (html !== this._lastPwr) { this._lastPwr = html; box.innerHTML = html; }
   }
 }
 customElements.define("pv-assistant-panel", PVAssistantPanel);
