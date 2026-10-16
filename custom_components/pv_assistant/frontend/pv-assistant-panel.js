@@ -85,9 +85,12 @@ class PVAssistantPanel extends HTMLElement {
           .sum { font-weight:500; }
           .muted { color:var(--secondary-text-color); }
           /* categorical slots 1-4 (blue, orange, aqua, yellow), light / dark stepped */
-          :host { --pva-1:#2a78d6; --pva-2:#eb6834; --pva-3:#1baf7a; --pva-4:#eda100; --pva-5:#e87ba4; }
-          :host([data-dark]) { --pva-1:#3987e5; --pva-2:#d95926; --pva-3:#199e70; --pva-4:#c98500; --pva-5:#d55181; --pva-neg:#e66767; }
-          :host { --pva-neg:#e34948; }
+          /* entity colors (same as the Energy dashboard); --pva-grid is reserved for grid import */
+          :host { --pva-prod:#ff9800; --pva-feed:#8353d1; --pva-grid:#488fc2; --pva-direct:#ffd700;
+                  --pva-bout:#4db6ac; --pva-bin:#f06292;
+                  --pva-avg:color-mix(in srgb, #ff9800 45%, var(--card-background-color));
+                  --pva-pos:#2a78d6; --pva-neg:#e34948; }
+          :host([data-dark]) { --pva-pos:#3987e5; --pva-neg:#e66767; }
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
           .filters button { font:inherit; color:var(--primary-text-color); background:transparent;
                   border:1px solid var(--divider-color); border-radius:16px; padding:4px 14px; cursor:pointer; }
@@ -376,10 +379,10 @@ class PVAssistantPanel extends HTMLElement {
     const hasStorageP = P.sin.length || P.sout.length || P.comb.length;
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
     const lines = [
-      { name: this._t("production"), short: this._t("production"), color: "--pva-1", points: toPts(pProd) },
-      { name: this._t("feed"), short: this._t("feed"), color: "--pva-2", points: toPts(pFeed) },
-      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-3", points: hasStorageP ? toPts(pNet) : [] },
-      { name: this._t("direct"), short: this._t("directShort"), color: "--pva-5", points: toPts(pDirect) },
+      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd) },
+      { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed) },
+      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", points: hasStorageP ? toPts(pNet) : [] },
+      { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect) },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
     const tickFmt = rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
@@ -399,11 +402,11 @@ class PVAssistantPanel extends HTMLElement {
     const eDirect = new Map();
     for (const [ts, v] of eProd) eDirect.set(ts, Math.max(0, v - (eFeed.get(ts) || 0) - (eSin.get(ts) || 0)));
     const bars = [
-      { name: this._t("production"), color: "--pva-1", values: eProd },
-      { name: this._t("feed"), color: "--pva-2", values: eFeed },
-      { name: this._t("sin"), color: "--pva-3", values: eSin },
-      { name: this._t("sout"), color: "--pva-4", values: eSout },
-      { name: this._t("direct"), color: "--pva-5", values: eDirect },
+      { name: this._t("production"), color: "--pva-prod", values: eProd },
+      { name: this._t("feed"), color: "--pva-feed", values: eFeed },
+      { name: this._t("sin"), color: "--pva-bin", values: eSin },
+      { name: this._t("sout"), color: "--pva-bout", values: eSout },
+      { name: this._t("direct"), color: "--pva-direct", values: eDirect },
     ];
     const hourly = rd.eBucket === 3600e3;
     barChart(this._root.getElementById("echart"), {
@@ -531,15 +534,15 @@ class PVAssistantPanel extends HTMLElement {
     categoryBarChart(root.getElementById("ychart"), {
       categories: names.map((n, m) => (Y === cy && m === cm ? `${n}*` : n)),
       series: [
-        { name: String(Y), color: "--pva-1", values: cur },
-        { name: `${this._t("avg")} (${used.size} ${this._t("yearsUnit")})`, color: "--pva-2", values: avg },
+        { name: String(Y), color: "--pva-prod", values: cur },
+        { name: `${this._t("avg")} (${used.size} ${this._t("yearsUnit")})`, color: "--pva-avg", values: avg },
       ],
       fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("monthly"),
     });
     categoryBarChart(root.getElementById("dchart"), {
       categories: names,
-      series: [{ name: this._t("deviation"), color: "--pva-1", colorOf: (v) => (v >= 0 ? "--pva-1" : "--pva-neg"), values: dev }],
-      legendItems: [{ name: this._t("above"), color: "--pva-1" }, { name: this._t("below"), color: "--pva-neg" }],
+      series: [{ name: this._t("deviation"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: dev }],
+      legendItems: [{ name: this._t("above"), color: "--pva-pos" }, { name: this._t("below"), color: "--pva-neg" }],
       fmtValue: (v, axis) => `${num(v, axis, 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("deviation"),
     });
     if (Y === cy) root.getElementById("ychart").append(Object.assign(document.createElement("p"), { className: "note", textContent: `* ${this._t("running")}` }));

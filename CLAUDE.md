@@ -8,3 +8,6 @@
   prüft das). Nach dem Merge erstellt der Workflow `release` automatisch das Release `v<version>`.
 - Changelog-Texte auf Englisch: Das Release wird aus den PR-Titeln (Squash-Commit-Betreff) erzeugt.
   PR-Titel daher immer auf Englisch und aussagekräftig formulieren. Chat und Doku mit dem Nutzer bleiben Deutsch.
+- Panel-Farben (wie im Energy-Dashboard, vom Nutzer vorgegeben): Einspeisung #8353d1, Netzbezug #488fc2,
+  PV-Erzeugung #ff9800, direkt verbrauchte PV #ffd700, aus Speicher #4db6ac, in Speicher #f06292.
+  Als CSS-Variablen `--pva-*` im Panel; neue Reihen nutzen diese Zuordnung.

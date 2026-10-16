@@ -1,6 +1,6 @@
 // Small dependency-free SVG charts (line + grouped bars) with crosshair/tooltip,
 // legend, direct end labels on lines and a table view. Colors come from CSS custom
-// properties set by the panel (--pva-1 ... --pva-4); text/grid use the HA theme.
+// properties set by the panel (--pva-prod, --pva-feed, --pva-bin, --pva-bout, --pva-direct, ...); text/grid use the HA theme.
 
 const NS = "http://www.w3.org/2000/svg";
 const M = { l: 48, r: 8, t: 10, b: 24 };
