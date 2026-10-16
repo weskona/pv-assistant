@@ -63,6 +63,13 @@ class PVAssistantPanel extends HTMLElement {
           header { display:flex; align-items:center; gap:8px; height:56px; padding:0 12px;
                    background:var(--app-header-background-color, var(--primary-color));
                    color:var(--app-header-text-color, #fff); font-size:20px; }
+          nav { display:flex; overflow-x:auto; background:var(--app-header-background-color, var(--primary-color));
+                color:var(--app-header-text-color, #fff); padding:0 8px; }
+          nav button { font:inherit; color:inherit; background:transparent; border:0; border-bottom:3px solid transparent;
+                padding:10px 16px 8px; opacity:.75; cursor:pointer; white-space:nowrap; }
+          nav button:hover { opacity:1; }
+          nav button[aria-selected="true"] { opacity:1; border-bottom-color:currentColor; font-weight:500; }
+          [role="tabpanel"][hidden] { display:none; }
           main { padding:16px; max-width:1100px; margin:0 auto; }
           h2 { font-weight:400; font-size:1.2em; margin:24px 0 8px; }
           .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
@@ -130,14 +137,15 @@ class PVAssistantPanel extends HTMLElement {
           p.empty { color:var(--secondary-text-color); margin:16px 0; }
         </style>
         <header><span id="menu"></span><span id="title"></span></header>
-        <main><div id="now"></div><div id="hist"></div><div id="yearsec"></div></main>`;
+        <nav id="tabs" role="tablist"></nav>
+        <main><div id="now" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div></main>`;
       const menu = document.createElement("ha-menu-button");
       this._root.getElementById("menu").appendChild(menu);
       this._menu = menu;
     }
     this._ro = new ResizeObserver(() => {
       cancelAnimationFrame(this._raf);
-      this._raf = requestAnimationFrame(() => { this._draw(); this._drawYears(); });
+      this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); });
     });
     this._ro.observe(this);
     this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); }, 5 * 60 * 1000);
@@ -159,6 +167,7 @@ class PVAssistantPanel extends HTMLElement {
     this._last = null;
     this._buildHistory();
     this._buildYears();
+    this._buildTabs();
     this._render();
     this._loadHistory();
     this._loadYears();
@@ -226,7 +235,6 @@ class PVAssistantPanel extends HTMLElement {
       if (cards) html += `<h2>${esc(this._t(g.id))}</h2><div class="grid">${cards}</div>`;
     }
     if (!html) html = `<p class="muted">${esc(this._t("none"))}</p>`;
-    if (html) html = `<h2>${esc(this._t("now"))}</h2>${html}`;
     if (html !== this._last) { this._last = html; this._root.getElementById("now").innerHTML = html; }
   }
 
@@ -252,7 +260,7 @@ class PVAssistantPanel extends HTMLElement {
     this._hist = !!(any(P) || any(E));
     if (!this._hist) { h.replaceChildren(); return; }
     if (!this._range) this._range = "today";
-    h.innerHTML = `<h2>${esc(this._t("history"))}</h2><div class="filters" id="ranges"></div>
+    h.innerHTML = `<div class="filters" id="ranges"></div>
       <div class="tiles" id="tiles"></div>
       <h3 class="ch">${esc(this._t("powerChart"))} (W)</h3><div class="chart" id="pchart"></div>
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
@@ -422,8 +430,7 @@ class PVAssistantPanel extends HTMLElement {
     this._yy = new Date().getFullYear(); // displayed year
     const opts = [1, 2, 3, 4, 5, 10, 0].map((v) =>
       `<option value="${v}"${v === this._yn ? " selected" : ""}>${v ? v : esc(this._t("all"))}</option>`).join("");
-    box.innerHTML = `<h2>${esc(this._t("years"))}</h2>
-      <div class="yearnav">
+    box.innerHTML = `<div class="yearnav">
         <button id="yprev" aria-label="${esc(this._t("prevYear"))}">‹</button><b id="ylabel"></b>
         <button id="ynext" aria-label="${esc(this._t("nextYear"))}">›</button>
         <label>${esc(this._t("avgOver"))} <select id="ynum">${opts}</select> ${esc(this._t("yearsUnit"))}</label>
@@ -523,6 +530,49 @@ class PVAssistantPanel extends HTMLElement {
       fmtValue: (v, axis) => `${num(v, axis, 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("deviation"),
     });
     if (Y === cy) root.getElementById("ychart").append(Object.assign(document.createElement("p"), { className: "note", textContent: `* ${this._t("running")}` }));
+  }
+
+  // ---------------------------------------------------------------- tabs
+
+  _buildTabs() {
+    const list = [["now", "now", "now"]];
+    if (this._hist) list.push(["history", "hist", "history"]);
+    if (this._yearsOn) list.push(["years", "yearsec", "years"]);
+    this._tabs = list;
+    let saved = null;
+    try { saved = localStorage.getItem("pv_assistant_tab"); } catch (e) { /* storage unavailable */ }
+    if (!this._tab || !list.some((t) => t[2] === this._tab)) this._tab = list.some((t) => t[2] === saved) ? saved : "now";
+    const nav = this._root.getElementById("tabs");
+    nav.replaceChildren();
+    for (const [label, , id] of list) {
+      const b = document.createElement("button");
+      b.setAttribute("role", "tab");
+      b.dataset.tab = id;
+      b.textContent = this._t(label);
+      b.addEventListener("click", () => this._showTab(id));
+      b.addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        const ids = list.map((t) => t[2]);
+        const next = ids[(ids.indexOf(id) + (e.key === "ArrowRight" ? 1 : ids.length - 1)) % ids.length];
+        this._showTab(next);
+        nav.querySelector(`[data-tab="${next}"]`).focus();
+      });
+      nav.append(b);
+    }
+    this._showTab(this._tab, false);
+  }
+
+  _showTab(id, remember = true) {
+    this._tab = id;
+    if (remember) { try { localStorage.setItem("pv_assistant_tab", id); } catch (e) { /* storage unavailable */ } }
+    for (const [, section, tid] of this._tabs) this._root.getElementById(section).hidden = tid !== id;
+    this._root.getElementById("tabs").querySelectorAll("button").forEach((b) => {
+      b.setAttribute("aria-selected", String(b.dataset.tab === id));
+      b.tabIndex = b.dataset.tab === id ? 0 : -1;
+    });
+    // charts measure their container; hidden tabs have no width, so draw once visible
+    if (id === "history") this._draw();
+    if (id === "years") this._drawYears();
   }
 }
 customElements.define("pv-assistant-panel", PVAssistantPanel);

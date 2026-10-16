@@ -10,7 +10,7 @@ Konfiguration in zwei Schritten mit gleichem Aufbau: (1) Energiesensoren (kWh), 
 3. Einstellungen → Geräte & Dienste → Integration hinzufügen → **PV Assistant**.
 4. Sensoren auswählen.
 
-Das Panel erscheint danach in der Seitenleiste und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
+Das Panel erscheint danach in der Seitenleiste, gegliedert in die Tabs „Aktuell“, „Verlauf“ und „Jahresübersicht“ (der zuletzt gewählte Tab wird im Browser gemerkt), und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
 
 ## Verlauf und Diagramme im Panel
 Unter „Verlauf" wählst du den Zeitraum (Heute, Gestern, 7 Tage, 30 Tage). Das Panel zeigt Summen, ein Leistungsdiagramm (Erzeugung, Einspeisung, Speicher netto) und ein Energiediagramm je Stunde bzw. Tag (Erzeugung, Einspeisung, In/Aus Speicher). Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Per Mouseover erscheinen die Werte, jedes Diagramm gibt es auch als Tabelle.
