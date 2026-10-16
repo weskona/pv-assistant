@@ -15,6 +15,7 @@ const T = {
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
+    negWarn: "Achtung: {names} liefert negative Werte, wird hier aber nur mit den positiven Werten gezählt. Sensoren mit Vorzeichen (z. B. Batterie: Laden und Entladen in einem) bitte im Feld „Kombi-Speichersensoren“ eintragen.",
     powerTab: "Leistung", ofMax: "von max.", pwrNote: "Maximum = höchste je gemessene Leistung des Strings (Langzeitstatistik, mindestens der aktuelle Wert).", noString: "Keine Erzeugungs-Leistungssensoren konfiguriert.",
     fcGroup: "Prognose (kWh)", fcToday: "Prognose heute", fcTomorrow: "Prognose morgen", fcRemaining: "Prognose Rest heute",
     fcReached: "Von Prognose erreicht", directShare: "Anteil an Erzeugung",
@@ -35,6 +36,7 @@ const T = {
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
+    negWarn: "Note: {names} reports negative values but only its positive values are counted here. Sensors with a sign (e.g. a battery with charge and discharge in one) belong in the field for combined storage sensors.",
     powerTab: "Power", ofMax: "of max.", pwrNote: "Maximum = highest power ever measured for the string (long-term statistics, at least the current value).", noString: "No production power sensors configured.",
     fcGroup: "Forecast (kWh)", fcToday: "Forecast today", fcTomorrow: "Forecast tomorrow", fcRemaining: "Forecast rest of today",
     fcReached: "Of forecast reached", directShare: "Share of production",
@@ -147,6 +149,7 @@ class PVAssistantPanel extends HTMLElement {
           .yearnav select { font:inherit; color:var(--primary-text-color); background:var(--card-background-color);
                   border:1px solid var(--divider-color); border-radius:8px; padding:4px 8px; }
           .note { color:var(--secondary-text-color); font-size:.85em; margin:0 0 16px; }
+          .note.warn { color:var(--primary-text-color); border-left:3px solid var(--pva-neg); padding-left:8px; margin:8px 0 0; }
           .grid + .note { margin-top:16px; }
           .gauge { height:10px; border-radius:5px; background:var(--divider-color); overflow:hidden; margin:10px 0 6px; }
           .gauge i { display:block; height:100%; border-radius:5px; background:var(--pva-prod); }
@@ -396,16 +399,19 @@ class PVAssistantPanel extends HTMLElement {
     // feed-in power: a sensor that reports feed-in as negative values is inverted; the other
     // direction (import) is not feed-in and counts as 0
     const feedFn = P.invFeed ? (v) => Math.max(-v, 0) : (v) => Math.max(v, 0);
-    const pProd = sum(P.prod, pr, "mean"), pFeed = sum(P.feed, pr, "mean", feedFn);
-    const pSin = sum(P.sin, pr, "mean"), pSout = sum(P.sout, pr, "mean");
+    // single-direction sensors (production, storage in, storage out) only count positive values;
+    // sensors with a sign belong in the combined storage field
+    const nz = (v) => Math.max(v, 0);
+    const pProd = sum(P.prod, pr, "mean", nz), pFeed = sum(P.feed, pr, "mean", feedFn);
+    const pSin = sum(P.sin, pr, "mean", nz), pSout = sum(P.sout, pr, "mean", nz);
     const pComb = sum(P.comb, pr, "mean", (v) => (P.inv ? -v : v));
     let pNet = merge(merge(pSout, pSin, -1), pComb);
     // PV used directly = production - feed-in - charging power (never below 0)
     const cP = comb(P.comb, pr, "mean", P.inv);
     const pCharge = merge(pSin, cP.neg);
     const pDirect = new Map();
-    for (const [ts, v] of pProd) pDirect.set(ts, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)));
-    const pNetParts = [...each(P.sout, pr, "mean"), ...each(P.sin, pr, "mean", (v) => -v), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
+    for (const [ts, v] of pProd) pDirect.set(ts, Math.min(v, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)))); // never above the production
+    const pNetParts = [...each(P.sout, pr, "mean", nz), ...each(P.sin, pr, "mean", (v) => -nz(v)), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
     const pDirectParts = [
       { name: this._t("production"), values: pProd },
       { name: `− ${this._t("feed")}`, values: neg(pFeed) },
@@ -414,7 +420,7 @@ class PVAssistantPanel extends HTMLElement {
     const hasStorageP = P.sin.length || P.sout.length || P.comb.length;
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
     const lines = [
-      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean") },
+      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean", nz) },
       { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(P.feed, pr, "mean", feedFn) },
       { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
       { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect), parts: pDirectParts },
@@ -428,6 +434,15 @@ class PVAssistantPanel extends HTMLElement {
       empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("powerChart")} (W)`,
     });
 
+    // hint when a single-direction sensor reports negative values (misplaced signed sensor)
+    const neg1 = [...P.prod, ...P.sin, ...P.sout].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
+    if (neg1.length) {
+      const warn = document.createElement("p");
+      warn.className = "note warn";
+      warn.textContent = this._t("negWarn").replace("{names}", neg1.join(", "));
+      this._root.getElementById("pchart").append(warn);
+    }
+
     // ---- energy bars
     const er = (field) => (id) => pick(id, field);
     const eProd = sum(E.prod, er("change"), "change"), eFeed = sum(E.feed, er("change"), "change");
@@ -435,7 +450,7 @@ class PVAssistantPanel extends HTMLElement {
     const eSin = merge(sum(E.sin, er("change"), "change"), c.neg);
     const eSout = merge(sum(E.sout, er("change"), "change"), c.pos);
     const eDirect = new Map();
-    for (const [ts, v] of eProd) eDirect.set(ts, Math.max(0, v - (eFeed.get(ts) || 0) - (eSin.get(ts) || 0)));
+    for (const [ts, v] of eProd) eDirect.set(ts, Math.min(v, Math.max(0, v - (eFeed.get(ts) || 0) - (eSin.get(ts) || 0))));
     const wfn = (v) => (E.inv ? -v : v); // default positive = from storage
     const eSinParts = [...each(E.sin, er("change"), "change"), ...each(E.comb, er("change"), "change", (v) => Math.max(-wfn(v), 0))];
     const eSoutParts = [...each(E.sout, er("change"), "change"), ...each(E.comb, er("change"), "change", (v) => Math.max(wfn(v), 0))];

@@ -19,7 +19,7 @@
       },
       "power": {
         "title": "Power sensors",
-        "description": "Select power (W) sensors, same layout as the previous step.\n\nNote: if your system has several strings (e.g. different orientations such as east/west), select the individual string sensors here. Do not pick a total sensor that sums strings with different orientations, otherwise they cannot be told apart.",
+        "description": "Select power (W) sensors, same layout as the previous step.\n\nNote: if your system has several strings (e.g. different orientations such as east/west), select the individual string sensors here. Do not pick a total sensor that sums strings with different orientations, otherwise they cannot be told apart. Sensors that only report one direction (production, feed-in, into storage, from storage) are counted with their positive values; a sensor with a sign (e.g. a battery that charges and discharges) belongs in the combined storage field.",
         "data": {
           "production_power_sensors": "Production sensors (power)",
           "feed_in_power_sensor": "Feed-in sensor (power)",
@@ -67,7 +67,7 @@
       },
       "power": {
         "title": "Power sensors",
-        "description": "Select power (W) sensors, same layout as the previous step.\n\nNote: if your system has several strings (e.g. different orientations such as east/west), select the individual string sensors here. Do not pick a total sensor that sums strings with different orientations, otherwise they cannot be told apart.",
+        "description": "Select power (W) sensors, same layout as the previous step.\n\nNote: if your system has several strings (e.g. different orientations such as east/west), select the individual string sensors here. Do not pick a total sensor that sums strings with different orientations, otherwise they cannot be told apart. Sensors that only report one direction (production, feed-in, into storage, from storage) are counted with their positive values; a sensor with a sign (e.g. a battery that charges and discharges) belongs in the combined storage field.",
         "data": {
           "production_power_sensors": "Production sensors (power)",
           "feed_in_power_sensor": "Feed-in sensor (power)",
