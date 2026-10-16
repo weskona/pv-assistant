@@ -11,5 +11,5 @@
 - Panel-Farben (wie im Energy-Dashboard, vom Nutzer vorgegeben): Einspeisung #8353d1, Netzbezug #488fc2,
   PV-Erzeugung #ff9800, direkt verbrauchte PV #ffd700, aus Speicher #4db6ac, in Speicher #f06292.
   Als CSS-Variablen `--pva-*` im Panel; neue Reihen nutzen diese Zuordnung.
-- Bis Version 1.0 ist das Projekt im Beta-Status (Versionen 0.x, normale Releases, kein Release Candidate).
-  Die Version 1.0.0 ist die erste stabile Version; sie wird erst nach ausdrücklicher Freigabe durch den Nutzer vergeben.
+- Das Projekt bleibt im Beta-Status (Versionen 0.x). Es gibt keine stabile Version und keine Version 1.0;
+  alle GitHub-Releases werden als Pre-release markiert (macht der Workflow `release`).

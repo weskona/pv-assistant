@@ -1,6 +1,7 @@
 name: Release
 
-# Runs when a PR is merged (= push to main). Creates the release v<manifest version>
+# Runs when a PR is merged (= push to main). Creates the release v<manifest version> (always as
+# pre-release: the project stays in beta)
 # if it does not exist yet; the PR check guarantees the version was bumped.
 on:
   push:
@@ -43,4 +44,4 @@ jobs:
           } > release-notes.md
           (cd custom_components/pv_assistant && zip -qr "$GITHUB_WORKSPACE/pv_assistant.zip" .)
           gh release create "$tag" pv_assistant.zip \
-            --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md
+            --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md --prerelease
