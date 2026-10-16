@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration mit eigenem Sidebar-Panel für PV-Energiefluss.
 
-Konfiguration in zwei Schritten mit gleichem Aufbau: (1) Energiesensoren (kWh), (2) Leistungssensoren (W). Je: Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein/raus oder kombiniert mit umschaltbarem Vorzeichen (mehrere).
+Konfiguration in drei Schritten: (1) Energiesensoren (kWh), (2) Leistungssensoren (W) – beide mit gleichem Aufbau –, (3) optional Prognose-Energiesensoren (heute, morgen, Rest heute; je beliebig viele, z. B. von Forecast.Solar oder Solcast). Je: Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein/raus oder kombiniert mit umschaltbarem Vorzeichen (mehrere).
 
 ## Installation
 1. Ordner `custom_components/pv_assistant` nach `config/custom_components/` kopieren (oder per HACS als Custom Repository).
@@ -11,6 +11,9 @@ Konfiguration in zwei Schritten mit gleichem Aufbau: (1) Energiesensoren (kWh), 
 4. Sensoren auswählen.
 
 Das Panel erscheint danach in der Seitenleiste, gegliedert in die Tabs „Aktuell“, „Verlauf“ und „Jahresübersicht“ (der zuletzt gewählte Tab wird im Browser gemerkt), und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
+
+## Prognose
+Die Prognose-Sensoren erscheinen im Tab „Aktuell“ als Karten (mit Summe, Wh/kWh werden umgerechnet). Im Tab „Verlauf“ zeigt der Zeitraum „Heute“ zusätzlich die Prognose für heute und wie viel davon bereits erzeugt wurde.
 
 ## Verlauf und Diagramme im Panel
 Unter „Verlauf" wählst du den Zeitraum (Heute, Gestern, 7 Tage, 30 Tage). Das Panel zeigt Summen, ein Leistungsdiagramm (Erzeugung, Einspeisung, Speicher netto) und ein Energiediagramm je Stunde bzw. Tag (Erzeugung, Einspeisung, In/Aus Speicher). Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Zusätzlich wird die direkt verbrauchte PV-Energie berechnet (Erzeugung − Einspeisung − Speicher laden, nie unter 0; als Linie, Balken, Summe und Anteil an der Erzeugung). Lädt der Speicher auch aus dem Netz, fällt der Direktverbrauch etwas zu niedrig aus. Per Mouseover erscheinen die Werte, jedes Diagramm gibt es auch als Tabelle.

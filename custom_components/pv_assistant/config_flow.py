@@ -1,5 +1,8 @@
 """Config flow for PV Assistant.
 
+Step 3 (forecast, all optional): forecast energy for today, for tomorrow and for the
+rest of today (any number of energy sensors each).
+
 Step 1 additionally has the reset confirmation time (minutes) of the energy filter:
 a lower value is only accepted as a real reset if it persists that long.
 
@@ -24,6 +27,9 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_FORECAST_REMAINING,
+    CONF_FORECAST_TODAY,
+    CONF_FORECAST_TOMORROW,
     CONF_RESET_CONFIRM_MINUTES,
     DEFAULT_RESET_CONFIRM_MINUTES,
     CONF_FEED_IN_ENERGY,
@@ -60,7 +66,8 @@ _KEYS = {
         CONF_INVERT_STORAGE_COMBINED_POWER,
     ),
 }
-_OPTIONAL = tuple(k for keys in _KEYS.values() for k in keys[2:5])
+_FORECAST = (CONF_FORECAST_TODAY, CONF_FORECAST_TOMORROW, CONF_FORECAST_REMAINING)
+_OPTIONAL = tuple(k for keys in _KEYS.values() for k in keys[2:5]) + _FORECAST
 
 
 def _sensor(device_class: str, multiple: bool) -> selector.EntitySelector:
@@ -105,6 +112,15 @@ def _schema(device_class: str, d: dict[str, Any]) -> vol.Schema:
     )
 
 
+def _forecast_schema(d: dict[str, Any]) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Optional(k, description={"suggested_value": d.get(k)}): _sensor("energy", True)
+            for k in _FORECAST
+        }
+    )
+
+
 class PVAssistantConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the initial setup."""
 
@@ -129,10 +145,19 @@ class PVAssistantConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Step 2: power sensors."""
         if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_forecast()
+        return self.async_show_form(step_id="power", data_schema=_schema("power", {}))
+
+    async def async_step_forecast(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Step 3: forecast energy sensors (all optional)."""
+        if user_input is not None:
             return self.async_create_entry(
                 title="PV Assistant", data={**self._data, **user_input}
             )
-        return self.async_show_form(step_id="power", data_schema=_schema("power", {}))
+        return self.async_show_form(step_id="forecast", data_schema=_forecast_schema({}))
 
     @staticmethod
     @callback
@@ -162,6 +187,17 @@ class PVAssistantOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         if user_input is not None:
             self._data.update(user_input)
+            return await self.async_step_forecast()
+        return self.async_show_form(
+            step_id="power",
+            data_schema=_schema("power", dict(self.config_entry.data)),
+        )
+
+    async def async_step_forecast(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if user_input is not None:
+            self._data.update(user_input)
             data = {**self.config_entry.data, **self._data}
             for key in _OPTIONAL:  # cleared optional fields must be dropped
                 if key not in self._data:
@@ -169,6 +205,6 @@ class PVAssistantOptionsFlow(OptionsFlow):
             self.hass.config_entries.async_update_entry(self.config_entry, data=data)
             return self.async_create_entry(data={})
         return self.async_show_form(
-            step_id="power",
-            data_schema=_schema("power", dict(self.config_entry.data)),
+            step_id="forecast",
+            data_schema=_forecast_schema(dict(self.config_entry.data)),
         )

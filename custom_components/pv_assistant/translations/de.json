@@ -31,6 +31,15 @@
         "data_description": {
           "production_power_sensors": "Pro String einen Sensor wählen, keinen Gesamtsensor über unterschiedliche Ausrichtungen."
         }
+      },
+      "forecast": {
+        "title": "Prognose",
+        "description": "Optionale Prognose-Energiesensoren (kWh), z. B. von Forecast.Solar oder Solcast. Pro Feld sind mehrere Sensoren möglich (z. B. einer je String).",
+        "data": {
+          "forecast_today_energy_sensors": "Prognose heute (Energie, optional)",
+          "forecast_tomorrow_energy_sensors": "Prognose morgen (Energie, optional)",
+          "forecast_remaining_energy_sensors": "Prognose Rest heute (Energie, optional)"
+        }
       }
     },
     "abort": {
@@ -68,6 +77,15 @@
         },
         "data_description": {
           "production_power_sensors": "Pro String einen Sensor wählen, keinen Gesamtsensor über unterschiedliche Ausrichtungen."
+        }
+      },
+      "forecast": {
+        "title": "Prognose",
+        "description": "Optionale Prognose-Energiesensoren (kWh), z. B. von Forecast.Solar oder Solcast. Pro Feld sind mehrere Sensoren möglich (z. B. einer je String).",
+        "data": {
+          "forecast_today_energy_sensors": "Prognose heute (Energie, optional)",
+          "forecast_tomorrow_energy_sensors": "Prognose morgen (Energie, optional)",
+          "forecast_remaining_energy_sensors": "Prognose Rest heute (Energie, optional)"
         }
       }
     }

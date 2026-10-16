@@ -31,6 +31,15 @@
         "data_description": {
           "production_power_sensors": "Select one sensor per string, not a total across different orientations."
         }
+      },
+      "forecast": {
+        "title": "Forecast",
+        "description": "Optional forecast energy (kWh) sensors, e.g. from Forecast.Solar or Solcast. Several sensors per field are possible (e.g. one per string).",
+        "data": {
+          "forecast_today_energy_sensors": "Forecast today (energy, optional)",
+          "forecast_tomorrow_energy_sensors": "Forecast tomorrow (energy, optional)",
+          "forecast_remaining_energy_sensors": "Forecast rest of today (energy, optional)"
+        }
       }
     },
     "abort": {
@@ -68,6 +77,15 @@
         },
         "data_description": {
           "production_power_sensors": "Select one sensor per string, not a total across different orientations."
+        }
+      },
+      "forecast": {
+        "title": "Forecast",
+        "description": "Optional forecast energy (kWh) sensors, e.g. from Forecast.Solar or Solcast. Several sensors per field are possible (e.g. one per string).",
+        "data": {
+          "forecast_today_energy_sensors": "Forecast today (energy, optional)",
+          "forecast_tomorrow_energy_sensors": "Forecast tomorrow (energy, optional)",
+          "forecast_remaining_energy_sensors": "Forecast rest of today (energy, optional)"
         }
       }
     }
