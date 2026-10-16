@@ -130,6 +130,8 @@ class PVAssistantPanel extends HTMLElement {
           .tip-row { display:flex; align-items:center; gap:8px; }
           .tip-row b { font-weight:600; color:var(--primary-text-color); }
           .tip-row span { color:var(--secondary-text-color); }
+          .tip-sub { display:flex; gap:8px; padding-left:20px; font-size:.9em; color:var(--secondary-text-color); }
+          .tip-sub span:first-child { min-width:4.5em; text-align:right; }
           details.tableview { margin-top:8px; font-size:.85em; }
           details.tableview summary { cursor:pointer; color:var(--secondary-text-color); }
           details.tableview table { border-collapse:collapse; margin-top:6px; width:100%; }
@@ -380,6 +382,13 @@ class PVAssistantPanel extends HTMLElement {
       }
       return { pos, neg };
     };
+    // one entry per sensor (source split for the tooltips): [{name, values: Map}]
+    const each = (ids, rows, field, fn = (v) => v) => ids.map((id) => {
+      const m = new Map();
+      for (const r of rows(id)) add(m, r.start, fn(r[field]));
+      return { name: this._read(id).name, values: m };
+    });
+    const neg = (m) => new Map([...m].map(([k, v]) => [k, -v]));
     const merge = (a, b, sign = 1) => { const m = new Map(a); for (const [k, v] of b) add(m, k, sign * v); return m; };
 
     // ---- power lines
@@ -396,13 +405,19 @@ class PVAssistantPanel extends HTMLElement {
     const pCharge = merge(pSin, cP.neg);
     const pDirect = new Map();
     for (const [ts, v] of pProd) pDirect.set(ts, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)));
+    const pNetParts = [...each(P.sout, pr, "mean"), ...each(P.sin, pr, "mean", (v) => -v), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
+    const pDirectParts = [
+      { name: this._t("production"), values: pProd },
+      { name: `− ${this._t("feed")}`, values: neg(pFeed) },
+      { name: `− ${this._t("sin")}`, values: neg(pCharge) },
+    ];
     const hasStorageP = P.sin.length || P.sout.length || P.comb.length;
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
     const lines = [
-      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd) },
-      { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed) },
-      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", points: hasStorageP ? toPts(pNet) : [] },
-      { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect) },
+      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean") },
+      { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(P.feed, pr, "mean", feedFn) },
+      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
+      { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect), parts: pDirectParts },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
     const tickFmt = rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
@@ -421,12 +436,20 @@ class PVAssistantPanel extends HTMLElement {
     const eSout = merge(sum(E.sout, er("change"), "change"), c.pos);
     const eDirect = new Map();
     for (const [ts, v] of eProd) eDirect.set(ts, Math.max(0, v - (eFeed.get(ts) || 0) - (eSin.get(ts) || 0)));
+    const wfn = (v) => (E.inv ? -v : v); // default positive = from storage
+    const eSinParts = [...each(E.sin, er("change"), "change"), ...each(E.comb, er("change"), "change", (v) => Math.max(-wfn(v), 0))];
+    const eSoutParts = [...each(E.sout, er("change"), "change"), ...each(E.comb, er("change"), "change", (v) => Math.max(wfn(v), 0))];
+    const eDirectParts = [
+      { name: this._t("production"), values: eProd },
+      { name: `− ${this._t("feed")}`, values: neg(eFeed) },
+      { name: `− ${this._t("sin")}`, values: neg(eSin) },
+    ];
     const bars = [
-      { name: this._t("production"), color: "--pva-prod", values: eProd },
-      { name: this._t("feed"), color: "--pva-feed", values: eFeed },
-      { name: this._t("sin"), color: "--pva-bin", values: eSin },
-      { name: this._t("sout"), color: "--pva-bout", values: eSout },
-      { name: this._t("direct"), color: "--pva-direct", values: eDirect },
+      { name: this._t("production"), color: "--pva-prod", values: eProd, parts: each(E.prod, er("change"), "change") },
+      { name: this._t("feed"), color: "--pva-feed", values: eFeed, parts: each(E.feed, er("change"), "change") },
+      { name: this._t("sin"), color: "--pva-bin", values: eSin, parts: eSinParts },
+      { name: this._t("sout"), color: "--pva-bout", values: eSout, parts: eSoutParts },
+      { name: this._t("direct"), color: "--pva-direct", values: eDirect, parts: eDirectParts },
     ];
     const hourly = rd.eBucket === 3600e3;
     barChart(this._root.getElementById("echart"), {
@@ -506,13 +529,16 @@ class PVAssistantPanel extends HTMLElement {
     const ym = (ts) => { const p = Object.fromEntries(fmt.formatToParts(ts).map((x) => [x.type, x.value])); return [Number(p.year), Number(p.month) - 1]; };
     // month -> kWh, summed over the production sensors; the filtered copy wins per month
     const months = new Map();
+    const byId = new Map(); // sensor -> month -> kWh (source split for the tooltips)
     for (const id of ids) {
       const own = new Map();
       for (const r of res[id] || []) if (r.change != null) own.set(r.start, r.change);
       for (const r of res[filt[id]] || []) if (r.change != null) own.set(r.start, r.change);
-      for (const [ts, v] of own) { const [y, m] = ym(ts); const k = `${y}-${m}`; months.set(k, (months.get(k) || 0) + v); }
+      const mine = new Map();
+      for (const [ts, v] of own) { const [y, m] = ym(ts); const k = `${y}-${m}`; months.set(k, (months.get(k) || 0) + v); mine.set(k, v); }
+      byId.set(id, mine);
     }
-    this._ydata = { months };
+    this._ydata = { months, byId, ids };
     this._drawYears();
   }
 
@@ -530,9 +556,12 @@ class PVAssistantPanel extends HTMLElement {
     const complete = (y, m) => y < cy || (y === cy && m < cm);
     const first = this._yn ? Y - this._yn + 1 : minY;
     const years = []; for (let y = Math.max(first, minY); y <= Y; y++) years.push(y);
-    const avg = [], used = new Set();
+    const avg = [], used = new Set(), yrsOf = [];
     for (let m = 0; m < 12; m++) {
-      const vs = years.filter((y) => complete(y, m) && val(y, m) != null).map((y) => { used.add(y); return val(y, m); });
+      const ys = years.filter((y) => complete(y, m) && val(y, m) != null);
+      ys.forEach((y) => used.add(y));
+      yrsOf.push(ys);
+      const vs = ys.map((y) => val(y, m));
       avg.push(vs.length ? vs.reduce((a, v) => a + v, 0) / vs.length : null);
     }
     const cur = [], dev = [];
@@ -541,6 +570,16 @@ class PVAssistantPanel extends HTMLElement {
       cur.push(v);
       dev.push(complete(Y, m) && v != null && avg[m] ? ((v - avg[m]) / avg[m]) * 100 : null);
     }
+    // source split per sensor: same years as the total average, a missing month counts as 0
+    const sensorVal = (id, y, m) => d.byId.get(id)?.get(`${y}-${m}`) ?? null;
+    const parts = (fn) => d.ids.map((id) => ({ name: this._read(id).name, values: Array.from({ length: 12 }, (_, m) => fn(id, m)) }));
+    const sensorAvg = (id, m) => (yrsOf[m].length ? yrsOf[m].reduce((a, y) => a + (sensorVal(id, y, m) || 0), 0) / yrsOf[m].length : null);
+    const curParts = parts((id, m) => sensorVal(id, Y, m));
+    const avgParts = parts((id, m) => sensorAvg(id, m));
+    const devParts = parts((id, m) => {
+      const v = sensorVal(id, Y, m), a = sensorAvg(id, m);
+      return complete(Y, m) && v != null && a ? ((v - a) / a) * 100 : null;
+    });
     const num = (v, axis, max = 1) => v.toLocaleString(lang, { maximumFractionDigits: axis ? 1 : max });
     const names = Array.from({ length: 12 }, (_, m) => new Intl.DateTimeFormat(lang, { month: "short" }).format(new Date(2000, m, 1)));
     const root = this._root;
@@ -561,14 +600,14 @@ class PVAssistantPanel extends HTMLElement {
     categoryBarChart(root.getElementById("ychart"), {
       categories: names.map((n, m) => (Y === cy && m === cm ? `${n}*` : n)),
       series: [
-        { name: String(Y), color: "--pva-prod", values: cur },
-        { name: `${this._t("avg")} (${used.size} ${this._t("yearsUnit")})`, color: "--pva-avg", values: avg },
+        { name: String(Y), color: "--pva-prod", values: cur, parts: curParts },
+        { name: `${this._t("avg")} (${used.size} ${this._t("yearsUnit")})`, color: "--pva-avg", values: avg, parts: avgParts },
       ],
       fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("monthly"),
     });
     categoryBarChart(root.getElementById("dchart"), {
       categories: names,
-      series: [{ name: this._t("deviation"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: dev }],
+      series: [{ name: this._t("deviation"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: dev, parts: devParts }],
       legendItems: [{ name: this._t("above"), color: "--pva-pos" }, { name: this._t("below"), color: "--pva-neg" }],
       fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis, 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("deviation"),
     });

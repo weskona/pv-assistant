@@ -57,7 +57,22 @@ function fillTip(tip, title, rows, fmt) {
     key.style.background = `var(${r.color})`;
     row.append(key, html("b", "", r.value == null ? "–" : fmt(r.value)), html("span", "", r.name));
     tip.append(row);
+    // source split: the sensors / components behind this value (names are untrusted: textContent)
+    for (const p of r.parts || []) {
+      const sub = html("div", "tip-sub");
+      sub.append(html("span", "", fmt(p.value)), html("span", "", p.name));
+      tip.append(sub);
+    }
   }
+}
+
+/** Parts of series `s` at `key` (Map key or array index); only for series with >= 2 sources, non-zero only. */
+function partsAt(s, key) {
+  if (!s.parts || s.parts.length < 2) return undefined;
+  const out = s.parts
+    .map((p) => ({ name: p.name, value: p.values instanceof Map ? p.values.get(key) : p.values[key] }))
+    .filter((p) => p.value != null && p.value !== 0 && !Number.isNaN(p.value));
+  return out.length ? out : undefined;
 }
 
 function placeTip(tip, wrap, x, y) {
@@ -86,7 +101,7 @@ function table(headers, rows) {
 }
 
 /**
- * opts: { series:[{name,color,points:[[ts,value]...]}], t0, t1, unit, height,
+ * opts: { series:[{name,color,points:[[ts,value]...], parts?:[{name,values:Map}]}], t0, t1, unit, height,
  *         fmtValue(v), fmtTime(ts), fmtTick(ts), tickStep, step (bucket ms), tableLabels }
  */
 export function lineChart(container, opts) {
@@ -157,7 +172,7 @@ export function lineChart(container, opts) {
       dots[i].setAttribute("visibility", v == null ? "hidden" : "visible");
       if (v != null) { dots[i].setAttribute("cx", x(ts)); dots[i].setAttribute("cy", y(v)); }
     });
-    fillTip(tip, fmtTime(ts), live.map((s, i) => ({ name: s.name, color: s.color, value: maps[i].get(ts) })), fmtValue);
+    fillTip(tip, fmtTime(ts), live.map((s, i) => ({ name: s.name, color: s.color, value: maps[i].get(ts), parts: partsAt(s, ts) })), fmtValue);
     placeTip(tip, wrap, (x(ts) / W) * r.width, ((ev.clientY - r.top)));
   };
   const hide = () => { tip.hidden = true; hair.setAttribute("visibility", "hidden"); dots.forEach((d) => d.setAttribute("visibility", "hidden")); };
@@ -227,7 +242,7 @@ export function barChart(container, opts) {
     const hit = el("rect", { x: x(ts), y: M.t, width: slot, height: ph, fill: "transparent", tabindex: 0 });
     const show = () => {
       wash.setAttribute("x", x(ts)); wash.setAttribute("visibility", "visible");
-      fillTip(tip, fmtTime(ts), live.map((s) => ({ name: s.name, color: s.color, value: s.values.get(ts) ?? 0 })), fmtValue);
+      fillTip(tip, fmtTime(ts), live.map((s) => ({ name: s.name, color: s.color, value: s.values.get(ts) ?? 0, parts: partsAt(s, ts) })), fmtValue);
       const rect = svg.getBoundingClientRect();
       placeTip(tip, wrap, ((x(ts) + slot / 2) / W) * rect.width, ph / 2);
     };
@@ -292,7 +307,7 @@ export function categoryBarChart(container, opts) {
     const hit = el("rect", { x: M.l + slot * i, y: M.t, width: slot, height: ph, fill: "transparent", tabindex: 0 });
     const show = () => {
       wash.setAttribute("x", M.l + slot * i); wash.setAttribute("visibility", "visible");
-      fillTip(tip, c, series.map((s) => ({ name: s.name, color: s.colorOf && s.values[i] != null ? s.colorOf(s.values[i]) : s.color, value: s.values[i] })), fmtValue);
+      fillTip(tip, c, series.map((s) => ({ name: s.name, color: s.colorOf && s.values[i] != null ? s.colorOf(s.values[i]) : s.color, value: s.values[i], parts: partsAt(s, i) })), fmtValue);
       placeTip(tip, wrap, ((M.l + slot * (i + 0.5)) / W) * svg.getBoundingClientRect().width, ph / 2);
     };
     const off = () => { tip.hidden = true; wash.setAttribute("visibility", "hidden"); };
