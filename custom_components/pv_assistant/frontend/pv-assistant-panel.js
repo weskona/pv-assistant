@@ -14,7 +14,9 @@ const T = {
     avg: "Ø", above: "über Schnitt", below: "unter Schnitt", running: "laufender Monat",
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
-    direct: "Direkt verbraucht", directShort: "Direkt", directShare: "Anteil an Erzeugung",
+    direct: "Direkt verbraucht", directShort: "Direkt",
+    forecast: "Prognose (kWh)", fcToday: "Prognose heute", fcTomorrow: "Prognose morgen", fcRemaining: "Prognose Rest heute",
+    fcReached: "Von Prognose erreicht", directShare: "Anteil an Erzeugung",
     storage: "Speicher", storageNet: "Speicher (+ Entladen / − Laden)", loading: "Lade …", noData: "Keine Daten im Zeitraum.",
     table: "Als Tabelle anzeigen", time: "Zeit", totals: "Summen im Zeitraum",
   },
@@ -31,7 +33,9 @@ const T = {
     avg: "Avg", above: "above average", below: "below average", running: "current month",
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
-    direct: "Used directly", directShort: "Direct", directShare: "Share of production",
+    direct: "Used directly", directShort: "Direct",
+    forecast: "Forecast (kWh)", fcToday: "Forecast today", fcTomorrow: "Forecast tomorrow", fcRemaining: "Forecast rest of today",
+    fcReached: "Of forecast reached", directShare: "Share of production",
     storage: "Storage", storageNet: "Storage (+ discharge / − charge)", loading: "Loading …", noData: "No data in this range.",
     table: "Show as table", time: "Time", totals: "Totals in range",
   },
@@ -239,6 +243,9 @@ class PVAssistantPanel extends HTMLElement {
       ].join("");
       if (cards) html += `<h2>${esc(this._t(g.id))}</h2><div class="grid">${cards}</div>`;
     }
+    const fc = [["fcToday", "forecast_today_energy_sensors"], ["fcTomorrow", "forecast_tomorrow_energy_sensors"], ["fcRemaining", "forecast_remaining_energy_sensors"]]
+      .map(([label, key]) => this._card(this._t(label), list(c[key]), "kWh")).join("");
+    if (fc) html += `<h2>${esc(this._t("forecast"))}</h2><div class="grid">${fc}</div>`;
     if (!html) html = `<p class="muted">${esc(this._t("none"))}</p>`;
     if (html !== this._last) { this._last = html; this._root.getElementById("now").innerHTML = html; }
   }
@@ -423,7 +430,14 @@ class PVAssistantPanel extends HTMLElement {
       `<div class="tile"><b>${esc(num(tot(b.values)))} kWh</b><span>${esc(b.name)}</span></div>`).join("");
     const prodTot = tot(eProd);
     const share = prodTot > 0 ? `<div class="tile"><b>${esc(num(tot(eDirect) / prodTot * 100, false, 0))} %</b><span>${esc(this._t("directShare"))}</span></div>` : "";
-    this._root.getElementById("tiles").innerHTML = tiles + share;
+    let fcTiles = "";
+    const fcToday = list(this._cfg.forecast_today_energy_sensors).map((id) => this._read(id).base).filter((v) => !isNaN(v));
+    if (this._range === "today" && fcToday.length) {
+      const fcSum = fcToday.reduce((a, v) => a + v, 0);
+      fcTiles = `<div class="tile"><b>${esc(num(fcSum, false, 1))} kWh</b><span>${esc(this._t("fcToday"))}</span></div>`;
+      if (fcSum > 0 && prodTot > 0) fcTiles += `<div class="tile"><b>${esc(num(prodTot / fcSum * 100, false, 0))} %</b><span>${esc(this._t("fcReached"))}</span></div>`;
+    }
+    this._root.getElementById("tiles").innerHTML = tiles + share + fcTiles;
     this._root.querySelectorAll(".chart").forEach((x) => x.classList.remove("loading"));
   }
 
