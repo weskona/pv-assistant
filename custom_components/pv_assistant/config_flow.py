@@ -27,6 +27,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_ABS_STORAGE_POWER,
     CONF_INVERT_FEED_IN_POWER,
     CONF_FORECAST_REMAINING,
     CONF_FORECAST_TODAY,
@@ -90,7 +91,10 @@ def _schema(device_class: str, d: dict[str, Any]) -> vol.Schema:
             vol.Required(prod, description=sv(prod)): _sensor(device_class, True),
             vol.Required(feed, description=sv(feed)): _sensor(device_class, False),
             **(
-                {vol.Required(CONF_INVERT_FEED_IN_POWER, default=d.get(CONF_INVERT_FEED_IN_POWER, False)): bool}
+                {
+                    vol.Required(CONF_INVERT_FEED_IN_POWER, default=d.get(CONF_INVERT_FEED_IN_POWER, False)): bool,
+                    vol.Required(CONF_ABS_STORAGE_POWER, default=d.get(CONF_ABS_STORAGE_POWER, False)): bool,
+                }
                 if device_class == "power"
                 else {}
             ),

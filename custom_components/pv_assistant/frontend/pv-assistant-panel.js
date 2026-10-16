@@ -15,7 +15,7 @@ const T = {
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
-    negWarn: "Achtung: {names} liefert negative Werte, wird hier aber nur mit den positiven Werten gezählt. Sensoren mit Vorzeichen (z. B. Batterie: Laden und Entladen in einem) bitte im Feld „Kombi-Speichersensoren“ eintragen.",
+    negWarn: "Achtung: {names} liefert negative Werte und wird nur mit den positiven Werten gezählt. Meldet der Sensor das Laden bzw. Entladen als negative Werte, aktiviere im Schritt „Leistungssensoren“ die Option „In-/Aus-Speicher-Sensoren liefern negative Werte“. Sensoren mit beiden Vorzeichen (Laden und Entladen in einem) gehören in „Kombi-Speichersensoren“.",
     powerTab: "Leistung", ofMax: "von max.", pwrNote: "Maximum = höchste je gemessene Leistung des Strings (Langzeitstatistik, mindestens der aktuelle Wert).", noString: "Keine Erzeugungs-Leistungssensoren konfiguriert.",
     fcGroup: "Prognose (kWh)", fcToday: "Prognose heute", fcTomorrow: "Prognose morgen", fcRemaining: "Prognose Rest heute",
     fcReached: "Von Prognose erreicht", directShare: "Anteil an Erzeugung",
@@ -36,7 +36,7 @@ const T = {
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
-    negWarn: "Note: {names} reports negative values but only its positive values are counted here. Sensors with a sign (e.g. a battery with charge and discharge in one) belong in the field for combined storage sensors.",
+    negWarn: "Note: {names} reports negative values and only its positive values are counted. If the sensor reports charging or discharging as negative values, enable the option \"Storage in/out sensors report negative values\" in the power step. Sensors with both signs (charge and discharge in one) belong in the combined storage sensors.",
     powerTab: "Power", ofMax: "of max.", pwrNote: "Maximum = highest power ever measured for the string (long-term statistics, at least the current value).", noString: "No production power sensors configured.",
     fcGroup: "Forecast (kWh)", fcToday: "Forecast today", fcTomorrow: "Forecast tomorrow", fcRemaining: "Forecast rest of today",
     fcReached: "Of forecast reached", directShare: "Share of production",
@@ -276,6 +276,7 @@ class PVAssistantPanel extends HTMLElement {
       comb: list(c[`storage_combined_${suffix}_sensors`]),
       inv: !!c[suffix === "power" ? "invert_storage_combined_power" : "invert_storage_combined"],
       invFeed: suffix === "power" && !!c.invert_feed_in_power,
+      absStorage: suffix === "power" && !!c.abs_storage_power,
     });
     return { P: g("power"), E: g("energy") };
   }
@@ -402,8 +403,10 @@ class PVAssistantPanel extends HTMLElement {
     // single-direction sensors (production, storage in, storage out) only count positive values;
     // sensors with a sign belong in the combined storage field
     const nz = (v) => Math.max(v, 0);
+    // storage in/out sensors that report their direction as negative values: use the magnitude
+    const ns = P.absStorage ? (v) => Math.abs(v) : nz;
     const pProd = sum(P.prod, pr, "mean", nz), pFeed = sum(P.feed, pr, "mean", feedFn);
-    const pSin = sum(P.sin, pr, "mean", nz), pSout = sum(P.sout, pr, "mean", nz);
+    const pSin = sum(P.sin, pr, "mean", ns), pSout = sum(P.sout, pr, "mean", ns);
     const pComb = sum(P.comb, pr, "mean", (v) => (P.inv ? -v : v));
     let pNet = merge(merge(pSout, pSin, -1), pComb);
     // PV used directly = production - feed-in - charging power (never below 0)
@@ -411,7 +414,7 @@ class PVAssistantPanel extends HTMLElement {
     const pCharge = merge(pSin, cP.neg);
     const pDirect = new Map();
     for (const [ts, v] of pProd) pDirect.set(ts, Math.min(v, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)))); // never above the production
-    const pNetParts = [...each(P.sout, pr, "mean", nz), ...each(P.sin, pr, "mean", (v) => -nz(v)), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
+    const pNetParts = [...each(P.sout, pr, "mean", ns), ...each(P.sin, pr, "mean", (v) => -ns(v)), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
     const pDirectParts = [
       { name: this._t("production"), values: pProd },
       { name: `− ${this._t("feed")}`, values: neg(pFeed) },
@@ -435,7 +438,7 @@ class PVAssistantPanel extends HTMLElement {
     });
 
     // hint when a single-direction sensor reports negative values (misplaced signed sensor)
-    const neg1 = [...P.prod, ...P.sin, ...P.sout].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
+    const neg1 = [...P.prod, ...(P.absStorage ? [] : [...P.sin, ...P.sout])].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
     if (neg1.length) {
       const warn = document.createElement("p");
       warn.className = "note warn";
