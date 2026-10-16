@@ -23,6 +23,9 @@ Das Panel erscheint danach in der Seitenleiste, gegliedert in die Tabs „Aktuel
 ## Prognose
 Die Prognose-Sensoren erscheinen im Tab „Aktuell“ als Karten (mit Summe, Wh/kWh werden umgerechnet). Im Tab „Verlauf“ zeigt der Zeitraum „Heute“ zusätzlich die Prognose für heute und wie viel davon bereits erzeugt wurde.
 
+## Leistung je String
+Der Tab „Leistung“ zeigt für jeden Erzeugungs-Leistungssensor (String) die aktuelle Leistung als Balken im Verhältnis zur höchsten je gemessenen Leistung dieses Strings (aus den Langzeitstatistiken von Home Assistant, mindestens der aktuelle Wert).
+
 ## Verlauf und Diagramme im Panel
 Unter „Verlauf" wählst du den Zeitraum (Heute, Gestern, 7 Tage, 30 Tage). Das Panel zeigt Summen, ein Leistungsdiagramm (Erzeugung, Einspeisung, Speicher netto) und ein Energiediagramm je Stunde bzw. Tag (Erzeugung, Einspeisung, In/Aus Speicher). Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Zusätzlich wird die direkt verbrauchte PV-Energie berechnet (Erzeugung − Einspeisung − Speicher laden, nie unter 0; als Linie, Balken, Summe und Anteil an der Erzeugung). Meldet dein Einspeise-Leistungssensor die Einspeisung als negative Werte, aktiviere im Schritt „Leistungssensoren“ die Option „Einspeisesensor liefert Einspeisung als negative Werte“; Bezug zählt dann nicht als Einspeisung. Lädt der Speicher auch aus dem Netz, fällt der Direktverbrauch etwas zu niedrig aus. Per Mouseover erscheinen die Werte, jedes Diagramm gibt es auch als Tabelle.
 
