@@ -242,3 +242,66 @@ export function barChart(container, opts) {
   container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...live.map((s) => s.name)] },
     times.map((ts) => [fmtTime(ts), ...live.map((s) => fmtValue(s.values.get(ts) ?? 0))])));
 }
+
+/**
+ * Bars per category (e.g. months); values may be negative or null.
+ * opts: { categories:[str], series:[{name,color,values:[v|null],colorOf?(v)->cssvar}],
+ *         legendItems?:[{name,color}], fmtValue, label, empty, tableLabels, height }
+ */
+export function categoryBarChart(container, opts) {
+  const { categories, series, height = 240, fmtValue } = opts;
+  container.replaceChildren();
+  const all = series.flatMap((s) => s.values.filter((v) => v != null));
+  if (!all.length) { container.append(html("p", "empty", opts.empty)); return; }
+  const W = Math.max(280, container.clientWidth || 600), H = height;
+  const pw = W - M.l - M.r, ph = H - M.t - M.b;
+  const ticks = niceTicks(Math.min(0, ...all), Math.max(0, ...all));
+  const lo = ticks[0], hi = ticks.at(-1);
+  const y = (v) => M.t + (1 - (v - lo) / (hi - lo)) * ph;
+  const slot = pw / categories.length;
+  const gap = 2, n = series.length;
+  const barW = Math.max(2, Math.min(28, (slot - 6 - gap * (n - 1)) / n));
+  const groupW = barW * n + gap * (n - 1);
+
+  const wrap = html("div", "chartwrap");
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img", "aria-label": opts.label });
+  for (const v of ticks) {
+    svg.append(el("line", { x1: M.l, x2: M.l + pw, y1: y(v), y2: y(v), class: v === 0 ? "axis" : "grid" }));
+    svg.append(el("text", { x: M.l - 6, y: y(v) + 4, class: "tick", "text-anchor": "end" }, fmtValue(v, true)));
+  }
+  categories.forEach((c, i) => svg.append(el("text", { x: M.l + slot * (i + 0.5), y: H - 6, class: "tick", "text-anchor": "middle" }, c)));
+  const wash = el("rect", { y: M.t, height: ph, width: slot, class: "wash", visibility: "hidden" });
+  svg.append(wash);
+  const r = Math.min(4, barW / 2);
+  categories.forEach((_, i) => {
+    series.forEach((s, k) => {
+      const v = s.values[i];
+      if (v == null || v === 0) return;
+      const bx = M.l + slot * i + (slot - groupW) / 2 + k * (barW + gap);
+      const base = y(0), end = y(v), up = v > 0;
+      const h = Math.max(1, Math.abs(base - end)), rr = Math.min(r, h);
+      // rounded data end, flat baseline
+      const d = up
+        ? `M${bx},${base}V${end + rr}Q${bx},${end} ${bx + rr},${end}H${bx + barW - rr}Q${bx + barW},${end} ${bx + barW},${end + rr}V${base}Z`
+        : `M${bx},${base}V${end - rr}Q${bx},${end} ${bx + rr},${end}H${bx + barW - rr}Q${bx + barW},${end} ${bx + barW},${end - rr}V${base}Z`;
+      svg.append(el("path", { d, fill: `var(${s.colorOf ? s.colorOf(v) : s.color})` }));
+    });
+  });
+  const tip = tooltipShell();
+  categories.forEach((c, i) => {
+    const hit = el("rect", { x: M.l + slot * i, y: M.t, width: slot, height: ph, fill: "transparent", tabindex: 0 });
+    const show = () => {
+      wash.setAttribute("x", M.l + slot * i); wash.setAttribute("visibility", "visible");
+      fillTip(tip, c, series.map((s) => ({ name: s.name, color: s.colorOf && s.values[i] != null ? s.colorOf(s.values[i]) : s.color, value: s.values[i] })), fmtValue);
+      placeTip(tip, wrap, ((M.l + slot * (i + 0.5)) / W) * svg.getBoundingClientRect().width, ph / 2);
+    };
+    const off = () => { tip.hidden = true; wash.setAttribute("visibility", "hidden"); };
+    hit.addEventListener("pointermove", show); hit.addEventListener("focus", show);
+    hit.addEventListener("pointerleave", off); hit.addEventListener("blur", off);
+    svg.append(hit);
+  });
+  wrap.append(svg, tip);
+  container.append(legend(opts.legendItems || series, "bar"), wrap);
+  container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...series.map((s) => s.name)] },
+    categories.map((c, i) => [c, ...series.map((s) => (s.values[i] == null ? "–" : fmtValue(s.values[i])))])));
+}
