@@ -19,7 +19,7 @@
       },
       "power": {
         "title": "Leistungssensoren",
-        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.\n\nHinweis: Hast du mehrere Strings (z. B. mit unterschiedlicher Ausrichtung wie Ost/West), wähle hier die einzelnen String-Sensoren. Nimm keinen Gesamtsensor, der Strings mit unterschiedlicher Ausrichtung zusammenfasst, sonst lassen sie sich nicht mehr unterscheiden.",
+        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.\n\nHinweis: Hast du mehrere Strings (z. B. mit unterschiedlicher Ausrichtung wie Ost/West), wähle hier die einzelnen String-Sensoren. Nimm keinen Gesamtsensor, der Strings mit unterschiedlicher Ausrichtung zusammenfasst, sonst lassen sie sich nicht mehr unterscheiden. Sensoren, die nur eine Richtung melden (Erzeugung, Einspeisung, In Speicher, Aus Speicher), zählen mit ihren positiven Werten; ein Sensor mit Vorzeichen (z. B. eine Batterie, die lädt und entlädt) gehört in das Feld für Kombi-Speichersensoren.",
         "data": {
           "production_power_sensors": "Erzeugungssensoren (Power)",
           "feed_in_power_sensor": "Einspeisesensor (Power)",
@@ -67,7 +67,7 @@
       },
       "power": {
         "title": "Leistungssensoren",
-        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.\n\nHinweis: Hast du mehrere Strings (z. B. mit unterschiedlicher Ausrichtung wie Ost/West), wähle hier die einzelnen String-Sensoren. Nimm keinen Gesamtsensor, der Strings mit unterschiedlicher Ausrichtung zusammenfasst, sonst lassen sie sich nicht mehr unterscheiden.",
+        "description": "Wähle Leistungssensoren (W), gleicher Aufbau wie im vorherigen Schritt.\n\nHinweis: Hast du mehrere Strings (z. B. mit unterschiedlicher Ausrichtung wie Ost/West), wähle hier die einzelnen String-Sensoren. Nimm keinen Gesamtsensor, der Strings mit unterschiedlicher Ausrichtung zusammenfasst, sonst lassen sie sich nicht mehr unterscheiden. Sensoren, die nur eine Richtung melden (Erzeugung, Einspeisung, In Speicher, Aus Speicher), zählen mit ihren positiven Werten; ein Sensor mit Vorzeichen (z. B. eine Batterie, die lädt und entlädt) gehört in das Feld für Kombi-Speichersensoren.",
         "data": {
           "production_power_sensors": "Erzeugungssensoren (Power)",
           "feed_in_power_sensor": "Einspeisesensor (Power)",
