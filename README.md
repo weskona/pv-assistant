@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration mit eigenem Sidebar-Panel für PV-Energiefluss.
 
-> **Beta:** Die Integration befindet sich im Beta-Status. Funktionen und Einstellungen können sich noch ändern, und es kann Fehler geben. Alle Releases sind als Vorabversion (Pre-release) markiert; in HACS dafür „Beta-Versionen anzeigen“ aktivieren oder die Version beim Herunterladen von Hand wählen. Rückmeldungen bitte als Issue melden.
+> **Beta:** Die Integration befindet sich im Beta-Status. Funktionen und Einstellungen können sich noch ändern, und es kann Fehler geben. Alle Releases sind als Vorabversion (Pre-release) markiert und tragen das Suffix `-beta` (z. B. `v0.6.4-beta`); in HACS dafür „Beta-Versionen anzeigen“ aktivieren oder die Version beim Herunterladen von Hand wählen. Rückmeldungen bitte als Issue melden.
 
 Konfiguration in drei Schritten: (1) Energiesensoren (kWh), (2) Leistungssensoren (W) – beide mit gleichem Aufbau –, (3) optional Prognose-Energiesensoren (heute, morgen, Rest heute; je beliebig viele, z. B. von Forecast.Solar oder Solcast). Je: Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein/raus oder kombiniert mit umschaltbarem Vorzeichen (mehrere).
 

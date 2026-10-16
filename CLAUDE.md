@@ -12,4 +12,6 @@
   PV-Erzeugung #ff9800, direkt verbrauchte PV #ffd700, aus Speicher #4db6ac, in Speicher #f06292.
   Als CSS-Variablen `--pva-*` im Panel; neue Reihen nutzen diese Zuordnung.
 - Das Projekt bleibt im Beta-Status (Versionen 0.x). Es gibt keine stabile Version und keine Version 1.0;
-  alle GitHub-Releases werden als Pre-release markiert (macht der Workflow `release`).
+  alle GitHub-Releases werden als Pre-release markiert (macht der Workflow `release`). Die Version trägt
+  immer das Suffix `-beta` (z. B. `0.6.4-beta`), damit steht es auch im Tag und Release-Namen (`v0.6.4-beta`);
+  der Workflow `validate` prüft das.
