@@ -15,7 +15,7 @@ const T = {
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
-    forecast: "Prognose (kWh)", fcToday: "Prognose heute", fcTomorrow: "Prognose morgen", fcRemaining: "Prognose Rest heute",
+    fcGroup: "Prognose (kWh)", fcToday: "Prognose heute", fcTomorrow: "Prognose morgen", fcRemaining: "Prognose Rest heute",
     fcReached: "Von Prognose erreicht", directShare: "Anteil an Erzeugung",
     storage: "Speicher", storageNet: "Speicher (+ Entladen / − Laden)", loading: "Lade …", noData: "Keine Daten im Zeitraum.",
     table: "Als Tabelle anzeigen", time: "Zeit", totals: "Summen im Zeitraum",
@@ -34,7 +34,7 @@ const T = {
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
-    forecast: "Forecast (kWh)", fcToday: "Forecast today", fcTomorrow: "Forecast tomorrow", fcRemaining: "Forecast rest of today",
+    fcGroup: "Forecast (kWh)", fcToday: "Forecast today", fcTomorrow: "Forecast tomorrow", fcRemaining: "Forecast rest of today",
     fcReached: "Of forecast reached", directShare: "Share of production",
     storage: "Storage", storageNet: "Storage (+ discharge / − charge)", loading: "Loading …", noData: "No data in this range.",
     table: "Show as table", time: "Time", totals: "Totals in range",
@@ -93,8 +93,8 @@ class PVAssistantPanel extends HTMLElement {
           :host { --pva-prod:#ff9800; --pva-feed:#8353d1; --pva-grid:#488fc2; --pva-direct:#ffd700;
                   --pva-bout:#4db6ac; --pva-bin:#f06292;
                   --pva-avg:color-mix(in srgb, #ff9800 45%, var(--card-background-color));
-                  --pva-pos:#2a78d6; --pva-neg:#e34948; }
-          :host([data-dark]) { --pva-pos:#3987e5; --pva-neg:#e66767; }
+                  --pva-pos:#008300; --pva-neg:#e34948; }
+          :host([data-dark]) { --pva-pos:#008300; --pva-neg:#e66767; }
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
           .filters button { font:inherit; color:var(--primary-text-color); background:transparent;
                   border:1px solid var(--divider-color); border-radius:16px; padding:4px 14px; cursor:pointer; }
@@ -245,7 +245,7 @@ class PVAssistantPanel extends HTMLElement {
     }
     const fc = [["fcToday", "forecast_today_energy_sensors"], ["fcTomorrow", "forecast_tomorrow_energy_sensors"], ["fcRemaining", "forecast_remaining_energy_sensors"]]
       .map(([label, key]) => this._card(this._t(label), list(c[key]), "kWh")).join("");
-    if (fc) html += `<h2>${esc(this._t("forecast"))}</h2><div class="grid">${fc}</div>`;
+    if (fc) html += `<h2>${esc(this._t("fcGroup"))}</h2><div class="grid">${fc}</div>`;
     if (!html) html = `<p class="muted">${esc(this._t("none"))}</p>`;
     if (html !== this._last) { this._last = html; this._root.getElementById("now").innerHTML = html; }
   }
@@ -561,7 +561,7 @@ class PVAssistantPanel extends HTMLElement {
       categories: names,
       series: [{ name: this._t("deviation"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: dev }],
       legendItems: [{ name: this._t("above"), color: "--pva-pos" }, { name: this._t("below"), color: "--pva-neg" }],
-      fmtValue: (v, axis) => `${num(v, axis, 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("deviation"),
+      fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis, 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("deviation"),
     });
     if (Y === cy) root.getElementById("ychart").append(Object.assign(document.createElement("p"), { className: "note", textContent: `* ${this._t("running")}` }));
   }
