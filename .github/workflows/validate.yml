@@ -49,6 +49,12 @@ jobs:
                  <(jq -S '[paths(scalars)|map(tostring)|join(".")]' "$t") \
               || { echo "Keys differ in $t"; exit 1; }
           done
+      - name: Version must carry the beta suffix
+        run: |
+          version=$(jq -r .version custom_components/pv_assistant/manifest.json)
+          echo "manifest version: $version"
+          printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta$' \
+            || { echo "::error::version must look like 0.6.4-beta (the project stays in beta)"; exit 1; }
       - name: Version must be bumped (pull requests only)
         if: github.event_name == 'pull_request'
         run: |
