@@ -16,6 +16,8 @@ CONF_STORAGE_OUT_POWER = "storage_out_power_sensors"  # list, optional, power fr
 CONF_STORAGE_COMBINED_POWER = "storage_combined_power_sensors"  # list, optional, in and out in one sensor
 CONF_INVERT_STORAGE_COMBINED_POWER = "invert_storage_combined_power"  # default: + = from storage, - = into storage
 
+CONF_INVERT_FEED_IN_POWER = "invert_feed_in_power"  # feed-in power sensor reports feed-in as negative values
+
 CONF_FORECAST_TODAY = "forecast_today_energy_sensors"  # list, optional, forecast energy for today (kWh)
 CONF_FORECAST_TOMORROW = "forecast_tomorrow_energy_sensors"  # list, optional, forecast energy for tomorrow (kWh)
 CONF_FORECAST_REMAINING = "forecast_remaining_energy_sensors"  # list, optional, forecast energy for the rest of today (kWh)

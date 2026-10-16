@@ -26,7 +26,8 @@
           "storage_in_power_sensors": "In Speicher (Power, optional)",
           "storage_out_power_sensors": "Aus Speicher (Power, optional)",
           "storage_combined_power_sensors": "Kombi-Speichersensoren (rein und raus, Power, optional)",
-          "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+          "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)",
+          "invert_feed_in_power": "Einspeisesensor liefert Einspeisung als negative Werte (Vorzeichen umkehren; Standard: positiv = Einspeisung)"
         },
         "data_description": {
           "production_power_sensors": "Pro String einen Sensor wählen, keinen Gesamtsensor über unterschiedliche Ausrichtungen."
@@ -73,7 +74,8 @@
           "storage_in_power_sensors": "In Speicher (Power, optional)",
           "storage_out_power_sensors": "Aus Speicher (Power, optional)",
           "storage_combined_power_sensors": "Kombi-Speichersensoren (rein und raus, Power, optional)",
-          "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)"
+          "invert_storage_combined_power": "Kombi-Speichersensoren: positiv = in Speicher (Standard: positiv = aus Speicher)",
+          "invert_feed_in_power": "Einspeisesensor liefert Einspeisung als negative Werte (Vorzeichen umkehren; Standard: positiv = Einspeisung)"
         },
         "data_description": {
           "production_power_sensors": "Pro String einen Sensor wählen, keinen Gesamtsensor über unterschiedliche Ausrichtungen."

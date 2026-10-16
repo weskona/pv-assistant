@@ -261,6 +261,7 @@ class PVAssistantPanel extends HTMLElement {
       sout: list(c[`storage_out_${suffix}_sensors`]),
       comb: list(c[`storage_combined_${suffix}_sensors`]),
       inv: !!c[suffix === "power" ? "invert_storage_combined_power" : "invert_storage_combined"],
+      invFeed: suffix === "power" && !!c.invert_feed_in_power,
     });
     return { P: g("power"), E: g("energy") };
   }
@@ -374,7 +375,10 @@ class PVAssistantPanel extends HTMLElement {
 
     // ---- power lines
     const pr = (id) => get(pres, id, "mean");
-    const pProd = sum(P.prod, pr, "mean"), pFeed = sum(P.feed, pr, "mean");
+    // feed-in power: a sensor that reports feed-in as negative values is inverted; the other
+    // direction (import) is not feed-in and counts as 0
+    const feedFn = P.invFeed ? (v) => Math.max(-v, 0) : (v) => Math.max(v, 0);
+    const pProd = sum(P.prod, pr, "mean"), pFeed = sum(P.feed, pr, "mean", feedFn);
     const pSin = sum(P.sin, pr, "mean"), pSout = sum(P.sout, pr, "mean");
     const pComb = sum(P.comb, pr, "mean", (v) => (P.inv ? -v : v));
     let pNet = merge(merge(pSout, pSin, -1), pComb);
