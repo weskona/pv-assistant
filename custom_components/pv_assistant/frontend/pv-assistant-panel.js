@@ -14,6 +14,7 @@ const T = {
     avg: "Ø", above: "über Schnitt", below: "unter Schnitt", running: "laufender Monat",
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
+    direct: "Direkt verbraucht", directShort: "Direkt", directShare: "Anteil an Erzeugung",
     storage: "Speicher", storageNet: "Speicher (+ Entladen / − Laden)", loading: "Lade …", noData: "Keine Daten im Zeitraum.",
     table: "Als Tabelle anzeigen", time: "Zeit", totals: "Summen im Zeitraum",
   },
@@ -30,6 +31,7 @@ const T = {
     avg: "Avg", above: "above average", below: "below average", running: "current month",
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
+    direct: "Used directly", directShort: "Direct", directShare: "Share of production",
     storage: "Storage", storageNet: "Storage (+ discharge / − charge)", loading: "Loading …", noData: "No data in this range.",
     table: "Show as table", time: "Time", totals: "Totals in range",
   },
@@ -83,8 +85,8 @@ class PVAssistantPanel extends HTMLElement {
           .sum { font-weight:500; }
           .muted { color:var(--secondary-text-color); }
           /* categorical slots 1-4 (blue, orange, aqua, yellow), light / dark stepped */
-          :host { --pva-1:#2a78d6; --pva-2:#eb6834; --pva-3:#1baf7a; --pva-4:#eda100; }
-          :host([data-dark]) { --pva-1:#3987e5; --pva-2:#d95926; --pva-3:#199e70; --pva-4:#c98500; --pva-neg:#e66767; }
+          :host { --pva-1:#2a78d6; --pva-2:#eb6834; --pva-3:#1baf7a; --pva-4:#eda100; --pva-5:#e87ba4; }
+          :host([data-dark]) { --pva-1:#3987e5; --pva-2:#d95926; --pva-3:#199e70; --pva-4:#c98500; --pva-5:#d55181; --pva-neg:#e66767; }
           :host { --pva-neg:#e34948; }
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
           .filters button { font:inherit; color:var(--primary-text-color); background:transparent;
@@ -366,12 +368,18 @@ class PVAssistantPanel extends HTMLElement {
     const pSin = sum(P.sin, pr, "mean"), pSout = sum(P.sout, pr, "mean");
     const pComb = sum(P.comb, pr, "mean", (v) => (P.inv ? -v : v));
     let pNet = merge(merge(pSout, pSin, -1), pComb);
+    // PV used directly = production - feed-in - charging power (never below 0)
+    const cP = comb(P.comb, pr, "mean", P.inv);
+    const pCharge = merge(pSin, cP.neg);
+    const pDirect = new Map();
+    for (const [ts, v] of pProd) pDirect.set(ts, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)));
     const hasStorageP = P.sin.length || P.sout.length || P.comb.length;
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
     const lines = [
       { name: this._t("production"), short: this._t("production"), color: "--pva-1", points: toPts(pProd) },
       { name: this._t("feed"), short: this._t("feed"), color: "--pva-2", points: toPts(pFeed) },
       { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-3", points: hasStorageP ? toPts(pNet) : [] },
+      { name: this._t("direct"), short: this._t("directShort"), color: "--pva-5", points: toPts(pDirect) },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
     const tickFmt = rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
@@ -388,11 +396,14 @@ class PVAssistantPanel extends HTMLElement {
     const c = comb(E.comb, er("change"), "change", E.inv);
     const eSin = merge(sum(E.sin, er("change"), "change"), c.neg);
     const eSout = merge(sum(E.sout, er("change"), "change"), c.pos);
+    const eDirect = new Map();
+    for (const [ts, v] of eProd) eDirect.set(ts, Math.max(0, v - (eFeed.get(ts) || 0) - (eSin.get(ts) || 0)));
     const bars = [
       { name: this._t("production"), color: "--pva-1", values: eProd },
       { name: this._t("feed"), color: "--pva-2", values: eFeed },
       { name: this._t("sin"), color: "--pva-3", values: eSin },
       { name: this._t("sout"), color: "--pva-4", values: eSout },
+      { name: this._t("direct"), color: "--pva-5", values: eDirect },
     ];
     const hourly = rd.eBucket === 3600e3;
     barChart(this._root.getElementById("echart"), {
@@ -407,7 +418,9 @@ class PVAssistantPanel extends HTMLElement {
     const tot = (m) => [...m.values()].reduce((a, v) => a + v, 0);
     const tiles = bars.filter((b) => b.values.size).map((b) =>
       `<div class="tile"><b>${esc(num(tot(b.values)))} kWh</b><span>${esc(b.name)}</span></div>`).join("");
-    this._root.getElementById("tiles").innerHTML = tiles;
+    const prodTot = tot(eProd);
+    const share = prodTot > 0 ? `<div class="tile"><b>${esc(num(tot(eDirect) / prodTot * 100, false, 0))} %</b><span>${esc(this._t("directShare"))}</span></div>` : "";
+    this._root.getElementById("tiles").innerHTML = tiles + share;
     this._root.querySelectorAll(".chart").forEach((x) => x.classList.remove("loading"));
   }
 
