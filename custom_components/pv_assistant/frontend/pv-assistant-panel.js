@@ -425,7 +425,9 @@ class PVAssistantPanel extends HTMLElement {
     const lines = [
       { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean", nz) },
       { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(P.feed, pr, "mean", feedFn) },
-      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
+      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", colorNeg: "--pva-bin",
+        legendItems: [{ name: `${this._t("sout")} (+)`, color: "--pva-bout" }, { name: `${this._t("sin")} (−)`, color: "--pva-bin" }],
+        points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
       { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect), parts: pDirectParts },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };

@@ -4,6 +4,7 @@
 
 const NS = "http://www.w3.org/2000/svg";
 const M = { l: 48, r: 8, t: 10, b: 24 };
+let clipCount = 0;
 
 const el = (tag, attrs = {}, text) => {
   const n = document.createElementNS(NS, tag);
@@ -33,7 +34,7 @@ export function niceTicks(min, max, count = 4) {
 
 function legend(series, kind) {
   const box = html("div", "legend");
-  for (const s of series) {
+  for (const s of series.flatMap((x) => x.legendItems || [x])) {
     const item = html("span", "legend-item");
     const key = html("i", `key ${kind}`);
     key.style.background = `var(${s.color})`;
@@ -142,7 +143,23 @@ export function lineChart(container, opts) {
       if (i === 0 && seg.length > 1) {
         svg.append(el("path", { d: `${d}L${x(seg.at(-1)[0]).toFixed(1)},${y(0)}L${x(seg[0][0]).toFixed(1)},${y(0)}Z`, fill: `var(${s.color})`, opacity: 0.12 }));
       }
-      svg.append(el("path", { d, fill: "none", stroke: `var(${s.color})`, "stroke-width": 2, "stroke-linejoin": "round" }));
+      if (s.colorNeg) {
+        // sign-dependent color: the same line twice, clipped above / below the zero line
+        const id = `pva-clip-${++clipCount}`;
+        const defs = el("defs");
+        defs.append(
+          el("clipPath", { id: `${id}-p` }, undefined),
+          el("clipPath", { id: `${id}-n` }, undefined),
+        );
+        defs.children[0].append(el("rect", { x: 0, y: 0, width: W, height: y(0) }));
+        defs.children[1].append(el("rect", { x: 0, y: y(0), width: W, height: H - y(0) }));
+        svg.append(defs);
+        for (const [suffix, color] of [["p", s.color], ["n", s.colorNeg]]) {
+          svg.append(el("path", { d, fill: "none", stroke: `var(${color})`, "stroke-width": 2, "stroke-linejoin": "round", "clip-path": `url(#${id}-${suffix})` }));
+        }
+      } else {
+        svg.append(el("path", { d, fill: "none", stroke: `var(${s.color})`, "stroke-width": 2, "stroke-linejoin": "round" }));
+      }
     }
   });
   // direct end labels (value stays in the tooltip), nudged apart
@@ -170,9 +187,12 @@ export function lineChart(container, opts) {
     live.forEach((s, i) => {
       const v = maps[i].get(ts);
       dots[i].setAttribute("visibility", v == null ? "hidden" : "visible");
-      if (v != null) { dots[i].setAttribute("cx", x(ts)); dots[i].setAttribute("cy", y(v)); }
+      if (v != null) {
+        dots[i].setAttribute("cx", x(ts)); dots[i].setAttribute("cy", y(v));
+        dots[i].setAttribute("fill", `var(${s.colorNeg && v < 0 ? s.colorNeg : s.color})`);
+      }
     });
-    fillTip(tip, fmtTime(ts), live.map((s, i) => ({ name: s.name, color: s.color, value: maps[i].get(ts), parts: partsAt(s, ts) })), fmtValue);
+    fillTip(tip, fmtTime(ts), live.map((s, i) => { const v = maps[i].get(ts); return { name: s.name, color: s.colorNeg && v < 0 ? s.colorNeg : s.color, value: v, parts: partsAt(s, ts) }; }), fmtValue);
     placeTip(tip, wrap, (x(ts) / W) * r.width, ((ev.clientY - r.top)));
   };
   const hide = () => { tip.hidden = true; hair.setAttribute("visibility", "hidden"); dots.forEach((d) => d.setAttribute("visibility", "hidden")); };
