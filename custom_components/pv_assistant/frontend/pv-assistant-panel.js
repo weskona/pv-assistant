@@ -24,6 +24,7 @@ const T = {
     gridImp: "Netzbezug", gridImpShort: "Netz", house: "Hausverbrauch", houseDerived: "Hausverbrauch (berechnet)", houseMixed: "Hausverbrauch (teils berechnet)", houseShort: "Haus",
     forecastTab: "Prognose", fcSoFar: "Bisher erzeugt (heute)", fcRangeDays: "Tage",
     stoSocMax: "Tageshöchstwert", stoSocAvg: "Tagesdurchschnitt", stoSocMin: "Tagestiefstwert", stoPeakPower: "Spitzenleistung (Tagesspitzen)", stoPeakOut: "Aus Speicher (Spitze)", stoPeakIn: "In Speicher (Spitze)",
+    pwrChart: "Leistung je String",
     storageTab: "Speicher", stoPower: "Speicherleistung", stoEnergy: "Geladen und entladen", stoMaxCharge: "Max. Ladeleistung", stoMaxDis: "Max. Entladeleistung", stoAvgSoc: "Ø Ladestand", stoNow: "Ladestand jetzt", stoNoCap: "Trage die Speicherkapazität im Tab „Einstellungen“ unter „Anlage“ ein, dann werden die Zyklen berechnet.", stoNote: "Wirkungsgrad = entladen ÷ geladen im Zeitraum; er ist nur aussagekräftig, wenn der Ladestand am Anfang und Ende ähnlich ist (längere Zeiträume).",
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
@@ -89,6 +90,7 @@ const T = {
     gridImp: "Grid import", gridImpShort: "Grid", house: "House consumption", houseDerived: "House consumption (calculated)", houseMixed: "House consumption (partly calculated)", houseShort: "House",
     forecastTab: "Forecast", fcSoFar: "Produced so far (today)", fcRangeDays: "days",
     stoSocMax: "Daily high", stoSocAvg: "Daily average", stoSocMin: "Daily low", stoPeakPower: "Peak power (daily peaks)", stoPeakOut: "From storage (peak)", stoPeakIn: "Into storage (peak)",
+    pwrChart: "Power per string",
     storageTab: "Storage", stoPower: "Storage power", stoEnergy: "Charged and discharged", stoMaxCharge: "Max charge power", stoMaxDis: "Max discharge power", stoAvgSoc: "Avg level", stoNow: "Level now", stoNoCap: "Enter the storage capacity in the Settings tab under \"Plant\" to get the cycles.", stoNote: "Efficiency = discharged ÷ charged in the range; it is only meaningful when the level at the start and end is similar (longer ranges).",
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
@@ -319,10 +321,10 @@ class PVAssistantPanel extends HTMLElement {
       if (w === this._lastW) return;
       this._lastW = w;
       cancelAnimationFrame(this._raf);
-      this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); if (this._tab === "analysis") this._drawAnalysis(); if (this._tab === "storage") this._drawStorage(); if (this._tab === "forecast") this._drawForecast(); });
+      this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); if (this._tab === "analysis") this._drawAnalysis(); if (this._tab === "storage") this._drawStorage(); if (this._tab === "forecast") this._drawForecast(); if (this._tab === "power") this._drawPowerChart(); });
     });
     this._ro.observe(this);
-    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); if (this._tab === "storage") this._loadStorage(); if (this._tab === "forecast") this._loadForecast(); this._loadPowerMax(); }, 5 * 60 * 1000);
+    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); if (this._tab === "storage") this._loadStorage(); if (this._tab === "forecast") this._loadForecast(); if (this._tab === "power") this._loadPowerChart(); this._loadPowerMax(); }, 5 * 60 * 1000);
     this._load();
   }
 
@@ -1405,6 +1407,7 @@ class PVAssistantPanel extends HTMLElement {
     if (id === "history") this._draw();
     if (id === "storage") this._loadStorage();
     if (id === "forecast") this._loadForecast();
+    if (id === "power") this._loadPowerChart();
     if (id === "settings") this._refreshPrices?.();
     if (id === "years") this._drawYears();
   }
@@ -1473,8 +1476,72 @@ class PVAssistantPanel extends HTMLElement {
         <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i style="width:0%"></i></div>
         <div class="pw-sub"><span class="muted">${esc(this._t("setNoPeakShort"))}</span></div></div>`;
     }
-    const html = `<div class="grid">${total}${cards}</div><p class="note">${esc(this._t("pwrNote"))}</p>`;
-    if (html !== this._lastPwr) { this._lastPwr = html; box.innerHTML = html; }
+    const html = `<div class="grid">${total}${cards}</div>`;
+    if (!this._pwrInit) { // cards on top are re-rendered with every value, the chart below is built once
+      this._pwrInit = true;
+      box.innerHTML = `<div id="pwrcards"></div><h3 class="ch">${esc(this._t("pwrChart"))} (W)</h3><div class="filters" id="pwranges"></div><div class="chart" id="pwrchart"></div><p class="note">${esc(this._t("pwrNote"))}</p>`;
+      if (!this._prange) this._prange = "today";
+      const ranges = box.querySelector("#pwranges");
+      for (const r of ["today", "yesterday", "d7"]) {
+        const b = document.createElement("button");
+        b.textContent = this._t(r);
+        b.dataset.range = r;
+        b.setAttribute("aria-pressed", String(r === this._prange));
+        b.addEventListener("click", () => {
+          this._prange = r;
+          ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
+          this._loadPowerChart();
+        });
+        ranges.append(b);
+      }
+    }
+    if (html !== this._lastPwr) { this._lastPwr = html; box.querySelector("#pwrcards").innerHTML = html; }
+  }
+
+  async _loadPowerChart() {
+    const box = this._root?.getElementById("pwrchart");
+    if (!box || !this._hass) return;
+    const token = (this._pctoken = (this._pctoken || 0) + 1);
+    const rd = this._rangeDef(this._prange);
+    box.classList.add("loading");
+    const res = await this._stats(this._keys().P.prod, rd.pPeriod, "mean", { power: "W" }, rd);
+    if (token !== this._pctoken) return;
+    this._pcdata = { rd, res };
+    this._drawPowerChart();
+  }
+
+  _drawPowerChart() {
+    const d = this._pcdata;
+    const box = this._root?.getElementById("pwrchart");
+    if (!d || !box) return;
+    const { rd, res } = d;
+    const ids = this._keys().P.prod;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const fm = (o) => new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
+    const fDT = fm({ day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    const fD = fm({ weekday: "short", day: "numeric", month: "numeric" });
+    const fH = fm({ hour: "2-digit", minute: "2-digit" });
+    const fDM = fm({ day: "numeric", month: "numeric" });
+    const num = (v, axis) => v.toLocaleString(lang, { maximumFractionDigits: axis ? 1 : 0 });
+    const perId = ids.map((id) => {
+      const m = new Map();
+      for (const r of res[id] || []) if (r.mean != null) m.set(r.start, Math.max(r.mean, 0));
+      return { id, name: this._read(id).name, peak: this._cfg.settings?.strings?.[id]?.peak, values: m };
+    });
+    const total = new Map();
+    for (const s of perId) for (const [ts, v] of s.values) total.set(ts, (total.get(ts) || 0) + v);
+    const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
+    const series = perId.map((s, k) => ({ name: s.name, short: `${s.name.slice(0, 11)}${s.name.length > 11 ? "…" : ""}`, color: `--pva-s${(k % 7) + 1}`, points: toPts(s.values) }));
+    if (perId.length > 1) series.push({ name: this._t("effTotal"), short: this._t("effTotal"), color: "--pva-prod", points: toPts(total), parts: perId.map((s) => ({ name: s.name, values: s.values, peak: s.peak })) });
+    box.classList.remove("loading");
+    lineChart(box, {
+      series, t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
+      fmtValue: (v, axis) => `${num(v, axis)}${axis ? "" : " W"}`,
+      fmtTime: (t) => fDT.format(t),
+      fmtTick: rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t),
+      empty: this._t("noData"), tableLabels: { summary: this._t("table"), time: this._t("time") }, label: `${this._t("pwrChart")} (W)`,
+    });
   }
 
   // ---------------------------------------------------------------- settings tab

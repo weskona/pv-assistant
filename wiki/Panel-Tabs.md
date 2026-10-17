@@ -6,7 +6,7 @@ Alle Kennzahlen eines Tabs stehen gemeinsam in einer Karte. Tabs ohne passende S
 Karten für alle konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen, dazu die Prognose-Sensoren.
 
 ## Leistung
-Aktuelle Leistung je String als Balken im Verhältnis zur höchsten gemessenen Leistung (oder dem eingetragenen Peak) und die effektive Leistung der **Gesamtanlage** in Prozent.
+Aktuelle Leistung je String als Balken im Verhältnis zur höchsten gemessenen Leistung (oder dem eingetragenen Peak) und die effektive Leistung der **Gesamtanlage** in Prozent. Darunter ein Diagramm mit dem Leistungsverlauf je String und der Gesamtanlage (Heute, Gestern, 7 Tage).
 
 ## Analyse
 Zeiträume 7, 30, 90 Tage, **Dieses Jahr** oder **12 Monate**.
