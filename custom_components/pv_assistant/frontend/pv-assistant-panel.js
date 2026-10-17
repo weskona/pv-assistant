@@ -28,10 +28,11 @@ const T = {
     analysisTab: "Analyse", d90: "90 Tage", d365: "Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
-    anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
+    anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
     anaWeakHint: "{name} erzeugt pro installiertem kWp nur {rel} % des besten Strings ({best}): {own} gegen {top} kWh/kWp. Der typische String liegt bei {med} kWh/kWp. Mögliche Ursachen: Verschattung, Verschmutzung, andere Ausrichtung oder Neigung, falsch eingetragener Peak, Defekt.",
     anaPlateauHint: "An {n} Tagen bleibt die Leistung mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
     anaPrHint: "Performance Ratio {pr} % – {verdict} Sie vergleicht den Ertrag mit dem, was bei der gemessenen Einstrahlung theoretisch möglich wäre (typisch 75 bis 85 %).", anaPrLow: "das liegt unter dem typischen Bereich. Mögliche Ursachen: Verschattung, Verschmutzung, Wechselrichter-Begrenzung, zu hoch eingetragene Peaks oder ein ungenauer Einstrahlungssensor.", anaPrOk: "das liegt im typischen Bereich.", anaPrHigh: "das liegt über dem typischen Bereich (prüfe, ob die Peaks zu niedrig eingetragen sind).",
+    anaNoForecastYet: "Noch keine abgeschlossenen Tage mit Prognose. Das Panel liest die Prognose der letzten Tage aus dem Verlauf der „Prognose heute“-Sensoren und merkt sie sich ab jetzt täglich; der Vergleich erscheint spätestens morgen. Prüfe, ob „Prognose heute“ in Schritt 3 gewählt ist (nicht nur „morgen“ oder „Rest heute“).",
     anaNoForecast: "Noch keine Prognose-Daten. Wähle im Config Flow (Schritt 3) Prognose-Sensoren; das Panel merkt sich die Prognose dann täglich.",
     yBenefit: "Nutzen", yBenefit12: "Nutzen (letzte 12 Monate)", yPaidPct: "Amortisiert zu", yPaidLeft: "Noch bis zur Amortisation", yYears: "Jahre", yTrend: "Trend der Jahressumme", yTrendUnit: "pro Jahr",
     aboveFc: "über Prognose", belowFc: "unter Prognose",
@@ -76,10 +77,11 @@ const T = {
     analysisTab: "Analysis", d90: "90 days", d365: "Year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastDev: "Deviation of actual from forecast (%)",
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
-    anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
+    anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
     anaWeakHint: "{name} produces only {rel} % per installed kWp of the best string ({best}): {own} vs {top} kWh/kWp. The typical string is at {med} kWh/kWp. Possible causes: shading, dirt, different orientation or tilt, wrong peak entered, defect.",
     anaPlateauHint: "On {n} days the power stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
     anaPrHint: "Performance ratio {pr} % – {verdict} It compares the yield with what would be theoretically possible at the measured irradiance (typically 75 to 85 %).", anaPrLow: "that is below the typical range. Possible causes: shading, dirt, inverter limiting, peaks entered too high or an inaccurate irradiance sensor.", anaPrOk: "that is within the typical range.", anaPrHigh: "that is above the typical range (check whether the peaks are entered too low).",
+    anaNoForecastYet: "No completed days with a forecast yet. The panel reads the forecast of the last days from the history of the \"forecast today\" sensors and remembers it daily from now on; the comparison appears tomorrow at the latest. Check that \"forecast today\" is selected in step 3 (not only \"tomorrow\" or \"remaining today\").",
     anaNoForecast: "No forecast data yet. Choose forecast sensors in the config flow (step 3); the panel then remembers the forecast every day.",
     yBenefit: "Benefit", yBenefit12: "Benefit (last 12 months)", yPaidPct: "Paid back", yPaidLeft: "Still until payback", yYears: "years", yTrend: "Trend of the yearly total", yTrendUnit: "per year",
     aboveFc: "above forecast", belowFc: "below forecast",
@@ -1227,15 +1229,54 @@ class PVAssistantPanel extends HTMLElement {
     ]);
     if (token !== this._atoken) return;
     if (cfg?.settings) this._cfg.settings = cfg.settings;
-    this._adata = { pres, eres, start };
+    const fcIds = list(this._cfg.forecast_today_energy_sensors);
+    const fcHist = fcIds.length ? await this._forecastFromHistory(fcIds) : {};
+    if (token !== this._atoken) return;
+    this._adata = { pres, eres, start, fcHist };
     this._drawAnalysis();
+  }
+
+  // Forecast of past days from the recorder history of the "forecast today" sensors (last value of each day);
+  // makes the comparison available right after setup. The log kept by the integration takes precedence.
+  async _forecastFromHistory(ids) {
+    const tz = this._hass.config?.time_zone;
+    const key = localKeyFn(tz);
+    const start = new Date(); start.setDate(start.getDate() - 12); start.setHours(0, 0, 0, 0);
+    let res;
+    try {
+      res = await this._hass.callWS({ type: "history/history_during_period", start_time: start.toISOString(), end_time: new Date().toISOString(),
+        entity_ids: ids, minimal_response: true, no_attributes: true, significant_changes_only: false });
+    } catch (e) { return {}; }
+    const days = [];
+    for (let t = start.getTime() + 12 * 3600e3; t < Date.now(); t += 24 * 3600e3) days.push(key(t).day);
+    const today = key(Date.now()).day;
+    const perId = ids.map((id) => {
+      const unit = this._hass.states[id]?.attributes?.unit_of_measurement;
+      const f = { Wh: 0.001, MWh: 1000 }[unit] ?? 1;
+      const last = new Map();
+      for (const r of res?.[id] || []) {
+        const v = parseFloat(r.s), ts = (r.lu ?? r.lc ?? 0) * 1000;
+        if (!isNaN(v) && ts) last.set(key(ts).day, v * f);
+      }
+      let carry = null;
+      const out = new Map();
+      for (const day of days) { if (last.has(day)) carry = last.get(day); if (carry != null) out.set(day, carry); }
+      return out;
+    });
+    const log = {};
+    for (const day of days) {
+      if (day === today || !perId.every((m) => m.has(day))) continue;
+      const total = perId.reduce((a, m) => a + m.get(day), 0);
+      if (total > 0) log[day] = Math.round(total * 100) / 100;
+    }
+    return log;
   }
 
   _drawAnalysis() {
     const d = this._adata;
     if (!d || !this._root.getElementById("astrings")) return;
     const { P, E, G } = this._keys();
-    const { pres, eres, start } = d;
+    const { pres, eres, start, fcHist } = d;
     const filt = this._cfg.filtered || {};
     const lang = this._hass.locale?.language || this._hass.language;
     const tz = this._hass.config?.time_zone;
@@ -1244,6 +1285,7 @@ class PVAssistantPanel extends HTMLElement {
     const root = this._root;
     const peakOf = (id) => { const v = this._cfg.settings?.strings?.[id]?.peak; return v > 0 ? v : null; };
     const dayLabel = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}.`;
+    const dayLabelY = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}`; // with year where a range can span years
     const todayKey = key(Date.now()).day;
 
     // daily production from the energy statistics (counters; the filtered copy wins)
@@ -1327,7 +1369,7 @@ class PVAssistantPanel extends HTMLElement {
     const sumPeak = series.every((s) => s.peak) && series.length ? series.reduce((a, s) => a + s.peak, 0) : null;
     const complete = days.filter((day) => day !== todayKey).map((day) => ({ day, kwh: byDay.get(day).reduce((a, w) => a + w, 0) / 1000 })).filter((x) => x.kwh > 0);
     const rows = (list) => `<table class="dtable"><thead><tr><th>${esc(this._t("anaDay"))}</th><th>kWh</th>${sumPeak ? `<th>${esc(this._t("anaSpec"))}</th>` : ""}</tr></thead><tbody>${
-      list.map((x) => `<tr><td>${esc(dayLabel(x.day))}</td><td>${esc(num(x.kwh))}</td>${sumPeak ? `<td>${esc(num(x.kwh / (sumPeak / 1000), 2))}</td>` : ""}</tr>`).join("")}</tbody></table>`;
+      list.map((x) => `<tr><td>${esc(dayLabelY(x.day))}</td><td>${esc(num(x.kwh))}</td>${sumPeak ? `<td>${esc(num(x.kwh / (sumPeak / 1000), 2))}</td>` : ""}</tr>`).join("")}</tbody></table>`;
     const bySize = [...complete].sort((a, b) => b.kwh - a.kwh);
     root.getElementById("adays").innerHTML = complete.length
       ? `<div class="chart"><h3 class="ch" style="margin-top:0">${esc(this._t("anaBest"))}</h3>${rows(bySize.slice(0, 5))}</div><div class="chart"><h3 class="ch" style="margin-top:0">${esc(this._t("anaWorst"))}</h3>${rows(bySize.slice(-5).reverse())}</div>`
@@ -1371,19 +1413,20 @@ class PVAssistantPanel extends HTMLElement {
         }
       }
     }
-    if (bySize.length) tiles.push([`${num(bySize[0].kwh)} kWh · ${dayLabel(bySize[0].day)}`, this._t("anaBestDay")]);
+    if (bySize.length) tiles.push([`${num(bySize[0].kwh)} kWh · ${dayLabelY(bySize[0].day)}`, this._t("anaBestDay")]);
+    if (bySize.length > 1) { const w = bySize[bySize.length - 1]; tiles.push([`${num(w.kwh)} kWh · ${dayLabelY(w.day)}`, this._t("anaWorstDay")]); }
     root.getElementById("atiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
     root.getElementById("ahints").innerHTML = hints.map((h) => `<li${h === infoHint ? ' class="info"' : ""}>${esc(h)}</li>`).join("");
 
     // forecast against actual (daily production from the energy statistics)
-    const log = this._cfg.settings?.forecast_log || {};
+    const log = { ...(fcHist || {}), ...(this._cfg.settings?.forecast_log || {}) };
     const fcDays = Object.keys(log).filter((day) => day !== todayKey && actual.has(day) && log[day] > 0).sort();
     const tl = { summary: this._t("table"), time: this._t("time") };
     const fv = (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`;
     const fcBox = root.getElementById("afc"), fdBox = root.getElementById("afd");
     fcBox.classList.remove("loading"); fdBox.classList.remove("loading");
     if (!fcDays.length) {
-      for (const b of [fcBox, fdBox]) b.innerHTML = `<p class="empty">${esc(this._t("anaNoForecast"))}</p>`;
+      for (const b of [fcBox, fdBox]) b.innerHTML = `<p class="empty">${esc(this._t(list(this._cfg.forecast_today_energy_sensors).length ? "anaNoForecastYet" : "anaNoForecast"))}</p>`;
     } else {
       const cats = fcDays.map(dayLabel);
       const fc = fcDays.map((day) => log[day]), ist = fcDays.map((day) => actual.get(day));
