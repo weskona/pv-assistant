@@ -537,20 +537,21 @@ class PVAssistantPanel extends HTMLElement {
     const energyIds = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb, ...G.impE, ...G.houseE];
     const energyAll = energyIds.concat(energyIds.map((i) => filt[i]).filter(Boolean));
     this._root.querySelectorAll(".chart").forEach((c) => c.classList.add("loading"));
-    const [pres, eres, hres] = await Promise.all([
+    const [pres, eres, hres, dres] = await Promise.all([
       this._stats(powerIds, rd.pPeriod, "mean", { power: "W" }, rd),
       this._stats(energyAll, rd.long ? "month" : rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
       rd.long ? this._stats(P.prod, "hour", "mean", { power: "W" }, rd) : null, // for the daily peaks of the effective power
+      rd.long ? this._stats(energyAll, "day", "change", { energy: "kWh" }, rd) : null, // daily mean power = daily energy / 24 h
     ]);
     if (token !== this._token) return; // a newer range was requested meanwhile
-    this._data = { rd, P, E, G, pres, eres, filt, hres };
+    this._data = { rd, P, E, G, pres, eres, filt, hres, dres };
     this._draw();
   }
 
   _draw() {
     const d = this._data;
     if (!d || !this._hist) return;
-    const { rd, P, E, G, pres, eres, filt, hres } = d;
+    const { rd, P, E, G, pres, eres, filt, hres, dres } = d;
     const lang = this._hass.locale?.language || this._hass.language;
     const tz = this._hass.config?.time_zone;
     const fm = (o) => new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
@@ -605,37 +606,43 @@ class PVAssistantPanel extends HTMLElement {
     const merge = (a, b, sign = 1) => { const m = new Map(a); for (const [k, v] of b) add(m, k, sign * v); return m; };
 
     // ---- power lines
-    const pr = (id) => get(pres, id, "mean");
+    // year ranges: the mean power of a day is its energy / 24 h. That is exact and keeps the direction of signed sensors
+    // (a daily mean of a signed power sensor would cancel import against export and charging against discharging)
+    const Pp = rd.long ? E : P;
+    const Gp = rd.long ? { ...G, impP: G.impE, houseP: G.houseE } : G;
+    const pr = rd.long
+      ? (id) => mergedRows(dres || {}, id, filt, "change").map((r) => ({ start: r.start, mean: (r.change * 1000) / 24 }))
+      : (id) => get(pres, id, "mean");
     // feed-in power: a sensor that reports feed-in as negative values is inverted; the other
     // direction (import) is not feed-in and counts as 0
-    const feedFn = P.invFeed ? (v) => Math.max(-v, 0) : (v) => Math.max(v, 0);
+    const feedFn = Pp.invFeed ? (v) => Math.max(-v, 0) : (v) => Math.max(v, 0);
     // single-direction sensors (production, storage in, storage out) only count positive values;
     // sensors with a sign belong in the combined storage field
     const nz = (v) => Math.max(v, 0);
     // storage in/out sensors that report their direction as negative values: use the magnitude
-    const ns = P.absStorage ? (v) => Math.abs(v) : nz;
-    const pProd = sum(P.prod, pr, "mean", nz), pFeed = sum(P.feed, pr, "mean", feedFn);
-    const pSin = sum(P.sin, pr, "mean", ns), pSout = sum(P.sout, pr, "mean", ns);
-    const pComb = sum(P.comb, pr, "mean", (v) => (P.inv ? -v : v));
+    const ns = Pp.absStorage ? (v) => Math.abs(v) : nz;
+    const pProd = sum(Pp.prod, pr, "mean", nz), pFeed = sum(Pp.feed, pr, "mean", feedFn);
+    const pSin = sum(Pp.sin, pr, "mean", ns), pSout = sum(Pp.sout, pr, "mean", ns);
+    const pComb = sum(Pp.comb, pr, "mean", (v) => (Pp.inv ? -v : v));
     let pNet = merge(merge(pSout, pSin, -1), pComb);
     // PV used directly = production - feed-in - charging power (never below 0)
-    const cP = comb(P.comb, pr, "mean", P.inv);
+    const cP = comb(Pp.comb, pr, "mean", Pp.inv);
     const pCharge = merge(pSin, cP.neg);
     const pDirect = new Map();
     for (const [ts, v] of pProd) pDirect.set(ts, Math.min(v, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)))); // never above the production
-    const pNetParts = [...each(P.sout, pr, "mean", ns), ...each(P.sin, pr, "mean", (v) => -ns(v)), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
+    const pNetParts = [...each(Pp.sout, pr, "mean", ns), ...each(Pp.sin, pr, "mean", (v) => -ns(v)), ...each(Pp.comb, pr, "mean", (v) => (Pp.inv ? -v : v))];
     let pDirectParts = [
       { name: this._t("production"), values: pProd },
       { name: `− ${this._t("feed")}`, values: neg(pFeed) },
       { name: `− ${this._t("sin")}`, values: neg(pCharge) },
     ];
-    const hasStorageP = P.sin.length || P.sout.length || P.comb.length;
+    const hasStorageP = Pp.sin.length || Pp.sout.length || Pp.comb.length;
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
     // grid import: own sensors, otherwise the positive part of a feed-in sensor that also reports import
-    const impP = G.impP.length ? sum(G.impP, pr, "mean", nz)
-      : P.invFeed && P.feed.length ? sum(P.feed, pr, "mean", (v) => Math.max(v, 0)) : null;
+    const impP = Gp.impP.length ? sum(Gp.impP, pr, "mean", nz)
+      : Pp.invFeed && Pp.feed.length ? sum(Pp.feed, pr, "mean", (v) => Math.max(v, 0)) : null;
     const pDis = merge(pSout, cP.pos); // discharge incl. the discharging part of combined sensors
-    const houseMeasuredP = G.houseP.length ? sum(G.houseP, pr, "mean", nz) : null;
+    const houseMeasuredP = Gp.houseP.length ? sum(Gp.houseP, pr, "mean", nz) : null;
     let houseP = houseMeasuredP;
     if (!houseP && impP) { // energy balance: production + import + discharge - feed-in - charge
       houseP = new Map();
@@ -654,8 +661,8 @@ class PVAssistantPanel extends HTMLElement {
       ];
     }
     const lines = [
-      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean", nz).map((part, i) => ({ ...part, peak: this._cfg.settings?.strings?.[P.prod[i]]?.peak })) },
-      { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(P.feed, pr, "mean", feedFn) },
+      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(Pp.prod, pr, "mean", nz).map((part, i) => ({ ...part, peak: this._cfg.settings?.strings?.[Pp.prod[i]]?.peak })) },
+      { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(Pp.feed, pr, "mean", feedFn) },
       { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", colorNeg: "--pva-bin",
         legendItems: [{ name: `${this._t("sout")} (+)`, color: "--pva-bout" }, { name: `${this._t("sin")} (−)`, color: "--pva-bin" }],
         points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
