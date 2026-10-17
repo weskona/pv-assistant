@@ -21,7 +21,7 @@ const T = {
     setNoPeak: "Trage in den Einstellungen für die Strings die Max.-Leistung (Peak) ein, dann erscheint hier die effektive Leistung in %.", ofPeakSum: "von Σ Peak", peakCount: "Strings mit Peak",
     yearTotal: "Gesamterzeugung je Jahr (kWh)", yearDev: "Abweichung der Jahressumme zum Schnitt (%)", avgSame: "Ø (gleiche Monate)", devTile: "Abweichung",
     yearStar: "* nur Monate mit Daten (laufendes Jahr: abgeschlossene Monate); verglichen wird mit denselben Monaten im Schnitt.",
-    gridImp: "Netzbezug", gridImpShort: "Netz", house: "Hausverbrauch", houseDerived: "Hausverbrauch (berechnet)", houseShort: "Haus",
+    gridImp: "Netzbezug", gridImpShort: "Netz", house: "Hausverbrauch", houseDerived: "Hausverbrauch (berechnet)", houseMixed: "Hausverbrauch (teils berechnet)", houseShort: "Haus",
     forecastTab: "Prognose", fcSoFar: "Bisher erzeugt (heute)", fcRangeDays: "Tage",
     storageTab: "Speicher", stoPower: "Speicherleistung", stoEnergy: "Geladen und entladen", stoMaxCharge: "Max. Ladeleistung", stoMaxDis: "Max. Entladeleistung", stoAvgSoc: "Ø Ladestand", stoNow: "Ladestand jetzt", stoNoCap: "Trage die Speicherkapazität im Tab „Einstellungen“ unter „Anlage“ ein, dann werden die Zyklen berechnet.", stoNote: "Wirkungsgrad = entladen ÷ geladen im Zeitraum; er ist nur aussagekräftig, wenn der Ladestand am Anfang und Ende ähnlich ist (längere Zeiträume).",
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
@@ -82,7 +82,7 @@ const T = {
     setNoPeak: "Enter the max. power (peak) of the strings in the settings and the effective power in % appears here.", ofPeakSum: "of Σ peak", peakCount: "strings with peak",
     yearTotal: "Total production per year (kWh)", yearDev: "Deviation of the yearly total from the average (%)", avgSame: "Avg. (same months)", devTile: "Deviation",
     yearStar: "* only months with data (current year: completed months); compared with the same months of the average.",
-    gridImp: "Grid import", gridImpShort: "Grid", house: "House consumption", houseDerived: "House consumption (calculated)", houseShort: "House",
+    gridImp: "Grid import", gridImpShort: "Grid", house: "House consumption", houseDerived: "House consumption (calculated)", houseMixed: "House consumption (partly calculated)", houseShort: "House",
     forecastTab: "Forecast", fcSoFar: "Produced so far (today)", fcRangeDays: "days",
     storageTab: "Storage", stoPower: "Storage power", stoEnergy: "Charged and discharged", stoMaxCharge: "Max charge power", stoMaxDis: "Max discharge power", stoAvgSoc: "Avg level", stoNow: "Level now", stoNoCap: "Enter the storage capacity in the Settings tab under \"Plant\" to get the cycles.", stoNote: "Efficiency = discharged ÷ charged in the range; it is only meaningful when the level at the start and end is similar (longer ranges).",
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
@@ -553,6 +553,24 @@ class PVAssistantPanel extends HTMLElement {
       return { name: this._read(id).name, values: m };
     });
     const neg = (m) => new Map([...m].map(([k, v]) => [k, -v]));
+    // A measured house consumption is only trusted in buckets where it is plausible (at least what came from the grid
+    // and the storage); missing or too small buckets (e.g. a young sensor) use the energy balance of the production side.
+    const reconcile = (measured, imp, dis, prod, feed, chg, tol) => {
+      const house = new Map(), direct = new Map();
+      let fallback = 0;
+      for (const [ts, v] of prod) {
+        const i = imp.get(ts) || 0, o = dis.get(ts) || 0, m = measured.get(ts);
+        if (m != null && m >= i + o - tol) {
+          house.set(ts, m);
+          direct.set(ts, Math.min(v, Math.max(0, m - i - o)));
+        } else {
+          house.set(ts, Math.max(0, v + i + o - (feed.get(ts) || 0) - (chg.get(ts) || 0)));
+          fallback++;
+        }
+      }
+      for (const [ts, m] of measured) if (!house.has(ts)) house.set(ts, m);
+      return { house, direct, mixed: fallback > 0 };
+    };
     const merge = (a, b, sign = 1) => { const m = new Map(a); for (const [k, v] of b) add(m, k, sign * v); return m; };
 
     // ---- power lines
@@ -592,9 +610,13 @@ class PVAssistantPanel extends HTMLElement {
       houseP = new Map();
       for (const [ts, v] of pProd) houseP.set(ts, Math.max(0, v + (impP.get(ts) || 0) + (pDis.get(ts) || 0) - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)));
     }
-    if (houseMeasuredP && impP) { // measured consumption makes the direct consumption exact
-      for (const [ts, v] of pProd) pDirect.set(ts, Math.min(v, Math.max(0, (houseMeasuredP.get(ts) || 0) - (impP.get(ts) || 0) - (pDis.get(ts) || 0))));
-      pDirectParts = [
+    let houseMixedP = false;
+    if (houseMeasuredP && impP) { // measured consumption makes the direct consumption exact (where it is plausible)
+      const r = reconcile(houseMeasuredP, impP, pDis, pProd, pFeed, pCharge, 50);
+      for (const [ts, v] of r.direct) pDirect.set(ts, v);
+      houseP = r.house;
+      houseMixedP = r.mixed;
+      if (!r.mixed) pDirectParts = [
         { name: this._t("house"), values: houseMeasuredP },
         { name: `− ${this._t("gridImp")}`, values: neg(impP) },
         { name: `− ${this._t("sout")}`, values: neg(pDis) },
@@ -608,7 +630,7 @@ class PVAssistantPanel extends HTMLElement {
         points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
       { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect), parts: pDirectParts },
       { name: this._t("gridImp"), short: this._t("gridImpShort"), color: "--pva-grid", points: impP ? toPts(impP) : [] },
-      { name: houseMeasuredP ? this._t("house") : this._t("houseDerived"), short: this._t("houseShort"), color: "--pva-house", points: houseP ? toPts(houseP) : [] },
+      { name: houseMeasuredP ? this._t(houseMixedP ? "houseMixed" : "house") : this._t("houseDerived"), short: this._t("houseShort"), color: "--pva-house", points: houseP ? toPts(houseP) : [] },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
     const fMon = fm(new Date(rd.t0).getFullYear() === new Date(rd.t1 - 1).getFullYear() ? { month: "short" } : { month: "short", year: "2-digit" });
@@ -679,9 +701,13 @@ class PVAssistantPanel extends HTMLElement {
       houseE = new Map();
       for (const [ts, v] of eProd) houseE.set(ts, Math.max(0, v + (impE.get(ts) || 0) + (eSout.get(ts) || 0) - (eFeed.get(ts) || 0) - (eSin.get(ts) || 0)));
     }
+    let houseMixedE = false;
     if (houseMeasuredE && impE) {
-      for (const [ts, v] of eProd) eDirect.set(ts, Math.min(v, Math.max(0, (houseMeasuredE.get(ts) || 0) - (impE.get(ts) || 0) - (eSout.get(ts) || 0))));
-      eDirectParts = [
+      const r = reconcile(houseMeasuredE, impE, eSout, eProd, eFeed, eSin, 0.05);
+      for (const [ts, v] of r.direct) eDirect.set(ts, v);
+      houseE = r.house;
+      houseMixedE = r.mixed;
+      if (!r.mixed) eDirectParts = [
         { name: this._t("house"), values: houseMeasuredE },
         { name: `− ${this._t("gridImp")}`, values: neg(impE) },
         { name: `− ${this._t("sout")}`, values: neg(eSout) },
@@ -695,7 +721,7 @@ class PVAssistantPanel extends HTMLElement {
       { name: this._t("direct"), color: "--pva-direct", values: eDirect, parts: eDirectParts },
     ];
     if (impE) bars.push({ name: this._t("gridImp"), color: "--pva-grid", values: impE, parts: each(G.impE, er("change"), "change") });
-    if (houseE) bars.push({ name: houseMeasuredE ? this._t("house") : this._t("houseDerived"), color: "--pva-house", values: houseE, parts: houseMeasuredE ? each(G.houseE, er("change"), "change") : undefined });
+    if (houseE) bars.push({ name: houseMeasuredE ? this._t(houseMixedE ? "houseMixed" : "house") : this._t("houseDerived"), color: "--pva-house", values: houseE, parts: houseMeasuredE && !houseMixedE ? each(G.houseE, er("change"), "change") : undefined });
     if (rd.long) {
       // one group of bars per month (daily bars would be far too dense for a year)
       const ymFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "numeric", timeZone: tz });
