@@ -26,6 +26,8 @@ const T = {
     stoSocMax: "Tageshöchstwert", stoSocAvg: "Tagesdurchschnitt", stoSocMin: "Tagestiefstwert", stoPeakPower: "Spitzenleistung (Tagesspitzen)", stoPeakOut: "Aus Speicher (Spitze)", stoPeakIn: "In Speicher (Spitze)",
     pwrTipNote: "Prozentwerte im Tooltip: bei einem String der Anteil an seinem eingetragenen Peak, bei der Gesamtanlage der Anteil an der Summe der Peaks, darunter der Anteil jedes Strings an der Gesamtleistung (zusammen 100 %).",
     pwrChart: "Leistung je String",
+    powerChartMean: "Leistung (Tagesmittel)", effChartPeak: "Effektive Leistung (%) – Tagesspitze",
+    effNoteLong: "Tagesspitze = höchstes Stundenmittel des Tages ÷ eingetragener Peak × 100 (Tagesmittel würden die Nacht mitzählen und nie in die Nähe des Peaks kommen). Die Gesamtanlage ist die höchste Summe aller Strings in einer Stunde, nur für Strings mit eingetragenem Peak.",
     storageTab: "Speicher", stoPower: "Speicherleistung", stoEnergy: "Geladen und entladen", stoMaxCharge: "Max. Ladeleistung", stoMaxDis: "Max. Entladeleistung", stoAvgSoc: "Ø Ladestand", stoNow: "Ladestand jetzt", stoNoCap: "Trage die Speicherkapazität im Tab „Einstellungen“ unter „Anlage“ ein, dann werden die Zyklen berechnet.", stoNote: "Wirkungsgrad = entladen ÷ geladen im Zeitraum; er ist nur aussagekräftig, wenn der Ladestand am Anfang und Ende ähnlich ist (längere Zeiträume).",
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
@@ -93,6 +95,8 @@ const T = {
     stoSocMax: "Daily high", stoSocAvg: "Daily average", stoSocMin: "Daily low", stoPeakPower: "Peak power (daily peaks)", stoPeakOut: "From storage (peak)", stoPeakIn: "Into storage (peak)",
     pwrTipNote: "Percentages in the tooltip: for a string the share of its entered peak, for the plant the share of the sum of the peaks, below it the share of each string in the plant power (adds up to 100 %).",
     pwrChart: "Power per string",
+    powerChartMean: "Power (daily mean)", effChartPeak: "Effective power (%) – daily peak",
+    effNoteLong: "Daily peak = highest hourly mean of the day ÷ entered peak × 100 (daily means would include the night and never get near the peak). The whole plant is the highest sum of all strings within an hour, only for strings with an entered peak.",
     storageTab: "Storage", stoPower: "Storage power", stoEnergy: "Charged and discharged", stoMaxCharge: "Max charge power", stoMaxDis: "Max discharge power", stoAvgSoc: "Avg level", stoNow: "Level now", stoNoCap: "Enter the storage capacity in the Settings tab under \"Plant\" to get the cycles.", stoNote: "Efficiency = discharged ÷ charged in the range; it is only meaningful when the level at the start and end is similar (longer ranges).",
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
@@ -457,8 +461,8 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._range) this._range = "today";
     h.innerHTML = `<div class="filters" id="ranges"></div>
       <div class="tiles" id="tiles"></div>
-      <h3 class="ch">${esc(this._t("powerChart"))} (W)</h3><div class="chart" id="pchart"></div>
-      <h3 class="ch">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
+      <h3 class="ch" id="pchead">${esc(this._t("powerChart"))} (W)</h3><div class="chart" id="pchart"></div>
+      <h3 class="ch" id="xchead">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
     for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
@@ -533,19 +537,20 @@ class PVAssistantPanel extends HTMLElement {
     const energyIds = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb, ...G.impE, ...G.houseE];
     const energyAll = energyIds.concat(energyIds.map((i) => filt[i]).filter(Boolean));
     this._root.querySelectorAll(".chart").forEach((c) => c.classList.add("loading"));
-    const [pres, eres] = await Promise.all([
+    const [pres, eres, hres] = await Promise.all([
       this._stats(powerIds, rd.pPeriod, "mean", { power: "W" }, rd),
       this._stats(energyAll, rd.long ? "month" : rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
+      rd.long ? this._stats(P.prod, "hour", "mean", { power: "W" }, rd) : null, // for the daily peaks of the effective power
     ]);
     if (token !== this._token) return; // a newer range was requested meanwhile
-    this._data = { rd, P, E, G, pres, eres, filt };
+    this._data = { rd, P, E, G, pres, eres, filt, hres };
     this._draw();
   }
 
   _draw() {
     const d = this._data;
     if (!d || !this._hist) return;
-    const { rd, P, E, G, pres, eres, filt } = d;
+    const { rd, P, E, G, pres, eres, filt, hres } = d;
     const lang = this._hass.locale?.language || this._hass.language;
     const tz = this._hass.config?.time_zone;
     const fm = (o) => new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
@@ -669,17 +674,36 @@ class PVAssistantPanel extends HTMLElement {
       empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("powerChart")} (W)`,
     });
 
+    this._root.getElementById("pchead").textContent = `${this._t(rd.long ? "powerChartMean" : "powerChart")} (W)`;
+    this._root.getElementById("xchead").textContent = this._t(rd.long ? "effChartPeak" : "effChart");
     // ---- effective power in % of the entered peak (only strings with a peak)
     const peakOf = (id) => { const v = this._cfg.settings?.strings?.[id]?.peak; return v > 0 ? v : null; };
     const peaked = P.prod.filter(peakOf);
+    // year ranges: a daily mean includes the night and never gets near the peak, so the highest hourly mean of each day is shown
+    const dkey = localKeyFn(tz);
+    const dailyMax = (m) => {
+      const best = new Map(), first = new Map();
+      for (const [ts, v] of m) {
+        const day = dkey(ts).day;
+        if (v > (best.get(day) ?? -1)) best.set(day, v);
+        if (!first.has(day) || ts < first.get(day)) first.set(day, ts);
+      }
+      return new Map([...best].map(([day, v]) => [first.get(day), v]));
+    };
+    const hourlyOf = (id) => new Map(get(hres || {}, id, "mean").map((r) => [r.start, Math.max(r.mean, 0)]));
+    const effSrc = (id) => (rd.long ? dailyMax(hourlyOf(id)) : each([id], pr, "mean", nz)[0].values);
     const effSeries = peaked.map((id, k) => {
-      const m = each([id], pr, "mean", nz)[0].values;
+      const m = effSrc(id);
       return { name: this._read(id).name, short: `${this._read(id).name.slice(0, 11)}${this._read(id).name.length > 11 ? "…" : ""}`, color: `--pva-s${(k % 7) + 1}`, id,
         points: toPts(new Map([...m].map(([ts, v]) => [ts, (v / peakOf(id)) * 100]))) };
     });
     if (peaked.length) {
       const sumPeak = peaked.reduce((a, id) => a + peakOf(id), 0), tot = new Map();
-      for (const id of peaked) for (const [ts, v] of each([id], pr, "mean", nz)[0].values) add(tot, ts, v);
+      if (rd.long) { // daily peak of the plant: highest hourly sum of the day
+        const hourlyTot = new Map();
+        for (const id of peaked) for (const [ts, v] of hourlyOf(id)) add(hourlyTot, ts, v);
+        for (const [ts, v] of dailyMax(hourlyTot)) tot.set(ts, v);
+      } else for (const id of peaked) for (const [ts, v] of each([id], pr, "mean", nz)[0].values) add(tot, ts, v);
       effSeries.push({ name: this._t("effTotal"), short: this._t("effTotal"), color: "--pva-prod", points: toPts(new Map([...tot].map(([ts, v]) => [ts, (v / sumPeak) * 100]))) });
     }
     lineChart(this._root.getElementById("xchart"), {
@@ -691,7 +715,7 @@ class PVAssistantPanel extends HTMLElement {
     if (peaked.length) {
       const n = document.createElement("p");
       n.className = "note";
-      n.textContent = this._t("effNote");
+      n.textContent = this._t(rd.long ? "effNoteLong" : "effNote");
       this._root.getElementById("xchart").append(n);
     }
 
