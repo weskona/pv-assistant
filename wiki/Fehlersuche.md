@@ -22,5 +22,9 @@ Die Schalter „negative Einspeisung“ und „negative In-/Aus-Speicher-Werte�
 ## Die Seite zeigt nach einem Update altes Verhalten
 Home Assistant neu starten und den Browser hart neu laden (Strg+F5).
 
-## Fehler melden
-Als Issue im Repository melden, mit Version, Screenshot und den betroffenen Sensoren.
+## Fehler melden und Wünsche äußern
+Fehler und Ideen gehören in den [Issue-Tracker](https://github.com/weskona/pv-assistant/issues/new/choose). Es gibt zwei Formulare:
+- **Fehler melden:** Version von PV Assistant und Home Assistant, betroffener Tab, was du siehst und erwartest (bei falschen Zahlen die Vergleichswerte mit Zeitraum), gewählte Sensoren und Einstellungen, Screenshots, Logs.
+- **Wunsch oder Idee:** das Ziel, ein Vorschlag, wie es aussehen könnte, und welche Daten dafür nötig wären.
+
+Bitte keine Zugangsdaten oder persönlichen Daten in Screenshots und Logs.
