@@ -24,7 +24,7 @@ Das Panel erscheint danach in der Seitenleiste, gegliedert in die Tabs „Aktuel
 Die Prognose-Sensoren erscheinen im Tab „Aktuell“ als Karten (mit Summe, Wh/kWh werden umgerechnet). Im Tab „Verlauf“ zeigt der Zeitraum „Heute“ zusätzlich die Prognose für heute und wie viel davon bereits erzeugt wurde.
 
 ## Leistung je String
-Der Tab „Leistung“ zeigt für jeden Erzeugungs-Leistungssensor (String) die aktuelle Leistung als Balken im Verhältnis zur höchsten je gemessenen Leistung dieses Strings (aus den Langzeitstatistiken von Home Assistant, mindestens der aktuelle Wert).
+Der Tab „Leistung“ zeigt für jeden Erzeugungs-Leistungssensor (String) die aktuelle Leistung als Balken im Verhältnis zur höchsten je gemessenen Leistung dieses Strings (aus den Langzeitstatistiken von Home Assistant, mindestens der aktuelle Wert). Darunter zeigt ein Diagramm den Leistungsverlauf je String und der Gesamtanlage (Heute, Gestern, 7 Tage).
 
 ## Effektive Leistung der Strings
 Für Strings mit eingetragenem Peak (Tab „Einstellungen“) wird die effektive Leistung in Prozent berechnet (Leistung ÷ Peak × 100): als Diagramm im Tab „Verlauf“ (eine Linie je String plus „Gesamtanlage“ = Summe ÷ Summe der Peaks), im Tab „Leistung“ als Karte „Gesamtanlage“ und im Tooltip des Leistungsdiagramms hinter jedem String. Strings ohne eingetragenen Peak werden dabei nicht berücksichtigt.
