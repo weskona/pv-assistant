@@ -22,7 +22,7 @@ custom_components/pv_assistant/
 - Combined sensors always get an option in the config flow to invert the sign.
 - Build the config flow in steps; texts in `strings.json`, `translations/en.json` and `translations/de.json` with identical keys.
 - The project stays in beta; there is no version 1.0.
-- **The wiki is always bilingual:** every page contains an English and a German section with the same content. Change both together.
+- **The wiki is always bilingual:** every page contains an English and a German section with the same content. Change both together. The same applies to the `README.md`.
 
 ### Panel colors (like the Energy dashboard)
 | Series | Color |
@@ -66,7 +66,7 @@ custom_components/pv_assistant/
 - Kombisensoren bekommen im Config Flow immer eine Option zum Invertieren des Vorzeichens.
 - Config Flow in Schritten aufbauen; Texte in `strings.json`, `translations/en.json` und `translations/de.json` mit identischen Schlüsseln.
 - Das Projekt bleibt im Beta-Status; es gibt keine Version 1.0.
-- **Das Wiki ist immer zweisprachig:** jede Seite hat einen englischen und einen deutschen Abschnitt mit demselben Inhalt. Beide gemeinsam ändern.
+- **Das Wiki ist immer zweisprachig:** jede Seite hat einen englischen und einen deutschen Abschnitt mit demselben Inhalt. Beide gemeinsam ändern. Dasselbe gilt für die `README.md`.
 
 ### Panel-Farben (wie im Energy-Dashboard)
 | Reihe | Farbe |

@@ -1,57 +1,79 @@
 # PV Assistant
 
-Ausführliche Dokumentation auf Englisch und Deutsch / Full documentation in English and German: [Wiki](https://github.com/weskona/pv-assistant/wiki) (Quelltexte im Ordner [`wiki/`](wiki)).
+[English](#english) · [Deutsch](#deutsch)
 
-Home-Assistant-Integration mit eigenem Sidebar-Panel für PV-Energiefluss.
+Full documentation / Ausführliche Dokumentation: **[Wiki](https://github.com/weskona/pv-assistant/wiki)** (English and German, sources in [`wiki/`](wiki)). Bugs and ideas / Fehler und Wünsche: **[Issue tracker](https://github.com/weskona/pv-assistant/issues/new/choose)**.
 
-> **Beta:** Die Integration befindet sich im Beta-Status. Funktionen und Einstellungen können sich noch ändern, und es kann Fehler geben. Alle Releases sind als Vorabversion (Pre-release) markiert und tragen das Suffix `-beta` (z. B. `v0.6.4-beta`); in HACS dafür „Beta-Versionen anzeigen“ aktivieren oder die Version beim Herunterladen von Hand wählen. Fehler und Wünsche bitte im [Issue-Tracker](https://github.com/weskona/pv-assistant/issues/new/choose) melden (Formulare für Fehler und Ideen).
+## English
 
-Konfiguration in vier Schritten: (1) Energiesensoren (kWh), (2) Leistungssensoren (W) – beide mit gleichem Aufbau –, (3) optional Prognose-Energiesensoren (heute, morgen, Rest heute; je beliebig viele, z. B. von Forecast.Solar oder Solcast), (4) optional Netzbezug (Energie/Leistung), Hausverbrauch (Energie/Leistung), Batterie-Ladestand, Einstrahlung sowie Strompreis und Einspeisevergütung (Sensor oder input_number). Je: Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein/raus oder kombiniert mit umschaltbarem Vorzeichen (mehrere).
+Home Assistant integration with its own sidebar panel for the PV energy flow: production, feed-in, grid import, storage, house consumption and forecast, with analyses per string.
 
-## Bekannte Einschränkungen
-- Direkt verbrauchte PV-Energie: lädt der Speicher auch aus dem Netz, fällt der Wert etwas zu niedrig aus (kein Netzbezug-Sensor). Bei Stundenwerten (7/30 Tage) mittelt Home Assistant vorzeichenbehaftete Leistungssensoren, dort ist der Wert eine Näherung.
-- Farben „Gelb auf hellem Hintergrund“ und „Rosa/Türkis bei Rot-Grün-Schwäche“ sind schwach unterscheidbar (Legende, Tooltip und Tabelle als Ausgleich).
+> **Beta:** The integration is in beta. Features and settings may still change and there may be bugs. All releases are marked as pre-releases and carry the suffix `-beta` (for example `v0.6.4-beta`); in HACS enable "Show beta versions" or choose the version by hand when downloading. Please report feedback as an issue.
 
-## Installation
-1. Ordner `custom_components/pv_assistant` nach `config/custom_components/` kopieren (oder per HACS als Custom Repository).
+### Installation
+1. Add the repository in HACS as a custom repository (type **Integration**) or copy the folder `custom_components/pv_assistant` to `config/custom_components/`.
+2. Restart Home Assistant.
+3. Settings → Devices & services → Add integration → **PV Assistant**.
+4. Choose the sensors. After an update restart Home Assistant and hard-reload the browser (Ctrl+F5).
+
+### Setup in four steps
+1. **Energy sensors (kWh):** production (several), feed-in (one), optional storage in / out / combined (several, combined sensors with switchable sign, default positive = from storage).
+2. **Power sensors (W):** same layout; switches for negative feed-in and negative storage values. With differently oriented strings use one sensor per string, not a total sensor.
+3. **Forecast (optional):** energy sensors for today, tomorrow and rest of today (for example Forecast.Solar or Solcast).
+4. **Grid, consumption and prices (optional):** grid import, house consumption (including wallbox, heat pump etc.), battery level, irradiance, electricity price and feed-in tariff (sensor or `input_number`).
+
+### The panel
+| Tab | Content |
+|---|---|
+| Now | current values and sums of all sensors and the forecast |
+| Power | power per string against its peak, whole plant, power chart per string |
+| Analysis | string comparison (kWh/kWp, corrected for orientation and tilt, with suggestions), heat map, best and weakest days, power plateaus, performance ratio |
+| History | power, effective power and energy charts for today up to 12 months, key figures such as autarky, self-consumption, savings, CO₂ |
+| Storage | level, storage power, charged and discharged energy, efficiency, cycles, usable capacity |
+| Forecast | forecast vs actual per day or month, deviation, hit rate |
+| Yearly overview | monthly production against the average, year forecast, benefit, payback, trend |
+| Settings | display names, peak, orientation and tilt per string, plant values (capacity, minimum level, prices, cost, CO₂ factor, location) |
+
+The data comes from the long-term statistics of Home Assistant (recorder); the sensors therefore need a `state_class`. The integration also creates filtered copies of the energy sensors (`… filtered`, ignore short drops, usable as `utility_meter` source) and a binary sensor `binary_sensor.pv_assistant_string_fault` ("String fault") that reports a string delivering almost nothing while the others produce. Settings are stored in `.storage/pv_assistant.settings` and apply to all devices; only administrators can save.
+
+### Known limitations
+- Directly used PV: if the storage also charges from the grid the value is a little too low (without a grid import sensor). For hourly values (7/30 days) Home Assistant averages signed power sensors, so there the value is an approximation.
+- The colors "yellow on a light background" and "pink/turquoise for red-green color weakness" are hard to tell apart (legend, tooltip and table as compensation).
+- The thresholds of hints and of the string fault sensor are heuristics, not a diagnosis.
+
+## Deutsch
+
+Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: Erzeugung, Einspeisung, Netzbezug, Speicher, Hausverbrauch und Prognose, mit Auswertungen pro String.
+
+> **Beta:** Die Integration befindet sich im Beta-Status. Funktionen und Einstellungen können sich noch ändern, und es kann Fehler geben. Alle Releases sind als Vorabversion (Pre-release) markiert und tragen das Suffix `-beta` (z. B. `v0.6.4-beta`); in HACS dafür „Beta-Versionen anzeigen“ aktivieren oder die Version beim Herunterladen von Hand wählen. Rückmeldungen bitte als Issue melden.
+
+### Installation
+1. Das Repository in HACS als benutzerdefiniertes Repository (Typ **Integration**) hinzufügen oder den Ordner `custom_components/pv_assistant` nach `config/custom_components/` kopieren.
 2. Home Assistant neu starten.
 3. Einstellungen → Geräte & Dienste → Integration hinzufügen → **PV Assistant**.
-4. Sensoren auswählen.
+4. Sensoren auswählen. Nach einem Update Home Assistant neu starten und den Browser hart neu laden (Strg+F5).
 
-Das Panel erscheint danach in der Seitenleiste, gegliedert in die Tabs „Aktuell“, „Leistung“, „Analyse“, „Verlauf“, „Speicher“, „Prognose“, „Jahresübersicht“ und „Einstellungen“ (der zuletzt gewählte Tab wird im Browser gemerkt), und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
+### Einrichtung in vier Schritten
+1. **Energiesensoren (kWh):** Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein / raus / kombiniert (mehrere, Kombisensoren mit umschaltbarem Vorzeichen, Standard positiv = aus Speicher).
+2. **Leistungssensoren (W):** gleicher Aufbau; Schalter für negative Einspeisung und negative Speicherwerte. Bei verschieden ausgerichteten Strings je String einen Sensor verwenden, keinen Gesamtsensor.
+3. **Prognose (optional):** Energiesensoren für heute, morgen und Rest heute (z. B. Forecast.Solar oder Solcast).
+4. **Netz, Verbrauch und Preise (optional):** Netzbezug, Hausverbrauch (inkl. Wallbox, Wärmepumpe usw.), Batterie-Ladestand, Einstrahlung, Strompreis und Einspeisevergütung (Sensor oder `input_number`).
 
-## Prognose
-Die Prognose-Sensoren erscheinen im Tab „Aktuell“ als Karten (mit Summe, Wh/kWh werden umgerechnet). Im Tab „Verlauf“ zeigt der Zeitraum „Heute“ zusätzlich die Prognose für heute und wie viel davon bereits erzeugt wurde.
+### Das Panel
+| Tab | Inhalt |
+|---|---|
+| Aktuell | aktuelle Werte und Summen aller Sensoren und der Prognose |
+| Leistung | Leistung je String im Verhältnis zum Peak, Gesamtanlage, Leistungsdiagramm je String |
+| Analyse | String-Vergleich (kWh/kWp, bereinigt um Ausrichtung und Neigung, mit Vorschlägen), Heatmap, beste und schwächste Tage, Leistungs-Plateaus, Performance Ratio |
+| Verlauf | Leistungs-, Effektivleistungs- und Energiediagramme von heute bis 12 Monate, Kennzahlen wie Autarkie, Eigenverbrauch, Ersparnis, CO₂ |
+| Speicher | Ladestand, Speicherleistung, geladene und entladene Energie, Wirkungsgrad, Zyklen, nutzbare Kapazität |
+| Prognose | Prognose gegen Ist je Tag oder Monat, Abweichung, Trefferquote |
+| Jahresübersicht | Monatserzeugung gegen den Schnitt, Jahresprognose, Nutzen, Amortisation, Trend |
+| Einstellungen | Anzeigenamen, Peak, Ausrichtung und Neigung je String, Anlagenwerte (Kapazität, Mindest-Ladestand, Preise, Kosten, CO₂-Faktor, Standort) |
 
-## Leistung je String
-Der Tab „Leistung“ zeigt für jeden Erzeugungs-Leistungssensor (String) die aktuelle Leistung als Balken im Verhältnis zur höchsten je gemessenen Leistung dieses Strings (aus den Langzeitstatistiken von Home Assistant, mindestens der aktuelle Wert). Darunter zeigt ein Diagramm den Leistungsverlauf je String und der Gesamtanlage (Heute, Gestern, 7 Tage).
+Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Die Integration legt außerdem bereinigte Kopien der Energiesensoren an (`… bereinigt`, ignorieren kurze Abstürze, als Quelle für `utility_meter` nutzbar) und einen Binärsensor `binary_sensor.pv_assistant_string_fault` („String-Störung“), der meldet, wenn ein String fast nichts liefert, während die anderen erzeugen. Die Einstellungen liegen in `.storage/pv_assistant.settings` und gelten für alle Geräte; nur Administratoren dürfen speichern.
 
-## Effektive Leistung der Strings
-Für Strings mit eingetragenem Peak (Tab „Einstellungen“) wird die effektive Leistung in Prozent berechnet (Leistung ÷ Peak × 100): als Diagramm im Tab „Verlauf“ (eine Linie je String plus „Gesamtanlage“ = Summe ÷ Summe der Peaks), im Tab „Leistung“ als Karte „Gesamtanlage“ und im Tooltip des Leistungsdiagramms hinter jedem String. Strings ohne eingetragenen Peak werden dabei nicht berücksichtigt.
-
-## Einstellungen im Panel
-Im Tab „Einstellungen“ (nur Administratoren dürfen speichern) kannst du für jeden Erzeugungssensor (String) einen eigenen **Anzeigenamen** vergeben, der im ganzen Panel statt des Home-Assistant-Namens erscheint (Karten, Diagramme, Tooltips). Bei Leistungssensoren lässt sich zusätzlich die **Max.-Leistung (Peak)** eintragen; sie ersetzt im Tab „Leistung“ das gemessene Maximum (mit „übernehmen“ kannst du den gemessenen Wert eintragen). Die Einstellungen werden in Home Assistant gespeichert (`.storage/pv_assistant.settings`) und gelten für alle Geräte. Leere Felder setzen auf den Standard zurück.
-
-## Verlauf und Diagramme im Panel
-Unter „Verlauf" wählst du den Zeitraum (Heute, Gestern, 7 Tage, 30 Tage, Dieses Jahr, 12 Monate; bei den Jahreszeiträumen zeigt das Leistungsdiagramm Tagesmittel und das Energiediagramm je Monat, die 12 Monate beginnen wie im Energy-Dashboard am Monatsanfang). Alle Kennzahlen eines Tabs stehen gemeinsam in einer Karte. Das Panel zeigt Summen, ein Leistungsdiagramm (Erzeugung, Einspeisung, Speicher netto) und ein Energiediagramm je Stunde bzw. Tag (Erzeugung, Einspeisung, In/Aus Speicher). Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Zusätzlich wird die direkt verbrauchte PV-Energie berechnet (Erzeugung − Einspeisung − Speicher laden, nie unter 0; als Linie, Balken, Summe und Anteil an der Erzeugung). Meldet dein Einspeise-Leistungssensor die Einspeisung als negative Werte, aktiviere im Schritt „Leistungssensoren“ die Option „Einspeisesensor liefert Einspeisung als negative Werte“; Bezug zählt dann nicht als Einspeisung. Melden deine „In Speicher“-/„Aus Speicher“-Leistungssensoren die Richtung als negative Werte (z. B. Alpha ESS „Leistung zur Batterie“), aktiviere im Schritt „Leistungssensoren“ die Option „In-/Aus-Speicher-Sensoren liefern negative Werte“; dann zählt der Betrag. Lädt der Speicher auch aus dem Netz, fällt der Direktverbrauch etwas zu niedrig aus. Per Mouseover erscheinen die Werte, bei Reihen aus mehreren Quellen zusätzlich aufgeteilt nach Sensor (z. B. die einzelnen Strings unter „Erzeugung“; beim Direktverbrauch die Bestandteile Erzeugung, Einspeisung und Speicher laden), jedes Diagramm gibt es auch als Tabelle.
-
-Hinweise zu Schritt 4: Der **Hausverbrauch** sollte den Gesamtverbrauch hinter dem Zähler enthalten (inkl. Wallbox, Wärmepumpe usw.) und denselben Umfang wie der Netzbezug haben; wird die Wallbox separat gemessen, füge ihren Sensor zusätzlich hinzu (Sensoren werden addiert). Der **Einstrahlungssensor** (W/m², Pyranometer oder Wetterstation) dient der Performance Ratio im Tab „Analyse“ und braucht die eingetragenen Peak-Leistungen der Strings.
-
-## Tabs „Speicher“ und „Prognose“
-Der Tab „Speicher“ (nur sichtbar, wenn Speichersensoren oder ein Ladestand gewählt sind) zeigt Ladestand, Speicherleistung (aus Speicher +, in Speicher −, je Gerät aufgeteilt), geladene und entladene Energie sowie Wirkungsgrad, Zyklen (mit Speicherkapazität aus den Einstellungen), maximale Lade- und Entladeleistung und den mittleren Ladestand. Die Speicher-Kennzahlen und das Ladestand-Diagramm sind aus dem Verlauf hierher gewandert.
-Der Tab „Prognose“ (sichtbar, wenn Prognose-Sensoren gewählt sind) zeigt die aktuellen Prognosen (heute, morgen, Rest heute), den bisherigen Tagesertrag, die Prognose gegen Ist je Tag sowie die Abweichung (7 Tage bis Jahr). Diese Auswertung ist aus dem Tab „Analyse“ hierher gewandert.
-
-Pro String kannst du im Tab „Einstellungen“ zusätzlich Ausrichtung (Azimut wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°) und Neigung eintragen. Die Analyse bereinigt den String-Vergleich dann um einen Richtwert für die Ausrichtung (Mitteleuropa, grobe Tabelle) und schlägt bei einem schwachen String je nach Tageszeit des Rückstands eine Ursache und Maßnahme vor (Verschattung am Vormittag oder Abend, Einbruch mittags, gleichmäßiger Rückstand). Der Standort kommt von Home Assistant; unter „Einstellungen“ → „Anlage“ lässt er sich mit Breiten- und Längengrad überschreiben. Mit dem Standort rechnet die Analyse den erwarteten Ertrag jedes Strings aus dem Sonnenstand (Einstrahlung auf die Modulfläche bei klarem Himmel über genau die verglichenen Stunden, also auch passend zur Jahreszeit) und ordnet den Rückstand dem Sonnenstand zu (Osten, Süden, Westen). Ohne Standort gilt eine grobe Jahrestabelle und die Uhrzeit.
-Die Werte sind Faustregeln, keine Diagnose.
-
-## Analyse, Auswertungen und Anlagenwerte
-Der Tab „Analyse“ (7/30/90 Tage, dieses Jahr oder 12 Monate; die Heatmap fasst längere Zeiträume wochenweise zusammen) vergleicht die Strings (kWh/kWp, Hinweis auf schwache Strings), zeigt eine Heatmap (Stunde × Tag), beste/schwächste Tage, einen Hinweis auf Leistungs-Plateaus (Wechselrichter-Begrenzung, ab 3 Tagen), die Performance Ratio (mit Einstrahlungssensor) und Prognose gegen Ist. Unter „Verlauf“ kommen Netzbezug, Hausverbrauch (gemessen oder berechnet), Autarkie, Eigenverbrauchsquote, Verschiebepotenzial, Speicher-Wirkungsgrad, Zyklen, Ersparnis, Einspeiseerlös, CO₂ und der Ladestand hinzu. Die Jahresübersicht zeigt zusätzlich Nutzen, Amortisation und den Trend der Jahressumme (wetterabhängig, nur Richtwert). Anlagenwerte (Speicherkapazität, Mindest-Ladestand des Speichers – daraus ergibt sich die nutzbare Kapazität –, Preise als Ersatz, Anlagenkosten, CO₂-Faktor) trägst du im Tab „Einstellungen“ unter „Anlage“ ein.
-Die Gesamt-Erzeugung im Tab „Analyse“ stammt aus den Energiezählern (wie im Energy-Dashboard); der String-Vergleich und die Heatmap nutzen die Leistungssensoren, weshalb sie leicht abweichen können (ab 3 % Abweichung erscheint ein Hinweis).
-Die Prognose der letzten Tage liest das Panel zusätzlich aus dem Verlauf der „Prognose heute“-Sensoren, damit der Vergleich sofort nach der Einrichtung erscheint (nur Sensoren „heute“ zählen, nicht „morgen“ oder „Rest heute“).
-Die Prognose des Tages wird täglich protokolliert (für „Prognose gegen Ist“). Der Binärsensor `binary_sensor.pv_assistant_string_fault` („String-Störung“) meldet, wenn ein String 15 Minuten fast nichts liefert, während die anderen deutlich erzeugen. Die Schwellen sind Heuristiken.
-
-## Jahresübersicht
-Eigener Bereich im Panel: Monatserzeugung des gewählten Jahres neben dem Monatsschnitt, Abweichung zum Schnitt in Prozent (grün über, rot unter dem Schnitt) sowie Jahresprognose. Das Jahr lässt sich mit den Pfeilen durchblättern, die Zahl der Jahre im Schnitt (1–5, 10 oder alle) ist einstellbar und wird im Browser gemerkt. Der Schnitt je Monat zählt nur echte, abgeschlossene Monate der letzten N Jahre bis zum aktuellsten Jahr mit Daten (unabhängig vom angezeigten Jahr, damit auch ältere Jahre mit dem aktuellen Schnitt verglichen werden) (Jahre ohne Daten für einen Monat zählen nicht als 0); die Jahresprognose ist die Summe dieser Monatsschnitte. Zusätzlich gibt es einen Jahresvergleich über alle Jahre: die Gesamterzeugung je Jahr neben dem Schnitt derselben Monate und die Abweichung der Jahressumme in Prozent (Jahre mit „*“ zählen nur Monate mit Daten, das laufende Jahr nur abgeschlossene Monate; die Quellen werden im Tooltip je Sensor aufgeteilt). Eine Kachel zeigt die Abweichung des gewählten Jahres. Grundlage sind die Erzeugungs-Energiesensoren.
-
-## Bereinigte Energiesensoren
-Zu jedem Erzeugungs-, Einspeise- und Speicher-Energiesensor (kWh) legt die Integration eine bereinigte Kopie an (`… bereinigt`). Kurze Abstürze auf 0 oder `unavailable` werden ignoriert; ein niedrigerer Wert gilt erst als echter Reset, wenn er die eingestellte Zeit (Standard 10 Minuten) besteht. Diese Sensoren als Quelle für `utility_meter` verwenden. Kombi-Speichersensoren (Netto) werden nicht gefiltert.
+### Bekannte Einschränkungen
+- Direkt verbrauchte PV-Energie: lädt der Speicher auch aus dem Netz, fällt der Wert etwas zu niedrig aus (kein Netzbezug-Sensor). Bei Stundenwerten (7/30 Tage) mittelt Home Assistant vorzeichenbehaftete Leistungssensoren, dort ist der Wert eine Näherung.
+- Farben „Gelb auf hellem Hintergrund“ und „Rosa/Türkis bei Rot-Grün-Schwäche“ sind schwach unterscheidbar (Legende, Tooltip und Tabelle als Ausgleich).
+- Die Schwellen der Hinweise und des String-Störungs-Sensors sind Heuristiken, keine Diagnose.
