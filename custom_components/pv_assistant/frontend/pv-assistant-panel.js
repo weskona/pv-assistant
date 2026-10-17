@@ -15,6 +15,9 @@ const T = {
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
+    effChart: "Effektive Leistung (%)", effTotal: "Gesamtanlage", effNote: "Effektive Leistung = Leistung ÷ eingetragener Peak × 100, nur für Strings mit eingetragenem Peak (Einstellungen).",
+    setNoPeakShort: "Peak in den Einstellungen eintragen für die %-Anzeige",
+    setNoPeak: "Trage in den Einstellungen für die Strings die Max.-Leistung (Peak) ein, dann erscheint hier die effektive Leistung in %.", ofPeakSum: "von Σ Peak", peakCount: "Strings mit Peak",
     settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
     setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
     setError: "Speichern fehlgeschlagen", setAdmin: "Nur Administratoren können Einstellungen ändern.", setPower: "Leistungssensor", setEnergy: "Energiesensor",
@@ -40,6 +43,9 @@ const T = {
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
+    effChart: "Effective power (%)", effTotal: "Whole system", effNote: "Effective power = power ÷ entered peak × 100, only for strings with an entered peak (settings).",
+    setNoPeakShort: "Enter the peak in the settings for the % display",
+    setNoPeak: "Enter the max. power (peak) of the strings in the settings and the effective power in % appears here.", ofPeakSum: "of Σ peak", peakCount: "strings with peak",
     settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
     setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
     setError: "Saving failed", setAdmin: "Only administrators can change settings.", setPower: "Power sensor", setEnergy: "Energy sensor",
@@ -105,8 +111,10 @@ class PVAssistantPanel extends HTMLElement {
           :host { --pva-prod:#ff9800; --pva-feed:#8353d1; --pva-grid:#488fc2; --pva-direct:#ffd700;
                   --pva-bout:#4db6ac; --pva-bin:#f06292;
                   --pva-avg:color-mix(in srgb, #ff9800 45%, var(--card-background-color));
-                  --pva-pos:#008300; --pva-neg:#e34948; }
-          :host([data-dark]) { --pva-pos:#008300; --pva-neg:#e66767; }
+                  --pva-pos:#008300; --pva-neg:#e34948;
+                  --pva-s1:#2a78d6; --pva-s2:#1baf7a; --pva-s3:#e87ba4; --pva-s4:#6250d6; --pva-s5:#008300; --pva-s6:#e34948; --pva-s7:#eda100; }
+          :host([data-dark]) { --pva-pos:#008300; --pva-neg:#e66767;
+                  --pva-s1:#3987e5; --pva-s2:#199e70; --pva-s3:#d55181; --pva-s4:#9085e9; --pva-s5:#008300; --pva-s6:#e66767; --pva-s7:#c98500; }
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
           .filters button { font:inherit; color:var(--primary-text-color); background:transparent;
                   border:1px solid var(--divider-color); border-radius:16px; padding:4px 14px; cursor:pointer; }
@@ -141,6 +149,7 @@ class PVAssistantPanel extends HTMLElement {
           .tip-row b { font-weight:600; color:var(--primary-text-color); }
           .tip-row span { color:var(--secondary-text-color); }
           .tip-sub { display:flex; gap:8px; padding-left:20px; font-size:.9em; color:var(--secondary-text-color); }
+          .tip-note { margin-left:4px; font-weight:600; color:var(--primary-text-color); }
           .tip-sub span:first-child { min-width:4.5em; text-align:right; }
           details.tableview { margin-top:8px; font-size:.85em; }
           details.tableview summary { cursor:pointer; color:var(--secondary-text-color); }
@@ -316,6 +325,7 @@ class PVAssistantPanel extends HTMLElement {
     h.innerHTML = `<div class="filters" id="ranges"></div>
       <div class="tiles" id="tiles"></div>
       <h3 class="ch">${esc(this._t("powerChart"))} (W)</h3><div class="chart" id="pchart"></div>
+      <h3 class="ch">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
     for (const r of ["today", "yesterday", "d7", "d30"]) {
@@ -448,7 +458,7 @@ class PVAssistantPanel extends HTMLElement {
     const hasStorageP = P.sin.length || P.sout.length || P.comb.length;
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
     const lines = [
-      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean", nz) },
+      { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean", nz).map((part, i) => ({ ...part, peak: this._cfg.settings?.strings?.[P.prod[i]]?.peak })) },
       { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(P.feed, pr, "mean", feedFn) },
       { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", colorNeg: "--pva-bin",
         legendItems: [{ name: `${this._t("sout")} (+)`, color: "--pva-bout" }, { name: `${this._t("sin")} (−)`, color: "--pva-bin" }],
@@ -463,6 +473,32 @@ class PVAssistantPanel extends HTMLElement {
       fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
       empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("powerChart")} (W)`,
     });
+
+    // ---- effective power in % of the entered peak (only strings with a peak)
+    const peakOf = (id) => { const v = this._cfg.settings?.strings?.[id]?.peak; return v > 0 ? v : null; };
+    const peaked = P.prod.filter(peakOf);
+    const effSeries = peaked.map((id, k) => {
+      const m = each([id], pr, "mean", nz)[0].values;
+      return { name: this._read(id).name, short: `${this._read(id).name.slice(0, 11)}${this._read(id).name.length > 11 ? "…" : ""}`, color: `--pva-s${(k % 7) + 1}`, id,
+        points: toPts(new Map([...m].map(([ts, v]) => [ts, (v / peakOf(id)) * 100]))) };
+    });
+    if (peaked.length) {
+      const sumPeak = peaked.reduce((a, id) => a + peakOf(id), 0), tot = new Map();
+      for (const id of peaked) for (const [ts, v] of each([id], pr, "mean", nz)[0].values) add(tot, ts, v);
+      effSeries.push({ name: this._t("effTotal"), short: this._t("effTotal"), color: "--pva-prod", points: toPts(new Map([...tot].map(([ts, v]) => [ts, (v / sumPeak) * 100]))) });
+    }
+    lineChart(this._root.getElementById("xchart"), {
+      series: effSeries, t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
+      fmtValue: (v, axis) => `${num(v, axis, 0)} %`,
+      fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
+      empty: this._t("setNoPeak"), tableLabels: timeLabels, label: this._t("effChart"),
+    });
+    if (peaked.length) {
+      const n = document.createElement("p");
+      n.className = "note";
+      n.textContent = this._t("effNote");
+      this._root.getElementById("xchart").append(n);
+    }
 
     // hint when a single-direction sensor reports negative values (misplaced signed sensor)
     const neg1 = [...P.prod, ...(P.absStorage ? [] : [...P.sin, ...P.sout])].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
@@ -749,7 +785,26 @@ class PVAssistantPanel extends HTMLElement {
         <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct.toFixed(1)}%"></i></div>
         <div class="pw-sub">${sub}</div></div>`;
     }).join("");
-    const html = `<div class="grid">${cards}</div><p class="note">${esc(this._t("pwrNote"))}</p>`;
+    // whole plant: always shown; the percentage only counts strings with an entered peak
+    const withPeak = ids.filter((id) => this._cfg.settings?.strings?.[id]?.peak > 0);
+    const nowW = (id) => { const b = this._read(id).base; return isNaN(b) ? 0 : Math.max(b, 0); };
+    const allCur = ids.reduce((a, id) => a + nowW(id), 0);
+    let total;
+    if (withPeak.length) {
+      const sumPeak = withPeak.reduce((a, id) => a + this._cfg.settings.strings[id].peak, 0);
+      const sumCur = withPeak.reduce((a, id) => a + nowW(id), 0);
+      const pct = Math.min(100, (sumCur / sumPeak) * 100);
+      total = `<div class="card"><h3><span>${esc(this._t("effTotal"))}</span><small>${withPeak.length}/${ids.length} ${esc(this._t("peakCount"))}</small></h3>
+        <div class="pw-val">${esc(this._fmt(allCur))} W</div>
+        <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct.toFixed(1)}%"></i></div>
+        <div class="pw-sub"><span>${esc(this._t("ofPeakSum"))} ${esc(this._fmt(sumPeak))} W</span><span>${esc(String(Math.round(pct)))} %</span></div></div>`;
+    } else {
+      total = `<div class="card"><h3><span>${esc(this._t("effTotal"))}</span></h3>
+        <div class="pw-val">${esc(this._fmt(allCur))} W</div>
+        <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i style="width:0%"></i></div>
+        <div class="pw-sub"><span class="muted">${esc(this._t("setNoPeakShort"))}</span></div></div>`;
+    }
+    const html = `<div class="grid">${total}${cards}</div><p class="note">${esc(this._t("pwrNote"))}</p>`;
     if (html !== this._lastPwr) { this._lastPwr = html; box.innerHTML = html; }
   }
 

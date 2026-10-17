@@ -62,6 +62,7 @@ function fillTip(tip, title, rows, fmt) {
     for (const p of r.parts || []) {
       const sub = html("div", "tip-sub");
       sub.append(html("span", "", fmt(p.value)), html("span", "", p.name));
+      if (p.note) sub.append(html("b", "tip-note", p.note));
       tip.append(sub);
     }
   }
@@ -71,7 +72,10 @@ function fillTip(tip, title, rows, fmt) {
 function partsAt(s, key) {
   if (!s.parts || s.parts.length < 2) return undefined;
   const out = s.parts
-    .map((p) => ({ name: p.name, value: p.values instanceof Map ? p.values.get(key) : p.values[key] }))
+    .map((p) => {
+      const value = p.values instanceof Map ? p.values.get(key) : p.values[key];
+      return { name: p.name, value, note: p.peak > 0 && value != null ? `${Math.round((value / p.peak) * 100)} %` : undefined };
+    })
     .filter((p) => p.value != null && p.value !== 0 && !Number.isNaN(p.value));
   return out.length ? out : undefined;
 }
@@ -166,6 +170,8 @@ export function lineChart(container, opts) {
   if (labelW) {
     const ends = live.map((s) => ({ s, y: y(s.points.at(-1)[1]) })).sort((a, b) => a.y - b.y);
     for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+    const over = ends.at(-1).y - (M.t + ph + 8); // keep the labels inside the chart area
+    if (over > 0) ends.forEach((e) => { e.y -= over; });
     for (const e of ends) svg.append(el("text", { x: M.l + pw + 6, y: e.y + 4, class: "endlabel" }, e.s.short || e.s.name));
   }
   const hair = el("line", { y1: M.t, y2: M.t + ph, class: "hair", visibility: "hidden" });
