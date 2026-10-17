@@ -22,6 +22,8 @@ const T = {
     yearTotal: "Gesamterzeugung je Jahr (kWh)", yearDev: "Abweichung der Jahressumme zum Schnitt (%)", avgSame: "Ø (gleiche Monate)", devTile: "Abweichung",
     yearStar: "* nur Monate mit Daten (laufendes Jahr: abgeschlossene Monate); verglichen wird mit denselben Monaten im Schnitt.",
     gridImp: "Netzbezug", gridImpShort: "Netz", house: "Hausverbrauch", houseDerived: "Hausverbrauch (berechnet)", houseShort: "Haus",
+    forecastTab: "Prognose", fcSoFar: "Bisher erzeugt (heute)", fcRangeDays: "Tage",
+    storageTab: "Speicher", stoPower: "Speicherleistung", stoEnergy: "Geladen und entladen", stoMaxCharge: "Max. Ladeleistung", stoMaxDis: "Max. Entladeleistung", stoAvgSoc: "Ø Ladestand", stoNow: "Ladestand jetzt", stoNoCap: "Trage die Speicherkapazität im Tab „Einstellungen“ unter „Anlage“ ein, dann werden die Zyklen berechnet.", stoNote: "Wirkungsgrad = entladen ÷ geladen im Zeitraum; er ist nur aussagekräftig, wenn der Ladestand am Anfang und Ende ähnlich ist (längere Zeiträume).",
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
     socRange: "Ladestand min–max", pr: "Performance Ratio",
@@ -71,6 +73,8 @@ const T = {
     yearTotal: "Total production per year (kWh)", yearDev: "Deviation of the yearly total from the average (%)", avgSame: "Avg. (same months)", devTile: "Deviation",
     yearStar: "* only months with data (current year: completed months); compared with the same months of the average.",
     gridImp: "Grid import", gridImpShort: "Grid", house: "House consumption", houseDerived: "House consumption (calculated)", houseShort: "House",
+    forecastTab: "Forecast", fcSoFar: "Produced so far (today)", fcRangeDays: "days",
+    storageTab: "Storage", stoPower: "Storage power", stoEnergy: "Charged and discharged", stoMaxCharge: "Max charge power", stoMaxDis: "Max discharge power", stoAvgSoc: "Avg level", stoNow: "Level now", stoNoCap: "Enter the storage capacity in the Settings tab under \"Plant\" to get the cycles.", stoNote: "Efficiency = discharged ÷ charged in the range; it is only meaningful when the level at the start and end is similar (longer ranges).",
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
     socRange: "Level min–max", pr: "Performance ratio",
@@ -262,7 +266,7 @@ class PVAssistantPanel extends HTMLElement {
         </style>
         <header><span id="menu"></span><span id="title"></span></header>
         <nav id="tabs" role="tablist"></nav>
-        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="ana" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
+        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="ana" role="tabpanel"></div><div id="sto" role="tabpanel"></div><div id="fcs" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
       const menu = document.createElement("ha-menu-button");
       this._root.getElementById("menu").appendChild(menu);
       this._menu = menu;
@@ -273,10 +277,10 @@ class PVAssistantPanel extends HTMLElement {
       if (w === this._lastW) return;
       this._lastW = w;
       cancelAnimationFrame(this._raf);
-      this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); if (this._tab === "analysis") this._drawAnalysis(); });
+      this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); if (this._tab === "analysis") this._drawAnalysis(); if (this._tab === "storage") this._drawStorage(); if (this._tab === "forecast") this._drawForecast(); });
     });
     this._ro.observe(this);
-    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); this._loadPowerMax(); }, 5 * 60 * 1000);
+    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); if (this._tab === "storage") this._loadStorage(); if (this._tab === "forecast") this._loadForecast(); this._loadPowerMax(); }, 5 * 60 * 1000);
     this._load();
   }
 
@@ -297,6 +301,8 @@ class PVAssistantPanel extends HTMLElement {
     this._buildYears();
     this._buildSettings();
     this._buildAnalysis();
+    this._buildStorage();
+    this._buildForecast();
     this._buildTabs();
     this._render();
     this._loadHistory();
@@ -406,8 +412,7 @@ class PVAssistantPanel extends HTMLElement {
     h.innerHTML = `<div class="filters" id="ranges"></div>
       <div class="tiles" id="tiles"></div>
       <h3 class="ch">${esc(this._t("powerChart"))} (W)</h3><div class="chart" id="pchart"></div>
-      <h3 class="ch">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>${this._keys().G.soc.length ? `
-      <h3 class="ch">${esc(this._t("socChart"))}</h3><div class="chart" id="schart"></div>` : ""}
+      <h3 class="ch">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
     for (const r of ["today", "yesterday", "d7", "d30"]) {
@@ -424,10 +429,10 @@ class PVAssistantPanel extends HTMLElement {
     }
   }
 
-  _rangeDef() {
+  _rangeDef(range) {
     const day = new Date(); day.setHours(0, 0, 0, 0);
     const at = (back) => { const d = new Date(day); d.setDate(d.getDate() - back); return d; };
-    const r = this._range;
+    const r = range || this._range;
     const start = r === "yesterday" ? at(1) : r === "d7" ? at(6) : r === "d30" ? at(29) : at(0);
     const days = r === "d7" ? 7 : r === "d30" ? 30 : 1;
     const t0 = start.getTime();
@@ -602,17 +607,6 @@ class PVAssistantPanel extends HTMLElement {
       this._root.getElementById("xchart").append(n);
     }
 
-    // ---- battery level
-    const socBox = this._root.getElementById("schart");
-    if (socBox && G.soc.length) {
-      lineChart(socBox, {
-        series: [{ name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: toPts(new Map(pr(G.soc[0]).map((r) => [r.start, r.mean]))) }],
-        t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
-        fmtValue: (v, axis) => `${num(v, axis, 0)} %`, fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
-        empty: this._t("noData"), tableLabels: timeLabels, label: this._t("socChart"),
-      });
-    }
-
     // hint when a single-direction sensor reports negative values (misplaced signed sensor)
     const neg1 = [...P.prod, ...(P.absStorage ? [] : [...P.sin, ...P.sout])].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
     if (neg1.length) {
@@ -677,13 +671,6 @@ class PVAssistantPanel extends HTMLElement {
       `<div class="tile"><b>${esc(num(tot(b.values)))} kWh</b><span>${esc(b.name)}</span></div>`).join("");
     const prodTot = tot(eProd);
     const share = prodTot > 0 ? `<div class="tile"><b>${esc(num(tot(eDirect) / prodTot * 100, false, 0))} %</b><span>${esc(this._t("directShare"))}</span></div>` : "";
-    let fcTiles = "";
-    const fcToday = list(this._cfg.forecast_today_energy_sensors).map((id) => this._read(id).base).filter((v) => !isNaN(v));
-    if (this._range === "today" && fcToday.length) {
-      const fcSum = fcToday.reduce((a, v) => a + v, 0);
-      fcTiles = `<div class="tile"><b>${esc(num(fcSum, false, 1))} kWh</b><span>${esc(this._t("fcToday"))}</span></div>`;
-      if (fcSum > 0 && prodTot > 0) fcTiles += `<div class="tile"><b>${esc(num(prodTot / fcSum * 100, false, 0))} %</b><span>${esc(this._t("fcReached"))}</span></div>`;
-    }
     // derived key figures of the range
     const kwh = (m) => (m ? tot(m) : null);
     const T = { prod: prodTot, feed: tot(eFeed), sin: tot(eSin), sout: tot(eSout), imp: kwh(impE), house: kwh(houseE) };
@@ -695,18 +682,270 @@ class PVAssistantPanel extends HTMLElement {
     if (T.house > 0 && T.imp != null) more.push([`${num((1 - Math.min(T.imp, T.house) / T.house) * 100, false, 0)} %`, this._t("autarky")]);
     if (T.prod > 0) more.push([`${num(((T.prod - Math.min(T.feed, T.prod)) / T.prod) * 100, false, 0)} %`, this._t("selfShare")]);
     if (T.imp != null && T.feed > 0) more.push([`${num(Math.min(T.imp, T.feed))} kWh`, this._t("shift")]);
-    if (T.sin > 0 && T.sout > 0) more.push([`${num((T.sout / T.sin) * 100, false, 0)} %`, this._t("storEff")]);
-    if (gen.storage_capacity_kwh > 0 && T.sin > 0) more.push([num(T.sin / gen.storage_capacity_kwh, false, 1), this._t("cycles")]);
     if (priceImp && T.prod > 0) more.push([`${num((T.prod - Math.min(T.feed, T.prod)) * priceImp, false, 2)} €`, this._t("saving")]);
     if (priceFeed && T.feed > 0) more.push([`${num(T.feed * priceFeed, false, 2)} €`, this._t("revenue")]);
     if (T.prod > 0) more.push([`${num((T.prod * (gen.co2_g_per_kwh || 380)) / 1000, false, 1)} kg`, this._t("co2")]);
-    if (socBox && G.soc.length) {
-      const vals = pr(G.soc[0]).map((r) => r.mean).filter((v) => v != null);
-      if (vals.length) more.push([`${num(Math.min(...vals), false, 0)}–${num(Math.max(...vals), false, 0)} %`, this._t("socRange")]);
-    }
     const moreTiles = more.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-    this._root.getElementById("tiles").innerHTML = tiles + share + moreTiles + fcTiles;
+    this._root.getElementById("tiles").innerHTML = tiles + share + moreTiles;
     this._root.querySelectorAll(".chart").forEach((x) => x.classList.remove("loading"));
+  }
+
+  // ---------------------------------------------------------------- storage tab
+
+  _buildStorage() {
+    const { P, E, G } = this._keys();
+    const has = (x) => x.sin.length || x.sout.length || x.comb.length;
+    this._storageOn = !!(has(P) || has(E) || G.soc.length);
+    const box = this._root.getElementById("sto");
+    if (!this._storageOn) { box.replaceChildren(); return; }
+    if (!this._srange) this._srange = "today";
+    box.innerHTML = `<div class="filters" id="sranges"></div><div class="tiles" id="stiles"></div>${G.soc.length ? `
+      <h3 class="ch">${esc(this._t("socChart"))}</h3><div class="chart" id="sosoc"></div>` : ""}${has(P) ? `
+      <h3 class="ch">${esc(this._t("stoPower"))} (W)</h3><div class="chart" id="sopow"></div>` : ""}${has(E) ? `
+      <h3 class="ch">${esc(this._t("stoEnergy"))} (kWh)</h3><div class="chart" id="soen"></div>` : ""}
+      <p class="note" id="sonote"></p>`;
+    const ranges = box.querySelector("#sranges");
+    for (const r of ["today", "yesterday", "d7", "d30"]) {
+      const b = document.createElement("button");
+      b.textContent = this._t(r);
+      b.dataset.range = r;
+      b.setAttribute("aria-pressed", String(r === this._srange));
+      b.addEventListener("click", () => {
+        this._srange = r;
+        ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
+        this._loadStorage();
+      });
+      ranges.append(b);
+    }
+  }
+
+  async _loadStorage() {
+    if (!this._storageOn || !this._hass || !this._root.getElementById("sranges")) return;
+    const token = (this._stoken = (this._stoken || 0) + 1);
+    const rd = this._rangeDef(this._srange);
+    const { P, E, G } = this._keys();
+    const filt = this._cfg.filtered || {};
+    const energyIds = [...E.sin, ...E.sout, ...E.comb];
+    const energyAll = energyIds.concat(energyIds.map((i) => filt[i]).filter(Boolean));
+    this._root.querySelectorAll("#sto .chart").forEach((c) => c.classList.add("loading"));
+    const [pres, eres] = await Promise.all([
+      this._stats([...P.sin, ...P.sout, ...P.comb, ...G.soc], rd.pPeriod, "mean", { power: "W" }, rd),
+      this._stats(energyAll, rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
+    ]);
+    if (token !== this._stoken) return;
+    this._sdata = { rd, pres, eres, filt };
+    this._drawStorage();
+  }
+
+  _drawStorage() {
+    const d = this._sdata;
+    if (!d || !this._storageOn || !this._root.getElementById("sranges")) return;
+    const { rd, pres, eres, filt } = d;
+    const { P, E, G } = this._keys();
+    const root = this._root;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const fm = (o) => new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
+    const fDT = fm({ day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    const fD = fm({ weekday: "short", day: "numeric", month: "numeric" });
+    const fH = fm({ hour: "2-digit", minute: "2-digit" });
+    const fDM = fm({ day: "numeric", month: "numeric" });
+    const num = (v, dec = 2) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const get = (res, id, field) => (res[id] || []).filter((r) => r[field] != null);
+    const pr = (id) => get(pres, id, "mean");
+    const pickE = (id) => { const f = filt[id]; return f && get(eres, f, "change").length ? get(eres, f, "change") : get(eres, id, "change"); };
+    const add = (m, ts, v) => m.set(ts, (m.get(ts) || 0) + v);
+    const each = (ids, rows, field, fn) => ids.map((id) => {
+      const m = new Map();
+      for (const r of rows(id)) add(m, r.start, fn(r[field]));
+      return { name: this._read(id).name, values: m };
+    });
+    const total = (parts) => { const m = new Map(); for (const x of parts) for (const [k, v] of x.values) add(m, k, v); return m; };
+    const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
+    const sum = (m) => [...m.values()].reduce((a, v) => a + v, 0);
+    const timeLabels = { summary: this._t("table"), time: this._t("time") };
+    const tickFmt = rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
+
+    // sign convention of the combined sensors: positive = from storage unless inverted
+    const nz = (v) => Math.max(v, 0);
+    const ns = P.absStorage ? (v) => Math.abs(v) : nz;
+    const w = (inv) => (v) => (inv ? -v : v);
+    const outP = [...each(P.sout, pr, "mean", ns), ...each(P.comb, pr, "mean", (v) => nz(w(P.inv)(v)))];
+    const inP = [...each(P.sin, pr, "mean", ns), ...each(P.comb, pr, "mean", (v) => nz(-w(P.inv)(v)))];
+    const netP = new Map();
+    for (const [ts, v] of total(outP)) add(netP, ts, v);
+    for (const [ts, v] of total(inP)) add(netP, ts, -v);
+    const netParts = [...each(P.sout, pr, "mean", ns), ...each(P.sin, pr, "mean", (v) => -ns(v)), ...each(P.comb, pr, "mean", w(P.inv))];
+
+    // level
+    const socRows = G.soc.length ? pr(G.soc[0]) : [];
+    const soc = socRows.map((r) => r.mean);
+    const socBox = root.getElementById("sosoc");
+    if (socBox) lineChart(socBox, {
+      series: [{ name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: toPts(new Map(socRows.map((r) => [r.start, r.mean]))) }],
+      t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
+      fmtValue: (v, axis) => `${num(v, axis ? 1 : 0)} %`, fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
+      empty: this._t("noData"), tableLabels: timeLabels, label: this._t("socChart"),
+    });
+    const powBox = root.getElementById("sopow");
+    if (powBox) lineChart(powBox, {
+      series: [{ name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", colorNeg: "--pva-bin",
+        legendItems: [{ name: `${this._t("sout")} (+)`, color: "--pva-bout" }, { name: `${this._t("sin")} (−)`, color: "--pva-bin" }],
+        points: toPts(netP), parts: netParts }],
+      t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
+      fmtValue: (v, axis) => `${num(v, axis ? 1 : 0)}${axis ? "" : " W"}`, fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
+      empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("stoPower")} (W)`,
+    });
+
+    // energy per hour / day
+    const flip = (inv) => (v) => (inv ? -v : v);
+    const outE = [...each(E.sout, pickE, "change", (v) => v), ...each(E.comb, pickE, "change", (v) => nz(flip(E.inv)(v)))];
+    const inE = [...each(E.sin, pickE, "change", (v) => v), ...each(E.comb, pickE, "change", (v) => nz(-flip(E.inv)(v)))];
+    const eOut = total(outE), eIn = total(inE);
+    const hourly = rd.eBucket === 3600e3;
+    const enBox = root.getElementById("soen");
+    if (enBox) barChart(enBox, {
+      series: [
+        { name: this._t("sin"), color: "--pva-bin", values: eIn, parts: inE },
+        { name: this._t("sout"), color: "--pva-bout", values: eOut, parts: outE },
+      ],
+      t0: rd.t0, t1: rd.t1, bucket: rd.eBucket, tickStep: hourly ? 3 * 3600e3 : rd.days === 7 ? 24 * 3600e3 : 5 * 24 * 3600e3,
+      fmtValue: (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`,
+      fmtTime: (t) => (hourly ? fDT.format(t) : fD.format(t)),
+      fmtTick: hourly ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t),
+      empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("stoEnergy")} (kWh)`,
+    });
+
+    // tiles
+    const tiles = [];
+    const gen = this._cfg.settings?.general || {};
+    const nowSoc = G.soc.length ? parseFloat(this._hass.states[G.soc[0]]?.state) : NaN;
+    if (!Number.isNaN(nowSoc)) tiles.push([`${num(nowSoc, 0)} %`, this._t("stoNow")]);
+    const tIn = sum(eIn), tOut = sum(eOut);
+    if (tIn > 0) tiles.push([`${num(tIn)} kWh`, this._t("sin")]);
+    if (tOut > 0) tiles.push([`${num(tOut)} kWh`, this._t("sout")]);
+    if (tIn > 0 && tOut > 0) tiles.push([`${num((tOut / tIn) * 100, 0)} %`, this._t("storEff")]);
+    if (gen.storage_capacity_kwh > 0 && tIn > 0) tiles.push([num(tIn / gen.storage_capacity_kwh, 1), this._t("cycles")]);
+    const maxIn = Math.max(0, ...total(inP).values()), maxOut = Math.max(0, ...total(outP).values());
+    if (maxIn > 0) tiles.push([`${num(maxIn, 0)} W`, this._t("stoMaxCharge")]);
+    if (maxOut > 0) tiles.push([`${num(maxOut, 0)} W`, this._t("stoMaxDis")]);
+    const vals = soc.filter((v) => v != null);
+    if (vals.length) {
+      tiles.push([`${num(Math.min(...vals), 0)}–${num(Math.max(...vals), 0)} %`, this._t("socRange")]);
+      tiles.push([`${num(vals.reduce((a, v) => a + v, 0) / vals.length, 0)} %`, this._t("stoAvgSoc")]);
+    }
+    root.getElementById("stiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+    const note = root.getElementById("sonote");
+    note.textContent = [tIn > 0 && tOut > 0 ? this._t("stoNote") : "", !(gen.storage_capacity_kwh > 0) && tIn > 0 ? this._t("stoNoCap") : ""].filter(Boolean).join(" ");
+    root.querySelectorAll("#sto .chart").forEach((x) => x.classList.remove("loading"));
+  }
+
+  // ---------------------------------------------------------------- forecast tab
+
+  _buildForecast() {
+    const c = this._cfg || {};
+    this._forecastOn = !!(list(c.forecast_today_energy_sensors).length || list(c.forecast_tomorrow_energy_sensors).length || list(c.forecast_remaining_energy_sensors).length);
+    const box = this._root.getElementById("fcs");
+    if (!this._forecastOn) { box.replaceChildren(); return; }
+    if (!this._fdays) this._fdays = 30;
+    box.innerHTML = `<div class="filters" id="franges"></div><div class="tiles" id="ftiles"></div>
+      <h3 class="ch">${esc(this._t("anaForecast"))}</h3><div class="chart" id="fcchart"></div>
+      <h3 class="ch">${esc(this._t("anaForecastDev"))}</h3><div class="chart" id="fcdev"></div>`;
+    const ranges = box.querySelector("#franges");
+    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], [365, "d365"]]) {
+      const b = document.createElement("button");
+      b.textContent = this._t(label);
+      b.setAttribute("aria-pressed", String(d === this._fdays));
+      b.addEventListener("click", () => {
+        this._fdays = d;
+        ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        this._loadForecast();
+      });
+      ranges.append(b);
+    }
+  }
+
+  async _loadForecast() {
+    if (!this._forecastOn || !this._hass || !this._root.getElementById("franges")) return;
+    const token = (this._ftoken = (this._ftoken || 0) + 1);
+    const { E } = this._keys();
+    const filt = this._cfg.filtered || {};
+    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (this._fdays - 1));
+    const ids = [...new Set(E.prod.concat(E.prod.map((i) => filt[i]).filter(Boolean)))];
+    this._root.querySelectorAll("#fcs .chart").forEach((c) => c.classList.add("loading"));
+    const todayIds = list(this._cfg.forecast_today_energy_sensors);
+    const [eres, cfg, hist] = await Promise.all([
+      ids.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: new Date().toISOString(),
+        statistic_ids: ids, period: "day", types: ["change"], units: { energy: "kWh" } }).catch(() => ({})) : {},
+      this._hass.callWS({ type: "pv_assistant/config" }).catch(() => null), // fresh forecast log
+      todayIds.length ? this._forecastFromHistory(todayIds) : {},
+    ]);
+    if (token !== this._ftoken) return;
+    if (cfg?.settings) this._cfg.settings = cfg.settings;
+    this._fdata = { eres, hist, start };
+    this._drawForecast();
+  }
+
+  _drawForecast() {
+    const d = this._fdata;
+    if (!d || !this._forecastOn || !this._root.getElementById("franges")) return;
+    const { eres, hist, start } = d;
+    const { E } = this._keys();
+    const filt = this._cfg.filtered || {};
+    const root = this._root;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const key = localKeyFn(this._hass.config?.time_zone);
+    const num = (v, dec = 1) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const dayLabel = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}.`;
+    const todayKey = key(Date.now()).day;
+    const actual = new Map(); // daily production from the energy counters (the filtered copy wins)
+    for (const id of E.prod) {
+      const rows = (eres[filt[id]] || []).length ? eres[filt[id]] : eres[id] || [];
+      for (const r of rows) if (r.change != null) { const day = key(r.start).day; actual.set(day, (actual.get(day) || 0) + r.change); }
+    }
+    const log = { ...(hist || {}), ...(this._cfg.settings?.forecast_log || {}) };
+    const startDay = key(start.getTime()).day;
+    const fcDays = Object.keys(log).filter((day) => day >= startDay && day !== todayKey && actual.has(day) && log[day] > 0).sort();
+
+    // current forecast sensors
+    const tiles = [];
+    const sumOf = (k) => { const v = list(this._cfg[k]).map((id) => this._read(id).base).filter((x) => !isNaN(x)); return v.length ? v.reduce((a, x) => a + x, 0) : null; };
+    const fToday = sumOf("forecast_today_energy_sensors"), fTom = sumOf("forecast_tomorrow_energy_sensors"), fRest = sumOf("forecast_remaining_energy_sensors");
+    if (fToday != null) tiles.push([`${num(fToday)} kWh`, this._t("fcToday")]);
+    if (fTom != null) tiles.push([`${num(fTom)} kWh`, this._t("fcTomorrow")]);
+    if (fRest != null) tiles.push([`${num(fRest)} kWh`, this._t("fcRemaining")]);
+    const soFar = actual.get(todayKey);
+    if (fToday != null && soFar > 0) {
+      tiles.push([`${num(soFar)} kWh`, this._t("fcSoFar")]);
+      if (fToday > 0) tiles.push([`${num((soFar / fToday) * 100, 0)} %`, this._t("fcReached")]);
+    }
+
+    const tl = { summary: this._t("table"), time: this._t("time") };
+    const fv = (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`;
+    const fcBox = root.getElementById("fcchart"), fdBox = root.getElementById("fcdev");
+    fcBox.classList.remove("loading"); fdBox.classList.remove("loading");
+    if (!fcDays.length) {
+      for (const b of [fcBox, fdBox]) b.innerHTML = `<p class="empty">${esc(this._t(list(this._cfg.forecast_today_energy_sensors).length ? "anaNoForecastYet" : "anaNoForecast"))}</p>`;
+    } else {
+      const cats = fcDays.map(dayLabel);
+      const fc = fcDays.map((day) => log[day]), ist = fcDays.map((day) => actual.get(day));
+      const dev = fcDays.map((day, i) => ((ist[i] - fc[i]) / fc[i]) * 100);
+      categoryBarChart(fcBox, {
+        categories: cats,
+        series: [{ name: this._t("fcForecast"), color: "--pva-s1", values: fc }, { name: this._t("fcActual"), color: "--pva-prod", values: ist }],
+        fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("anaForecast"),
+      });
+      categoryBarChart(fdBox, {
+        categories: cats,
+        series: [{ name: this._t("anaForecastDev"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: dev }],
+        legendItems: [{ name: this._t("aboveFc"), color: "--pva-pos" }, { name: this._t("belowFc"), color: "--pva-neg" }],
+        fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis ? 0 : 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("anaForecastDev"),
+      });
+      const mean = dev.reduce((a, v) => a + v, 0) / dev.length;
+      const hit = (dev.filter((v) => Math.abs(v) <= 20).length / dev.length) * 100;
+      tiles.push([`${mean > 0 ? "+" : ""}${num(mean)} %`, this._t("fcAvgDev")], [`${num(hit, 0)} %`, this._t("fcHit")], [String(fcDays.length), this._t("fcDays")]);
+    }
+    root.getElementById("ftiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
   }
 
   // ---------------------------------------------------------------- yearly overview
@@ -956,6 +1195,8 @@ class PVAssistantPanel extends HTMLElement {
     if (this._keys().P.prod.length) list.push(["powerTab", "pwr", "power"]);
     if (this._keys().P.prod.length) list.push(["analysisTab", "ana", "analysis"]);
     if (this._hist) list.push(["history", "hist", "history"]);
+    if (this._storageOn) list.push(["storageTab", "sto", "storage"]);
+    if (this._forecastOn) list.push(["forecastTab", "fcs", "forecast"]);
     if (this._yearsOn) list.push(["years", "yearsec", "years"]);
     if (this._keys().P.prod.length || this._keys().E.prod.length) list.push(["settingsTab", "setsec", "settings"]);
     this._tabs = list;
@@ -993,6 +1234,8 @@ class PVAssistantPanel extends HTMLElement {
     // charts measure their container; hidden tabs have no width, so draw once visible
     if (id === "analysis") this._loadAnalysis();
     if (id === "history") this._draw();
+    if (id === "storage") this._loadStorage();
+    if (id === "forecast") this._loadForecast();
     if (id === "years") this._drawYears();
   }
 
@@ -1170,7 +1413,7 @@ class PVAssistantPanel extends HTMLElement {
         this._cfg.settings = res;
         status.textContent = this._t("setSaved");
         this._lastPwr = null; this._last = null;
-        this._render(); this._renderPower(); this._draw(); this._drawYears();
+        this._render(); this._renderPower(); this._draw(); this._drawYears(); this._drawStorage(); this._drawForecast();
       } catch (err) {
         status.textContent = `${this._t("setError")}: ${err?.message || err}`;
       }
@@ -1189,9 +1432,7 @@ class PVAssistantPanel extends HTMLElement {
     box.innerHTML = `<div class="filters" id="aranges"></div><ul class="hints" id="ahints"></ul><div class="tiles" id="atiles"></div>
       <h3 class="ch">${esc(this._t("anaStrings"))}</h3><div class="chart" id="astrings"></div>
       <h3 class="ch" id="aheath">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
-      <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>
-      <h3 class="ch">${esc(this._t("anaForecast"))}</h3><div class="chart" id="afc"></div>
-      <h3 class="ch">${esc(this._t("anaForecastDev"))}</h3><div class="chart" id="afd"></div>`;
+      <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>`;
     const ranges = box.querySelector("#aranges");
     for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], [365, "d365"]]) {
       const b = document.createElement("button");
@@ -1212,7 +1453,6 @@ class PVAssistantPanel extends HTMLElement {
     const { P, E, G } = this._keys();
     const filt = this._cfg.filtered || {};
     const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (this._adays - 1));
-    const fcStart = new Date(); fcStart.setHours(0, 0, 0, 0); fcStart.setDate(fcStart.getDate() - 60);
     const call = async (ids, from, period, type, units) => {
       ids = [...new Set(ids)];
       if (!ids.length) return {};
@@ -1222,17 +1462,12 @@ class PVAssistantPanel extends HTMLElement {
     };
     this._root.querySelectorAll("#ana .chart").forEach((c) => c.classList.add("loading"));
     const eids = E.prod.concat(E.prod.map((i) => filt[i]).filter(Boolean));
-    const [pres, eres, cfg] = await Promise.all([
+    const [pres, eres] = await Promise.all([
       call([...P.prod, ...G.irr], start, "hour", "mean", { power: "W" }),
-      call(eids, start < fcStart ? start : fcStart, "day", "change", { energy: "kWh" }),
-      this._hass.callWS({ type: "pv_assistant/config" }).catch(() => null), // fresh forecast log
+      call(eids, start, "day", "change", { energy: "kWh" }),
     ]);
     if (token !== this._atoken) return;
-    if (cfg?.settings) this._cfg.settings = cfg.settings;
-    const fcIds = list(this._cfg.forecast_today_energy_sensors);
-    const fcHist = fcIds.length ? await this._forecastFromHistory(fcIds) : {};
-    if (token !== this._atoken) return;
-    this._adata = { pres, eres, start, fcHist };
+    this._adata = { pres, eres, start };
     this._drawAnalysis();
   }
 
@@ -1276,7 +1511,7 @@ class PVAssistantPanel extends HTMLElement {
     const d = this._adata;
     if (!d || !this._root.getElementById("astrings")) return;
     const { P, E, G } = this._keys();
-    const { pres, eres, start, fcHist } = d;
+    const { pres, eres, start } = d;
     const filt = this._cfg.filtered || {};
     const lang = this._hass.locale?.language || this._hass.language;
     const tz = this._hass.config?.time_zone;
@@ -1417,37 +1652,6 @@ class PVAssistantPanel extends HTMLElement {
     if (bySize.length > 1) { const w = bySize[bySize.length - 1]; tiles.push([`${num(w.kwh)} kWh · ${dayLabelY(w.day)}`, this._t("anaWorstDay")]); }
     root.getElementById("atiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
     root.getElementById("ahints").innerHTML = hints.map((h) => `<li${h === infoHint ? ' class="info"' : ""}>${esc(h)}</li>`).join("");
-
-    // forecast against actual (daily production from the energy statistics)
-    const log = { ...(fcHist || {}), ...(this._cfg.settings?.forecast_log || {}) };
-    const fcDays = Object.keys(log).filter((day) => day !== todayKey && actual.has(day) && log[day] > 0).sort();
-    const tl = { summary: this._t("table"), time: this._t("time") };
-    const fv = (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`;
-    const fcBox = root.getElementById("afc"), fdBox = root.getElementById("afd");
-    fcBox.classList.remove("loading"); fdBox.classList.remove("loading");
-    if (!fcDays.length) {
-      for (const b of [fcBox, fdBox]) b.innerHTML = `<p class="empty">${esc(this._t(list(this._cfg.forecast_today_energy_sensors).length ? "anaNoForecastYet" : "anaNoForecast"))}</p>`;
-    } else {
-      const cats = fcDays.map(dayLabel);
-      const fc = fcDays.map((day) => log[day]), ist = fcDays.map((day) => actual.get(day));
-      const dev = fcDays.map((day, i) => ((ist[i] - fc[i]) / fc[i]) * 100);
-      categoryBarChart(fcBox, {
-        categories: cats,
-        series: [{ name: this._t("fcForecast"), color: "--pva-s1", values: fc }, { name: this._t("fcActual"), color: "--pva-prod", values: ist }],
-        fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("anaForecast"),
-      });
-      categoryBarChart(fdBox, {
-        categories: cats,
-        series: [{ name: this._t("anaForecastDev"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: dev }],
-        legendItems: [{ name: this._t("aboveFc"), color: "--pva-pos" }, { name: this._t("belowFc"), color: "--pva-neg" }],
-        fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis ? 0 : 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("anaForecastDev"),
-      });
-      const mean = dev.reduce((a, v) => a + v, 0) / dev.length;
-      const hit = (dev.filter((v) => Math.abs(v) <= 20).length / dev.length) * 100;
-      root.getElementById("atiles").insertAdjacentHTML("beforeend",
-        [[`${mean > 0 ? "+" : ""}${num(mean, 1)} %`, this._t("fcAvgDev")], [`${num(hit, 0)} %`, this._t("fcHit")], [String(fcDays.length), this._t("fcDays")]]
-          .map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join(""));
-    }
   }
 }
 customElements.define("pv-assistant-panel", PVAssistantPanel);
