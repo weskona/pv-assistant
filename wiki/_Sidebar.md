@@ -2,10 +2,12 @@
 
 - [[Home]]
 - [[Installation]]
-- [[Einrichtung]]
+- [[Setup]] · Einrichtung
 - [[Panel-Tabs]]
-- [[Einstellungen]]
-- [[Berechnungen]]
-- [[Entitäten-und-Dienste]]
-- [[Fehlersuche]]
-- [[Entwicklung]]
+- [[Settings]] · Einstellungen
+- [[Calculations]] · Berechnungen
+- [[Entities-and-Services]] · Entitäten und Dienste
+- [[Troubleshooting]] · Fehlersuche
+- [[Development]] · Entwicklung
+
+English · Deutsch
