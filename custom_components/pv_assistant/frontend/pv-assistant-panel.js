@@ -187,8 +187,11 @@ class PVAssistantPanel extends HTMLElement {
                   border:1px solid var(--g-tileb); border-radius:14px; padding:7px 15px; cursor:pointer; }
           .filters button:hover { background:var(--secondary-background-color); }
           .filters button[aria-pressed="true"] { border-color:color-mix(in srgb, var(--g-accent) 40%, transparent); color:var(--g-accent); background:color-mix(in srgb, var(--g-accent) 14%, transparent); }
-          .tiles { display:flex; gap:12px; flex-wrap:wrap; margin:0 0 12px; }
-          .tile { background:var(--g-tile); border:1px solid var(--g-tileb); border-radius:15px; padding:9px 13px; min-width:120px; display:flex; flex-direction:column; gap:2px; }
+          /* all key figures of a tab sit together in one card */
+          .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:16px 20px; margin:0 0 16px; padding:18px 22px;
+                   background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; }
+          .tiles:empty { display:none; }
+          .tile { display:flex; flex-direction:column; gap:3px; min-width:0; }
           .tile b { display:block; font-size:1.35em; font-weight:700; font-variant-numeric:tabular-nums; }
           .tile span { color:var(--g-muted); font-size:.75em; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
           .chart { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; padding:16px 18px 10px;
@@ -423,9 +426,9 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
-    for (const r of ["today", "yesterday", "d7", "d30"]) {
+    for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
       const b = document.createElement("button");
-      b.textContent = this._t(r);
+      b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
       b.dataset.range = r;
       b.setAttribute("aria-pressed", String(r === this._range));
       b.addEventListener("click", () => {
@@ -441,6 +444,13 @@ class PVAssistantPanel extends HTMLElement {
     const day = new Date(); day.setHours(0, 0, 0, 0);
     const at = (back) => { const d = new Date(day); d.setDate(d.getDate() - back); return d; };
     const r = range || this._range;
+    if (r === "ytd" || r === "y12") { // calendar year so far / last 12 months (month aligned, like the Energy dashboard)
+      const s = r === "ytd" ? new Date(day.getFullYear(), 0, 1) : new Date(day.getFullYear(), day.getMonth() - 11, 1);
+      const tomorrow = new Date(day); tomorrow.setDate(tomorrow.getDate() + 1);
+      const H = 3600e3;
+      return { t0: s.getTime(), t1: tomorrow.getTime(), end: Date.now(), days: Math.round((tomorrow - s) / (24 * H)), long: true,
+        pPeriod: "day", pStep: 24 * H, eBucket: "month", eStep: 30 * 24 * H, tickStep: (365.25 / 12) * 24 * H };
+    }
     const start = r === "yesterday" ? at(1) : r === "d7" ? at(6) : r === "d30" ? at(29) : at(0);
     const days = r === "d7" ? 7 : r === "d30" ? 30 : 1;
     const t0 = start.getTime();
@@ -479,7 +489,7 @@ class PVAssistantPanel extends HTMLElement {
     this._root.querySelectorAll(".chart").forEach((c) => c.classList.add("loading"));
     const [pres, eres] = await Promise.all([
       this._stats(powerIds, rd.pPeriod, "mean", { power: "W" }, rd),
-      this._stats(energyAll, rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
+      this._stats(energyAll, rd.long ? "month" : rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
     ]);
     if (token !== this._token) return; // a newer range was requested meanwhile
     this._data = { rd, P, E, G, pres, eres, filt };
@@ -581,7 +591,9 @@ class PVAssistantPanel extends HTMLElement {
       { name: houseMeasuredP ? this._t("house") : this._t("houseDerived"), short: this._t("houseShort"), color: "--pva-house", points: houseP ? toPts(houseP) : [] },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
-    const tickFmt = rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
+    const fMon = fm(new Date(rd.t0).getFullYear() === new Date(rd.t1 - 1).getFullYear() ? { month: "short" } : { month: "short", year: "2-digit" });
+    const tickFmt = rd.long ? (t) => fMon.format(t + 15 * 24 * 3600e3) : // ticks sit near the start of a month
+       rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
     lineChart(this._root.getElementById("pchart"), {
       series: lines, t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
       fmtValue: (v, axis) => `${num(v, axis, 0)}${axis ? "" : " W"}`,
@@ -664,14 +676,30 @@ class PVAssistantPanel extends HTMLElement {
     ];
     if (impE) bars.push({ name: this._t("gridImp"), color: "--pva-grid", values: impE, parts: each(G.impE, er("change"), "change") });
     if (houseE) bars.push({ name: houseMeasuredE ? this._t("house") : this._t("houseDerived"), color: "--pva-house", values: houseE, parts: houseMeasuredE ? each(G.houseE, er("change"), "change") : undefined });
-    const hourly = rd.eBucket === 3600e3;
-    barChart(this._root.getElementById("echart"), {
-      series: bars, t0: rd.t0, t1: rd.t1, bucket: rd.eBucket, tickStep: hourly ? 3 * 3600e3 : rd.days === 7 ? 24 * 3600e3 : 5 * 24 * 3600e3,
-      fmtValue: (v, axis) => `${num(v, axis)}${axis ? "" : " kWh"}`,
-      fmtTime: (t) => (hourly ? fDT.format(t) : fD.format(t)),
-      fmtTick: hourly ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t),
-      empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("energyChart")} (kWh)`,
-    });
+    if (rd.long) {
+      // one group of bars per month (daily bars would be far too dense for a year)
+      const ymFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "numeric", timeZone: tz });
+      const ymKey = (ts) => { const q = Object.fromEntries(ymFmt.formatToParts(ts).map((x) => [x.type, x.value])); return `${q.year}-${q.month}`; };
+      const months = [];
+      for (let t = new Date(rd.t0); t.getTime() < rd.t1; t = new Date(t.getFullYear(), t.getMonth() + 1, 1)) months.push(new Date(t.getFullYear(), t.getMonth(), 15, 12).getTime());
+      const idx = new Map(months.map((ts, i) => [ymKey(ts), i]));
+      const toArr = (m) => { const out = months.map(() => null); for (const [ts, v] of m) { const i = idx.get(ymKey(ts)); if (i != null) out[i] = (out[i] || 0) + v; } return out; };
+      categoryBarChart(this._root.getElementById("echart"), {
+        categories: months.map((ts) => fMon.format(ts)),
+        series: bars.map((b) => ({ name: b.name, color: b.color, values: toArr(b.values), parts: b.parts && b.parts.map((x) => ({ ...x, values: toArr(x.values) })) })),
+        fmtValue: (v, axis) => `${num(v, axis)}${axis ? "" : " kWh"}`,
+        empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("energyChart")} (kWh)`,
+      });
+    } else {
+      const hourly = rd.eBucket === 3600e3;
+      barChart(this._root.getElementById("echart"), {
+        series: bars, t0: rd.t0, t1: rd.t1, bucket: rd.eBucket, tickStep: hourly ? 3 * 3600e3 : rd.days === 7 ? 24 * 3600e3 : 5 * 24 * 3600e3,
+        fmtValue: (v, axis) => `${num(v, axis)}${axis ? "" : " kWh"}`,
+        fmtTime: (t) => (hourly ? fDT.format(t) : fD.format(t)),
+        fmtTick: hourly ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t),
+        empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("energyChart")} (kWh)`,
+      });
+    }
 
     // ---- totals
     const tot = (m) => [...m.values()].reduce((a, v) => a + v, 0);
