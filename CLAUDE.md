@@ -15,3 +15,5 @@
   alle GitHub-Releases werden als Pre-release markiert (macht der Workflow `release`). Die Version trägt
   immer das Suffix `-beta` (z. B. `0.6.4-beta`), damit steht es auch im Tag und Release-Namen (`v0.6.4-beta`);
   der Workflow `validate` prüft das.
+- Das Wiki (Ordner `wiki/`) ist immer zweisprachig, Englisch und Deutsch: jede Seite hat einen englischen und einen
+  deutschen Abschnitt mit gleichem Inhalt; bei jeder Änderung beide Sprachen pflegen. Seitennamen sind englisch.

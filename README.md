@@ -1,6 +1,6 @@
 # PV Assistant
 
-Ausführliche Dokumentation: [Wiki](https://github.com/weskona/pv-assistant/wiki) (Quelltexte im Ordner [`wiki/`](wiki)).
+Ausführliche Dokumentation auf Englisch und Deutsch / Full documentation in English and German: [Wiki](https://github.com/weskona/pv-assistant/wiki) (Quelltexte im Ordner [`wiki/`](wiki)).
 
 Home-Assistant-Integration mit eigenem Sidebar-Panel für PV-Energiefluss.
 

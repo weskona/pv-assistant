@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Danke für die Meldung! Bitte schau vorher kurz in die [Fehlersuche im Wiki](https://github.com/weskona/pv-assistant/wiki/Fehlersuche).
+        Danke für die Meldung! Bitte schau vorher kurz in die [Fehlersuche im Wiki](https://github.com/weskona/pv-assistant/wiki/Troubleshooting).
         Das Projekt ist im Beta-Status; bitte keine Zugangsdaten, Tokens oder persönlichen Daten in Screenshots oder Logs.
   - type: input
     id: version
