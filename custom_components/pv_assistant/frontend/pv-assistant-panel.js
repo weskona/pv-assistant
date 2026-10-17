@@ -908,7 +908,7 @@ class PVAssistantPanel extends HTMLElement {
     if (socBox) lineChart(socBox, {
       series: rd.long && socMaxRows.length
         ? [{ name: this._t("stoSocMax"), short: this._t("stoSocMax"), color: "--pva-s2", points: socPts(socMaxRows, "max") },
-           { name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: socPts(socRows, "mean") },
+           { name: this._t("stoAvgSoc"), short: this._t("stoAvgSoc"), color: "--pva-s1", points: socPts(socRows, "mean") }, // the daily mean, not the level at a given time
            { name: this._t("stoSocMin"), short: this._t("stoSocMin"), color: "--pva-s3", points: socPts(socMinRows, "min") }]
         : [{ name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: toPts(new Map(socRows.map((r) => [r.start, r.mean]))) }],
       t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
