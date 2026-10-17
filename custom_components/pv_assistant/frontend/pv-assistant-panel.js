@@ -655,14 +655,21 @@ class PVAssistantPanel extends HTMLElement {
       cur.push(v);
       dev.push(complete(Y, m) && v != null && avg[m] ? ((v - avg[m]) / avg[m]) * 100 : null);
     }
-    // source split per sensor: same years as the total average, a missing month counts as 0
+    // source split per sensor of the monthly average: same years as the total average, a missing month counts as 0 (so the parts add up to the total)
     const sensorVal = (id, y, m) => d.byId.get(id)?.get(`${y}-${m}`) ?? null;
     const parts = (fn) => d.ids.map((id) => ({ name: this._read(id).name, values: Array.from({ length: 12 }, (_, m) => fn(id, m)) }));
     const sensorAvg = (id, m) => (yrsOf[m].length ? yrsOf[m].reduce((a, y) => a + (sensorVal(id, y, m) || 0), 0) / yrsOf[m].length : null);
     const curParts = parts((id, m) => sensorVal(id, Y, m));
     const avgParts = parts((id, m) => sensorAvg(id, m));
+    // deviation per sensor: compare with the sensor's OWN recorded years only (a year without data
+    // is not a year with 0 kWh, otherwise a newly added sensor shows +200 % / +300 % ...); a sensor
+    // needs at least two recorded years for a comparison
+    const ownAvg = (id, m) => {
+      const ys = yrsOf[m].filter((y) => sensorVal(id, y, m) != null);
+      return ys.length >= 2 ? ys.reduce((a, y) => a + sensorVal(id, y, m), 0) / ys.length : null;
+    };
     const devParts = parts((id, m) => {
-      const v = sensorVal(id, Y, m), a = sensorAvg(id, m);
+      const v = sensorVal(id, Y, m), a = ownAvg(id, m);
       return complete(Y, m) && v != null && a ? ((v - a) / a) * 100 : null;
     });
     const num = (v, axis, max = 1) => v.toLocaleString(lang, { maximumFractionDigits: axis ? 1 : max });
