@@ -1322,8 +1322,10 @@ class PVAssistantPanel extends HTMLElement {
       // last 12 completed months and everything recorded so far
       const done = [];
       for (let y = minY; y <= latest; y++) for (let m = 0; m < 12; m++) if (complete(y, m)) { const b = benefit(y, m); if (b != null) done.push(b); }
-      if (done.length >= 12) {
-        const last12 = done.slice(-12).reduce((a, v) => a + v, 0);
+      // the last 12 completed calendar months, only when every one of them has data
+      const lastMonths = Array.from({ length: 12 }, (_, i) => { const t = new Date(cy, cm - 12 + i, 1); return benefit(t.getFullYear(), t.getMonth()); });
+      if (lastMonths.every((b) => b != null)) {
+        const last12 = lastMonths.reduce((a, v) => a + v, 0);
         extra.push([eur(last12), this._t("yBenefit12")]);
         if (gen.system_cost_eur > 0 && last12 > 0) {
           const paid = done.reduce((a, v) => a + v, 0);
@@ -1840,7 +1842,10 @@ class PVAssistantPanel extends HTMLElement {
 
     // best / weakest complete days
     const sumPeak = series.every((s) => s.peak) && series.length ? series.reduce((a, s) => a + s.peak, 0) : null;
-    const complete = days.filter((day) => day !== todayKey).map((day) => ({ day, kwh: byDay.get(day).reduce((a, w) => a + w, 0) / 1000 })).filter((x) => x.kwh >= 0.1); // days that show as 0 kWh (outage, no data) are left out
+    // daily yields from the energy counters (same basis as the total); the power sum is the fallback
+    const startDayKey = key(start.getTime()).day;
+    const fromCounters = [...actual].filter(([day]) => day >= startDayKey && day !== todayKey).map(([day, kwh]) => ({ day, kwh })).filter((x) => x.kwh >= 0.1);
+    const complete = fromCounters.length ? fromCounters : days.filter((day) => day !== todayKey).map((day) => ({ day, kwh: byDay.get(day).reduce((a, w) => a + w, 0) / 1000 })).filter((x) => x.kwh >= 0.1); // days that show as 0 kWh (outage, no data) are left out
     const rows = (list) => `<table class="dtable"><thead><tr><th>${esc(this._t("anaDay"))}</th><th>kWh</th>${sumPeak ? `<th>${esc(this._t("anaSpec"))}</th>` : ""}</tr></thead><tbody>${
       list.map((x) => `<tr><td>${esc(dayLabelY(x.day))}</td><td>${esc(num(x.kwh))}</td>${sumPeak ? `<td>${esc(num(x.kwh / (sumPeak / 1000), 2))}</td>` : ""}</tr>`).join("")}</tbody></table>`;
     const bySize = [...complete].sort((a, b) => b.kwh - a.kwh);
