@@ -122,3 +122,28 @@ export function heatmap(container, opts) {
   scale.append(lo, bar, hi);
   container.append(wrap, scale);
 }
+
+// Rough annual yield of a module orientation relative to the optimum (central Europe, in %/100):
+// rows = deviation from south (0, 45, 90, 135, 180 degrees), columns = tilt (0, 15, 30, 45, 60, 90 degrees).
+const OR_DEV = [0, 45, 90, 135, 180];
+const OR_TILT = [0, 15, 30, 45, 60, 90];
+const OR_TABLE = [
+  [0.87, 0.96, 1.0, 0.99, 0.93, 0.70],
+  [0.87, 0.94, 0.97, 0.94, 0.87, 0.66],
+  [0.87, 0.91, 0.85, 0.80, 0.73, 0.55],
+  [0.87, 0.87, 0.78, 0.70, 0.62, 0.42],
+  [0.87, 0.82, 0.68, 0.57, 0.47, 0.32],
+];
+const interp = (axis, x) => {
+  const v = Math.max(axis[0], Math.min(axis.at(-1), x));
+  let i = 0;
+  while (i < axis.length - 2 && v > axis[i + 1]) i++;
+  return [i, (v - axis[i]) / (axis[i + 1] - axis[i])];
+};
+/** Expected relative yield (0..1) of a string; azimuth like Forecast.Solar (south = 0, east = -90, west = 90). */
+export function orientationFactor(azimuth, tilt) {
+  const [i, fi] = interp(OR_DEV, Math.min(180, Math.abs(azimuth)));
+  const [j, fj] = interp(OR_TILT, tilt);
+  const row = (r) => OR_TABLE[r][j] * (1 - fj) + OR_TABLE[r][j + 1] * fj;
+  return row(i) * (1 - fi) + row(i + 1) * fi;
+}

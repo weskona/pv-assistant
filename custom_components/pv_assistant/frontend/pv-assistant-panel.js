@@ -1,5 +1,5 @@
 import { lineChart, barChart, categoryBarChart } from "./pv-assistant-charts.js";
-import { localKeyFn, median, plateauDays, heatmap } from "./pv-assistant-analysis.js";
+import { localKeyFn, median, plateauDays, heatmap, orientationFactor } from "./pv-assistant-analysis.js";
 
 const T = {
   de: {
@@ -31,6 +31,15 @@ const T = {
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
+    setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
+    anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
+    anaNoOrient: "Trage bei den Strings Ausrichtung und Neigung ein (Einstellungen), dann wird der Vergleich um die Ausrichtung bereinigt (Ost/West erzeugt weniger als Süd).",
+    anaAdvPrefix: "Vorschlag:",
+    anaAdvMorning: "Der String fällt vor allem am Vormittag zurück: wahrscheinlich Verschattung aus Osten oder Südosten (Gebäude, Baum, Dachaufbau). Prüfe die Umgebung am Morgen und stutze ggf. Bewuchs.",
+    anaAdvMidday: "Der String fällt vor allem mittags zurück: mögliche Ursachen sind Überhitzung, Begrenzung des Wechselrichters oder ein Hindernis im Süden. Prüfe Belüftung und die Einstellung der Einspeisebegrenzung.",
+    anaAdvEvening: "Der String fällt vor allem am Nachmittag und Abend zurück: wahrscheinlich Verschattung aus Westen oder Südwesten. Prüfe die Umgebung am Abend und stutze ggf. Bewuchs.",
+    anaAdvFlat: "Der Rückstand zieht sich gleichmäßig durch den Tag: Reinige die Module, prüfe Steckverbindungen, Optimierer und den Wechselrichter-Eingang und kontrolliere, ob der eingetragene Peak stimmt.",
+    anaAdvOrient: "Tipp: Trage Ausrichtung und Neigung des Strings ein, damit der Vergleich fairer wird.",
     anaWeakHint: "{name} erzeugt pro installiertem kWp nur {rel} % des besten Strings ({best}): {own} gegen {top} kWh/kWp. Der typische String liegt bei {med} kWh/kWp. Mögliche Ursachen: Verschattung, Verschmutzung, andere Ausrichtung oder Neigung, falsch eingetragener Peak, Defekt.",
     anaPlateauHint: "An {n} Tagen bleibt die Leistung mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
     anaPrHint: "Performance Ratio {pr} % – {verdict} Sie vergleicht den Ertrag mit dem, was bei der gemessenen Einstrahlung theoretisch möglich wäre (typisch 75 bis 85 %).", anaPrLow: "das liegt unter dem typischen Bereich. Mögliche Ursachen: Verschattung, Verschmutzung, Wechselrichter-Begrenzung, zu hoch eingetragene Peaks oder ein ungenauer Einstrahlungssensor.", anaPrOk: "das liegt im typischen Bereich.", anaPrHigh: "das liegt über dem typischen Bereich (prüfe, ob die Peaks zu niedrig eingetragen sind).",
@@ -82,6 +91,15 @@ const T = {
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
+    setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
+    anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
+    anaNoOrient: "Enter orientation and tilt of the strings (Settings) and the comparison is corrected for the orientation (east/west yields less than south).",
+    anaAdvPrefix: "Suggestion:",
+    anaAdvMorning: "The string falls behind mostly in the morning: probably shading from the east or south-east (building, tree, roof structure). Check the surroundings in the morning and trim vegetation if needed.",
+    anaAdvMidday: "The string falls behind mostly at midday: possible causes are overheating, inverter limiting or an obstacle to the south. Check ventilation and the feed-in limit setting.",
+    anaAdvEvening: "The string falls behind mostly in the afternoon and evening: probably shading from the west or south-west. Check the surroundings in the evening and trim vegetation if needed.",
+    anaAdvFlat: "The gap runs evenly through the day: clean the modules, check connectors, optimizers and the inverter input, and verify the entered peak.",
+    anaAdvOrient: "Tip: enter orientation and tilt of the string to make the comparison fairer.",
     anaWeakHint: "{name} produces only {rel} % per installed kWp of the best string ({best}): {own} vs {top} kWh/kWp. The typical string is at {med} kWh/kWp. Possible causes: shading, dirt, different orientation or tilt, wrong peak entered, defect.",
     anaPlateauHint: "On {n} days the power stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
     anaPrHint: "Performance ratio {pr} % – {verdict} It compares the yield with what would be theoretically possible at the measured irradiance (typically 75 to 85 %).", anaPrLow: "that is below the typical range. Possible causes: shading, dirt, inverter limiting, peaks entered too high or an inaccurate irradiance sensor.", anaPrOk: "that is within the typical range.", anaPrHigh: "that is above the typical range (check whether the peaks are entered too low).",
@@ -1373,7 +1391,7 @@ class PVAssistantPanel extends HTMLElement {
       name.disabled = !isAdmin;
       nameRow.append(mk("label", { for: nameId }, this._t("setName")), name);
       c.append(nameRow);
-      let peak = null, take = null;
+      let peak = null, take = null, az = null, tilt = null;
       if (withPeak) {
         const row = mk("div", { class: "setrow" });
         const peakId = `set-peak-${id}`;
@@ -1387,9 +1405,21 @@ class PVAssistantPanel extends HTMLElement {
         row.append(mk("label", { for: peakId }, this._t("setPeak")), peak, hint);
         c.append(row);
         take.addEventListener("click", () => { const m = this._pmax?.[id]; if (m > 0) peak.value = String(Math.round(m)); });
+        const orient = (key, label, min, max, step, hintKey) => {
+          const r = mk("div", { class: "setrow" });
+          const oid = `set-${key}-${id}`;
+          const input = mk("input", { type: "number", id: oid, min: String(min), max: String(max), step: String(step), inputmode: "decimal" });
+          input.value = strings[id]?.[key] != null ? String(strings[id][key]) : "";
+          input.disabled = !isAdmin;
+          r.append(mk("label", { for: oid }, this._t(label)), input, mk("div", { class: "hint" }, this._t(hintKey)));
+          c.append(r);
+          return input;
+        };
+        az = orient("azimuth", "setAz", -180, 180, 5, "setAzHint");
+        tilt = orient("tilt", "setTilt", 0, 90, 5, "setTiltHint");
       }
       box.append(c);
-      inputs.push({ id, name, peak });
+      inputs.push({ id, name, peak, az, tilt });
     };
     P.prod.forEach((id) => card(id, "setPower", true));
     E.prod.forEach((id) => card(id, "setEnergy", false));
@@ -1430,11 +1460,16 @@ class PVAssistantPanel extends HTMLElement {
     this._setMeasured();
     save.addEventListener("click", async () => {
       const payload = {};
-      for (const { id, name, peak } of inputs) {
+      for (const { id, name, peak, az, tilt } of inputs) {
         const e = {};
         if (name.value.trim()) e.name = name.value.trim();
         const pv = peak ? parseFloat(peak.value.replace(",", ".")) : NaN;
         if (pv > 0) e.peak = pv;
+        if (az) { // 0 is valid (south / flat); null clears
+          const av = parseFloat(az.value.replace(",", ".")), tv = parseFloat(tilt.value.replace(",", "."));
+          e.azimuth = Number.isNaN(av) ? null : av;
+          e.tilt = Number.isNaN(tv) ? null : tv;
+        }
         payload[id] = e;
       }
       save.disabled = true;
@@ -1581,32 +1616,57 @@ class PVAssistantPanel extends HTMLElement {
       common = [...peaked[0].m.keys()].filter((ts) => peaked.every((s) => s.m.has(ts)));
       for (const s of peaked) s.spec = common.reduce((a, ts) => a + s.m.get(ts), 0) / 1000 / (s.peak / 1000);
     }
+    // expected yield of the orientation (azimuth / tilt from the settings); strings without it count as 1
+    for (const s of peaked) {
+      const o = this._cfg.settings?.strings?.[s.id];
+      s.factor = o && o.azimuth != null && o.tilt != null ? orientationFactor(o.azimuth, o.tilt) : null;
+      s.eff = s.spec / (s.factor || 1);
+    }
+    const usesOrient = peaked.some((s) => s.factor);
     const hints = [];
+    const infoSet = new Set(); // hints shown as plain information (not as a warning)
     let weak = new Set();
     if (peaked.length >= 2 && common.length >= 24) {
-      const med = median(peaked.map((s) => s.spec));
-      for (const s of peaked) if (med > 0 && s.spec < med * 0.85) {
+      const med = median(peaked.map((s) => s.eff));
+      for (const s of peaked) if (med > 0 && s.eff < med * 0.85) {
         weak.add(s.id);
-        const top = peaked.reduce((a, x) => (x.spec > a.spec ? x : a), peaked[0]);
-        hints.push(this._t("anaWeakHint").replace(/\{name\}/g, s.name).replace("{rel}", String(Math.round((s.spec / top.spec) * 100))).replace("{best}", top.name)
-          .replace("{own}", num(s.spec)).replace("{top}", num(top.spec)).replace("{med}", num(med)));
+        const top = peaked.reduce((a, x) => (x.eff > a.eff ? x : a), peaked[0]);
+        hints.push(this._t("anaWeakHint").replace(/\{name\}/g, s.name).replace("{rel}", String(Math.round((s.eff / top.eff) * 100))).replace("{best}", top.name)
+          .replace("{own}", num(s.spec)).replace("{top}", num(top.spec)).replace("{med}", num(median(peaked.map((x) => x.spec))))
+          + (usesOrient ? ` ${this._t("anaOrientUsed")}` : ""));
+        // improvement suggestion from the time of day in which the string falls behind
+        const part = (ts) => { const h = key(ts).hour; return h <= 10 ? 0 : h <= 14 ? 1 : 2; };
+        const sums = [[0, 0], [0, 0], [0, 0]];
+        for (const ts of common) {
+          const k = part(ts);
+          sums[k][0] += s.m.get(ts) / s.peak / (s.factor || 1);
+          sums[k][1] += top.m.get(ts) / top.peak / (top.factor || 1);
+        }
+        const all = sums.reduce((x, [u]) => x + u, 0) / (sums.reduce((x, [, v]) => x + v, 0) || 1);
+        const ratios = sums.map(([u, v]) => (v > 0 ? u / v : null));
+        const low = ratios.findIndex((r) => r != null && r < all * 0.85);
+        let advice = this._t(low >= 0 ? ["anaAdvMorning", "anaAdvMidday", "anaAdvEvening"][low] : "anaAdvFlat");
+        if (!s.factor) advice += ` ${this._t("anaAdvOrient")}`;
+        const text = `${this._t("anaAdvPrefix")} ${advice}`;
+        hints.push(text);
+        infoSet.add(text);
       }
     }
 
     // string cards
-    const sorted = [...series].sort((a, b) => (b.spec ?? -1) - (a.spec ?? -1) || b.kwh - a.kwh);
-    const bestSpec = Math.max(0, ...peaked.map((s) => s.spec));
+    const sorted = [...series].sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1) || b.kwh - a.kwh);
+    const bestSpec = Math.max(0, ...peaked.map((s) => s.eff));
     const box = root.getElementById("astrings");
     box.classList.remove("loading");
     box.innerHTML = sorted.map((s) => {
-      const w = s.spec && bestSpec ? (s.spec / bestSpec) * 100 : 0;
+      const w = s.eff && bestSpec ? (s.eff / bestSpec) * 100 : 0;
       const sub = s.spec != null
-        ? `${esc(num(s.spec))} ${esc(this._t("anaSpec"))} · ${esc(String(Math.round(w)))} % ${esc(this._t("anaRel"))}${weak.has(s.id) ? ` · <span class="weak">${esc(this._t("anaWeak"))}</span>` : ""}`
+        ? `${esc(num(s.spec))} ${esc(this._t("anaSpec"))} · ${esc(String(Math.round(w)))} % ${esc(this._t("anaRel"))}${s.factor ? ` · ${esc(this._t("anaFactor").replace("{pct}", String(Math.round(s.factor * 100))))}` : ""}${weak.has(s.id) ? ` · <span class="weak">${esc(this._t("anaWeak"))}</span>` : ""}`
         : `<span class="muted">–</span>`;
       return `<div class="strow"><div><div>${esc(s.name)}</div><div class="muted" style="font-size:.85em">${sub}</div></div>
         <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(w)}"><i style="width:${w.toFixed(1)}%"></i></div>
         <div><b>${esc(num(s.kwh))} kWh</b></div></div>`;
-    }).join("") + (peaked.length ? "" : `<p class="note">${esc(this._t("anaNoPeak"))}</p>`);
+    }).join("") + (peaked.length ? (peaked.some((s) => !s.factor) && peaked.length >= 2 ? `<p class="note">${esc(this._t("anaNoOrient"))}</p>` : "") : `<p class="note">${esc(this._t("anaNoPeak"))}</p>`);
 
     // plant totals per local day and hour
     const total = new Map();
@@ -1654,7 +1714,6 @@ class PVAssistantPanel extends HTMLElement {
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio
     const tiles = [];
-    let infoHint = null;
     const powerTotal = series.reduce((a, s) => a + s.kwh, 0);
     // the total comes from the energy counters (same as the Energy dashboard); the power sum is the fallback
     const startDay = key(start.getTime()).day;
@@ -1679,15 +1738,16 @@ class PVAssistantPanel extends HTMLElement {
           const pr = (eb / (h * kwp)) * 100;
           tiles.push([`${num(pr, 0)} %`, this._t("anaPr")]);
           const verdict = this._t(pr < 75 ? "anaPrLow" : pr > 85 ? "anaPrHigh" : "anaPrOk");
-          infoHint = this._t("anaPrHint").replace("{pr}", num(pr, 0)).replace("{verdict}", verdict);
-          hints.push(infoHint);
+          const prText = this._t("anaPrHint").replace("{pr}", num(pr, 0)).replace("{verdict}", verdict);
+          infoSet.add(prText);
+          hints.push(prText);
         }
       }
     }
     if (bySize.length) tiles.push([`${num(bySize[0].kwh)} kWh · ${dayLabelY(bySize[0].day)}`, this._t("anaBestDay")]);
     if (bySize.length > 1) { const w = bySize[bySize.length - 1]; tiles.push([`${num(w.kwh)} kWh · ${dayLabelY(w.day)}`, this._t("anaWorstDay")]); }
     root.getElementById("atiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-    root.getElementById("ahints").innerHTML = hints.map((h) => `<li${h === infoHint ? ' class="info"' : ""}>${esc(h)}</li>`).join("");
+    root.getElementById("ahints").innerHTML = hints.map((h) => `<li${infoSet.has(h) ? ' class="info"' : ""}>${esc(h)}</li>`).join("");
   }
 }
 customElements.define("pv-assistant-panel", PVAssistantPanel);

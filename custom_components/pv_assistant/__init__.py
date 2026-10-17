@@ -63,6 +63,9 @@ def _as_list(value) -> list[str]:
             str: {
                 vol.Optional("name"): vol.All(str, vol.Length(max=MAX_NAME_LENGTH)),
                 vol.Optional("peak"): vol.All(vol.Coerce(float), vol.Range(min=0, max=MAX_PEAK_W)),
+                # orientation (azimuth like Forecast.Solar: south = 0, east = -90, west = 90) and tilt in degrees; None = not set
+                vol.Optional("azimuth"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=-180, max=180))),
+                vol.Optional("tilt"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=90))),
             }
         },
         # plant-wide numbers (empty / 0 = not set)
@@ -78,7 +81,7 @@ def _as_list(value) -> list[str]:
 @websocket_api.require_admin
 @websocket_api.async_response
 async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
-    """Save display names and peak power per string (merged per sensor, empty = reset) and the plant-wide numbers."""
+    """Save display names, peak power and orientation per string (merged per sensor, empty = reset) and the plant-wide numbers."""
     entries = hass.config_entries.async_entries(DOMAIN)
     if not entries:
         connection.send_error(msg["id"], "not_configured", "PV Assistant is not set up")
@@ -97,6 +100,9 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
             clean["name"] = name
         if (peak := values.get("peak") or 0) > 0:
             clean["peak"] = peak
+        for key in ("azimuth", "tilt"):  # 0 is a valid value (south, flat), so only None means "not set"
+            if values.get(key) is not None:
+                clean[key] = values[key]
         if clean:
             strings[entity_id] = clean
         else:
