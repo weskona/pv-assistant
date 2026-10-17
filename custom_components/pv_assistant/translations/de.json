@@ -121,5 +121,12 @@
         }
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "string_fault": {
+        "name": "String-Störung"
+      }
+    }
   }
 }

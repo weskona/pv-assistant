@@ -11,9 +11,12 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_FORECAST_TODAY,
     CONF_PRODUCTION_ENERGY,
     CONF_PRODUCTION_POWER,
     DOMAIN,
@@ -27,7 +30,7 @@ from .const import (
 )
 from .sensor import filtered_unique_id, source_entity_ids
 
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "binary_sensor"]
 
 
 @websocket_api.websocket_command({vol.Required("type"): "pv_assistant/config"})
@@ -137,9 +140,51 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         domain_data["panel"] = True
 
+    _track_forecast(hass, entry)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+FORECAST_LOG_DAYS = 800
+
+
+def _kwh(state) -> float | None:
+    """State of a forecast energy sensor in kWh (None when unknown / unavailable)."""
+    if state is None or state.state in ("unknown", "unavailable"):
+        return None
+    try:
+        value = float(state.state)
+    except ValueError:
+        return None
+    return value * {"Wh": 0.001, "MWh": 1000}.get(state.attributes.get("unit_of_measurement"), 1)
+
+
+def _track_forecast(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remember the last forecast of every day (sum of the 'forecast today' sensors) so the
+    panel can compare forecast and actual production afterwards."""
+    ids = _as_list(entry.data.get(CONF_FORECAST_TODAY))
+    if not ids:
+        return
+    domain_data = hass.data[DOMAIN]
+
+    @callback
+    def _log(_event=None) -> None:
+        values = [_kwh(hass.states.get(i)) for i in ids]
+        if None in values:  # never log a partial sum
+            return
+        total = round(sum(values), 2)
+        log = domain_data["settings"].setdefault("forecast_log", {})
+        today = dt_util.now().date().isoformat()
+        if log.get(today) == total:
+            return
+        log[today] = total
+        for old in sorted(log)[:-FORECAST_LOG_DAYS]:
+            del log[old]
+        domain_data["store"].async_delay_save(lambda: domain_data["settings"], 60)
+
+    entry.async_on_unload(async_track_state_change_event(hass, ids, _log))
+    _log()
 
 
 async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
