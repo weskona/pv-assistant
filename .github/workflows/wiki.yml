@@ -1,0 +1,37 @@
+name: Wiki
+
+# Publishes the Markdown pages from wiki/ to the GitHub wiki of this repository when they change on main.
+# The wiki must exist once: create a first page in the GitHub wiki UI, then run this workflow again.
+on:
+  push:
+    branches: [main]
+    paths: ["wiki/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish wiki
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git clone "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki-repo; then
+            echo "::warning::The wiki is not initialised yet. Create a first page in the GitHub wiki UI, then run this workflow again."
+            exit 0
+          fi
+          rsync -a --delete --exclude .git wiki/ wiki-repo/
+          cd wiki-repo
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki is up to date."
+            exit 0
+          fi
+          git commit -m "Sync wiki from ${GITHUB_SHA}"
+          git push

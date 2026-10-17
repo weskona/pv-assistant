@@ -1,5 +1,7 @@
 # PV Assistant
 
+Ausführliche Dokumentation: [Wiki](https://github.com/weskona/pv-assistant/wiki) (Quelltexte im Ordner [`wiki/`](wiki)).
+
 Home-Assistant-Integration mit eigenem Sidebar-Panel für PV-Energiefluss.
 
 > **Beta:** Die Integration befindet sich im Beta-Status. Funktionen und Einstellungen können sich noch ändern, und es kann Fehler geben. Alle Releases sind als Vorabversion (Pre-release) markiert und tragen das Suffix `-beta` (z. B. `v0.6.4-beta`); in HACS dafür „Beta-Versionen anzeigen“ aktivieren oder die Version beim Herunterladen von Hand wählen. Rückmeldungen bitte als Issue melden.
@@ -8,8 +10,6 @@ Konfiguration in vier Schritten: (1) Energiesensoren (kWh), (2) Leistungssensore
 
 ## Bekannte Einschränkungen
 - Direkt verbrauchte PV-Energie: lädt der Speicher auch aus dem Netz, fällt der Wert etwas zu niedrig aus (kein Netzbezug-Sensor). Bei Stundenwerten (7/30 Tage) mittelt Home Assistant vorzeichenbehaftete Leistungssensoren, dort ist der Wert eine Näherung.
-- Der Netzbezug wird noch nicht ausgewertet (Farbe ist vorgesehen).
-- Prognose: nur aktuelle Sensorwerte, kein Vergleich Prognose gegen Ist im Verlauf.
 - Farben „Gelb auf hellem Hintergrund“ und „Rosa/Türkis bei Rot-Grün-Schwäche“ sind schwach unterscheidbar (Legende, Tooltip und Tabelle als Ausgleich).
 
 ## Installation
@@ -18,7 +18,7 @@ Konfiguration in vier Schritten: (1) Energiesensoren (kWh), (2) Leistungssensore
 3. Einstellungen → Geräte & Dienste → Integration hinzufügen → **PV Assistant**.
 4. Sensoren auswählen.
 
-Das Panel erscheint danach in der Seitenleiste, gegliedert in die Tabs „Aktuell“, „Verlauf“ und „Jahresübersicht“ (der zuletzt gewählte Tab wird im Browser gemerkt), und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
+Das Panel erscheint danach in der Seitenleiste, gegliedert in die Tabs „Aktuell“, „Leistung“, „Analyse“, „Verlauf“, „Speicher“, „Prognose“, „Jahresübersicht“ und „Einstellungen“ (der zuletzt gewählte Tab wird im Browser gemerkt), und zeigt die konfigurierten Sensoren (Energie und Leistung) mit aktuellen Werten und Summen.
 
 ## Prognose
 Die Prognose-Sensoren erscheinen im Tab „Aktuell“ als Karten (mit Summe, Wh/kWh werden umgerechnet). Im Tab „Verlauf“ zeigt der Zeitraum „Heute“ zusätzlich die Prognose für heute und wie viel davon bereits erzeugt wurde.
