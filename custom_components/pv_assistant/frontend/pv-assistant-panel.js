@@ -12,7 +12,7 @@ const T = {
     years: "Jahresübersicht", avgOver: "Schnitt über", yearsUnit: "Jahre", all: "alle", yearProd: "Erzeugung", sofar: "bisher",
     forecast: "Jahresprognose", avgMonth: "Ø Monat", monthly: "Erzeugung je Monat (kWh)", deviation: "Abweichung zum Schnitt (%)",
     avg: "Ø", above: "über Schnitt", below: "unter Schnitt", running: "laufender Monat",
-    yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
+    yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der letzten Jahre (Anzahl einstellbar) bis zum aktuellsten Jahr mit Daten, unabhängig vom angezeigten Jahr. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
     effChart: "Effektive Leistung (%)", effTotal: "Gesamtanlage", effNote: "Effektive Leistung = Leistung ÷ eingetragener Peak × 100, nur für Strings mit eingetragenem Peak (Einstellungen).",
@@ -40,7 +40,7 @@ const T = {
     years: "Yearly overview", avgOver: "Average over", yearsUnit: "years", all: "all", yearProd: "Production", sofar: "so far",
     forecast: "Year forecast", avgMonth: "Avg. month", monthly: "Production per month (kWh)", deviation: "Deviation from average (%)",
     avg: "Avg", above: "above average", below: "below average", running: "current month",
-    yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
+    yearNote: "The monthly average only uses real, completed months of the last years (number selectable) up to the latest year with data, independent of the displayed year. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
     effChart: "Effective power (%)", effTotal: "Whole system", effNote: "Effective power = power ÷ entered peak × 100, only for strings with an entered peak (settings).",
@@ -639,8 +639,11 @@ class PVAssistantPanel extends HTMLElement {
     const Y = this._yy;
     const val = (y, m) => d.months.get(`${y}-${m}`) ?? null;
     const complete = (y, m) => y < cy || (y === cy && m < cm);
-    const first = this._yn ? Y - this._yn + 1 : minY;
-    const years = []; for (let y = Math.max(first, minY); y <= Y; y++) years.push(y);
+    // the average always covers the LAST n recorded years (up to the latest year with data), not the
+    // n years before the displayed year; otherwise older years would be compared with almost nothing
+    const latest = keys.length ? Math.max(...keys) : cy;
+    const first = this._yn ? latest - this._yn + 1 : minY;
+    const years = []; for (let y = Math.max(first, minY); y <= latest; y++) years.push(y);
     const avg = [], used = new Set(), yrsOf = [];
     for (let m = 0; m < 12; m++) {
       const ys = years.filter((y) => complete(y, m) && val(y, m) != null);
