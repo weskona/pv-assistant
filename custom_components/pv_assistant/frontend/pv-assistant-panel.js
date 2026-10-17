@@ -27,6 +27,7 @@ const T = {
     socRange: "Ladestand min–max", pr: "Performance Ratio",
     analysisTab: "Analyse", d90: "90 Tage", d365: "Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
+    anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
     anaWeakHint: "{name} liegt bei {pct} % des mittleren Strings (kWh/kWp). Mögliche Ursachen: Verschattung, Verschmutzung, Defekt.",
     anaPlateauHint: "An {n} Tagen bleibt die Leistung mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
@@ -74,6 +75,7 @@ const T = {
     socRange: "Level min–max", pr: "Performance ratio",
     analysisTab: "Analysis", d90: "90 days", d365: "Year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastDev: "Deviation of actual from forecast (%)",
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
+    anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
     anaWeakHint: "{name} is at {pct} % of the median string (kWh/kWp). Possible causes: shading, dirt, defect.",
     anaPlateauHint: "On {n} days the power stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
@@ -1220,12 +1222,12 @@ class PVAssistantPanel extends HTMLElement {
     const eids = E.prod.concat(E.prod.map((i) => filt[i]).filter(Boolean));
     const [pres, eres, cfg] = await Promise.all([
       call([...P.prod, ...G.irr], start, "hour", "mean", { power: "W" }),
-      call(eids, fcStart, "day", "change", { energy: "kWh" }),
+      call(eids, start < fcStart ? start : fcStart, "day", "change", { energy: "kWh" }),
       this._hass.callWS({ type: "pv_assistant/config" }).catch(() => null), // fresh forecast log
     ]);
     if (token !== this._atoken) return;
     if (cfg?.settings) this._cfg.settings = cfg.settings;
-    this._adata = { pres, eres };
+    this._adata = { pres, eres, start };
     this._drawAnalysis();
   }
 
@@ -1233,7 +1235,7 @@ class PVAssistantPanel extends HTMLElement {
     const d = this._adata;
     if (!d || !this._root.getElementById("astrings")) return;
     const { P, E, G } = this._keys();
-    const { pres, eres } = d;
+    const { pres, eres, start } = d;
     const filt = this._cfg.filtered || {};
     const lang = this._hass.locale?.language || this._hass.language;
     const tz = this._hass.config?.time_zone;
@@ -1243,6 +1245,13 @@ class PVAssistantPanel extends HTMLElement {
     const peakOf = (id) => { const v = this._cfg.settings?.strings?.[id]?.peak; return v > 0 ? v : null; };
     const dayLabel = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}.`;
     const todayKey = key(Date.now()).day;
+
+    // daily production from the energy statistics (counters; the filtered copy wins)
+    const actual = new Map();
+    for (const id of E.prod) {
+      const rows = (eres[filt[id]] || []).length ? eres[filt[id]] : eres[id] || [];
+      for (const r of rows) if (r.change != null) { const day = key(r.start).day; actual.set(day, (actual.get(day) || 0) + r.change); }
+    }
 
     // hourly mean power per string: Map ts -> W
     const series = P.prod.map((id) => {
@@ -1330,8 +1339,16 @@ class PVAssistantPanel extends HTMLElement {
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio
     const tiles = [];
-    const prodTotal = series.reduce((a, s) => a + s.kwh, 0);
+    const powerTotal = series.reduce((a, s) => a + s.kwh, 0);
+    // the total comes from the energy counters (same as the Energy dashboard); the power sum is the fallback
+    const startDay = key(start.getTime()).day;
+    const energyDays = [...actual].filter(([day]) => day >= startDay);
+    const energyTotal = energyDays.reduce((a, [, v]) => a + v, 0);
+    const prodTotal = energyTotal > 0 ? energyTotal : powerTotal;
     tiles.push([`${num(prodTotal)} kWh`, this._t("anaTotal")]);
+    if (energyTotal > 0 && powerTotal > 0 && Math.abs(powerTotal - energyTotal) / energyTotal > 0.03) {
+      hints.push(this._t("anaPowerDiff").replace("{p}", num(powerTotal, 0)).replace("{e}", num(energyTotal, 0)).replace("{d}", `${powerTotal > energyTotal ? "+" : ""}${num(((powerTotal - energyTotal) / energyTotal) * 100, 1)}`));
+    }
     if (peaked.length && common.length) {
       const e = peaked.reduce((a, s) => a + common.reduce((b, ts) => b + s.m.get(ts), 0) / 1000, 0);
       const kwp = peaked.reduce((a, s) => a + s.peak, 0) / 1000;
@@ -1355,11 +1372,6 @@ class PVAssistantPanel extends HTMLElement {
 
     // forecast against actual (daily production from the energy statistics)
     const log = this._cfg.settings?.forecast_log || {};
-    const actual = new Map();
-    for (const id of E.prod) {
-      const rows = (eres[filt[id]] || []).length ? eres[filt[id]] : eres[id] || [];
-      for (const r of rows) if (r.change != null) { const day = key(r.start).day; actual.set(day, (actual.get(day) || 0) + r.change); }
-    }
     const fcDays = Object.keys(log).filter((day) => day !== todayKey && actual.has(day) && log[day] > 0).sort();
     const tl = { summary: this._t("table"), time: this._t("time") };
     const fv = (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`;
