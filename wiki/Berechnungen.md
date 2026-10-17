@@ -14,7 +14,9 @@
 | Eigenverbrauchsquote | (Erzeugung − Einspeisung) ÷ Erzeugung, enthält auch, was in den Speicher ging |
 | Verschiebepotenzial | kleinerer Wert aus Netzbezug und Einspeisung |
 | Speicher-Wirkungsgrad | entladen ÷ geladen (aussagekräftig bei ähnlichem Ladestand am Anfang und Ende) |
-| Zyklen | geladene Energie ÷ Speicherkapazität |
+| Nutzbare Kapazität | Kapazität × (1 − Mindest-Ladestand) |
+| Nutzbar jetzt | (Ladestand − Mindest-Ladestand) × Kapazität |
+| Zyklen | geladene Energie ÷ nutzbare Kapazität |
 | Ersparnis | (Erzeugung − Einspeisung) × Strompreis |
 | Einspeiseerlös | Einspeisung × Einspeisevergütung |
 | CO₂ vermieden | Erzeugung × CO₂-Faktor |
