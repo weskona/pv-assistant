@@ -122,3 +122,68 @@ export function heatmap(container, opts) {
   scale.append(lo, bar, hi);
   container.append(wrap, scale);
 }
+
+// Rough annual yield of a module orientation relative to the optimum (central Europe, in %/100):
+// rows = deviation from south (0, 45, 90, 135, 180 degrees), columns = tilt (0, 15, 30, 45, 60, 90 degrees).
+const OR_DEV = [0, 45, 90, 135, 180];
+const OR_TILT = [0, 15, 30, 45, 60, 90];
+const OR_TABLE = [
+  [0.87, 0.96, 1.0, 0.99, 0.93, 0.70],
+  [0.87, 0.94, 0.97, 0.94, 0.87, 0.66],
+  [0.87, 0.91, 0.85, 0.80, 0.73, 0.55],
+  [0.87, 0.87, 0.78, 0.70, 0.62, 0.42],
+  [0.87, 0.82, 0.68, 0.57, 0.47, 0.32],
+];
+const interp = (axis, x) => {
+  const v = Math.max(axis[0], Math.min(axis.at(-1), x));
+  let i = 0;
+  while (i < axis.length - 2 && v > axis[i + 1]) i++;
+  return [i, (v - axis[i]) / (axis[i + 1] - axis[i])];
+};
+/** Expected relative yield (0..1) of a string; azimuth like Forecast.Solar (south = 0, east = -90, west = 90). */
+export function orientationFactor(azimuth, tilt) {
+  const [i, fi] = interp(OR_DEV, Math.min(180, Math.abs(azimuth)));
+  const [j, fj] = interp(OR_TILT, tilt);
+  const row = (r) => OR_TABLE[r][j] * (1 - fj) + OR_TABLE[r][j + 1] * fj;
+  return row(i) * (1 - fi) + row(i + 1) * fi;
+}
+
+// ---- sun position and a simple clear-sky model (location of the plant)
+const RAD = Math.PI / 180;
+
+/** Sun position at a timestamp (ms): elevation in degrees and azimuth like Forecast.Solar (south = 0, east < 0, west > 0). */
+export function sunPosition(ts, lat, lon) {
+  const d = ts / 86400000 + 2440587.5 - 2451545.0; // days since J2000
+  const g = (357.529 + 0.98560028 * d) * RAD;
+  const q = 280.459 + 0.98564736 * d;
+  const L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * RAD;
+  const e = (23.439 - 0.00000036 * d) * RAD;
+  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L));
+  const dec = Math.asin(Math.sin(e) * Math.sin(L));
+  const gmst = (18.697374558 + 24.06570982441908 * d) * 15; // degrees
+  const ha = (gmst + lon) * RAD - ra;
+  const phi = lat * RAD;
+  const el = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha));
+  const az = Math.atan2(Math.sin(ha), Math.cos(ha) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+  return { el: el / RAD, az: az / RAD };
+}
+
+/** Irradiance on a tilted plane (W/m2, clear sky, direct beam plus a diffuse part standing in for clouds). */
+export function planeIrradiance(el, azSun, azPanel, tilt) {
+  if (el <= 1) return 0;
+  const s = Math.sin(el * RAD);
+  const am = 1 / (s + 0.50572 * Math.pow(el + 6.07995, -1.6364));
+  const dni = 1353 * Math.pow(0.7, Math.pow(am, 0.678));
+  const cosInc = s * Math.cos(tilt * RAD) + Math.cos(el * RAD) * Math.sin(tilt * RAD) * Math.cos((azSun - azPanel) * RAD);
+  return dni * Math.max(0, cosInc) + 0.3 * dni * (1 + Math.cos(tilt * RAD)) / 2;
+}
+
+/** Expected relative yield of a string over hourly timestamps (hour starts, ms): summed clear-sky irradiance on its plane. */
+export function expectedYield(timestamps, lat, lon, azimuth, tilt) {
+  let sum = 0;
+  for (const ts of timestamps) {
+    const { el, az } = sunPosition(ts + 1800e3, lat, lon);
+    sum += planeIrradiance(el, az, azimuth, tilt);
+  }
+  return sum;
+}
