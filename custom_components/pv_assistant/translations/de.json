@@ -42,6 +42,20 @@
           "forecast_tomorrow_energy_sensors": "Prognose morgen (Energie, optional)",
           "forecast_remaining_energy_sensors": "Prognose Rest heute (Energie, optional)"
         }
+      },
+      "grid": {
+        "title": "Netz, Verbrauch und Preise",
+        "description": "Optional. Netzbezug und Hausverbrauch ermöglichen Autarkie und exakten Eigenverbrauch; Ladestand, Einstrahlung und Preise ermöglichen die Batteriekurve, die Performance Ratio und die Ersparnis. Meldet dein Einspeise-Leistungssensor den Netzbezug als positive Werte (Option im Schritt Leistungssensoren), wird der Netzbezug automatisch daraus abgeleitet.",
+        "data": {
+          "grid_import_energy_sensors": "Netzbezug (Energie, optional)",
+          "grid_import_power_sensors": "Netzbezug (Leistung, optional)",
+          "house_energy_sensors": "Hausverbrauch (Energie, optional)",
+          "house_power_sensors": "Hausverbrauch (Leistung, optional)",
+          "battery_soc_sensor": "Batterieladestand (%, optional)",
+          "irradiance_sensor": "Sonneneinstrahlung (optional)",
+          "price_import": "Strompreis Netzbezug je kWh (Sensor oder input_number, optional)",
+          "price_feed_in": "Einspeisevergütung je kWh (Sensor oder input_number, optional)"
+        }
       }
     },
     "abort": {
@@ -91,6 +105,27 @@
           "forecast_tomorrow_energy_sensors": "Prognose morgen (Energie, optional)",
           "forecast_remaining_energy_sensors": "Prognose Rest heute (Energie, optional)"
         }
+      },
+      "grid": {
+        "title": "Netz, Verbrauch und Preise",
+        "description": "Optional. Netzbezug und Hausverbrauch ermöglichen Autarkie und exakten Eigenverbrauch; Ladestand, Einstrahlung und Preise ermöglichen die Batteriekurve, die Performance Ratio und die Ersparnis. Meldet dein Einspeise-Leistungssensor den Netzbezug als positive Werte (Option im Schritt Leistungssensoren), wird der Netzbezug automatisch daraus abgeleitet.",
+        "data": {
+          "grid_import_energy_sensors": "Netzbezug (Energie, optional)",
+          "grid_import_power_sensors": "Netzbezug (Leistung, optional)",
+          "house_energy_sensors": "Hausverbrauch (Energie, optional)",
+          "house_power_sensors": "Hausverbrauch (Leistung, optional)",
+          "battery_soc_sensor": "Batterieladestand (%, optional)",
+          "irradiance_sensor": "Sonneneinstrahlung (optional)",
+          "price_import": "Strompreis Netzbezug je kWh (Sensor oder input_number, optional)",
+          "price_feed_in": "Einspeisevergütung je kWh (Sensor oder input_number, optional)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "string_fault": {
+        "name": "String-Störung"
       }
     }
   }

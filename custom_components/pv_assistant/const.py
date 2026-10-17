@@ -18,6 +18,16 @@ CONF_INVERT_STORAGE_COMBINED_POWER = "invert_storage_combined_power"  # default:
 
 CONF_INVERT_FEED_IN_POWER = "invert_feed_in_power"  # feed-in power sensor reports feed-in as negative values
 
+# Step 4: grid, consumption, battery level, irradiance and prices (all optional)
+CONF_GRID_IMPORT_ENERGY = "grid_import_energy_sensors"  # list, energy bought from the grid (kWh)
+CONF_GRID_IMPORT_POWER = "grid_import_power_sensors"  # list, power bought from the grid (W)
+CONF_HOUSE_ENERGY = "house_energy_sensors"  # list, house consumption energy (kWh)
+CONF_HOUSE_POWER = "house_power_sensors"  # list, house consumption power (W)
+CONF_BATTERY_SOC = "battery_soc_sensor"  # single, battery level (%)
+CONF_IRRADIANCE = "irradiance_sensor"  # single, solar irradiance (W/m2)
+CONF_PRICE_IMPORT = "price_import"  # sensor / input_number, price per kWh bought from the grid
+CONF_PRICE_FEED_IN = "price_feed_in"  # sensor / input_number, feed-in tariff per kWh
+
 CONF_ABS_STORAGE_POWER = "abs_storage_power"  # storage in/out power sensors report their direction as negative values (use the magnitude)
 
 CONF_FORECAST_TODAY = "forecast_today_energy_sensors"  # list, optional, forecast energy for today (kWh)
