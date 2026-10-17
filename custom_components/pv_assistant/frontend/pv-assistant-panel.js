@@ -15,8 +15,12 @@ const T = {
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der gewählten Jahre. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
-    negWarn: "Achtung: {names} liefert negative Werte, wird hier aber nur mit den positiven Werten gezählt. Sensoren mit Vorzeichen (z. B. Batterie: Laden und Entladen in einem) bitte im Feld „Kombi-Speichersensoren“ eintragen.",
-    powerTab: "Leistung", ofMax: "von max.", pwrNote: "Maximum = höchste je gemessene Leistung des Strings (Langzeitstatistik, mindestens der aktuelle Wert).", noString: "Keine Erzeugungs-Leistungssensoren konfiguriert.",
+    settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
+    setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
+    setError: "Speichern fehlgeschlagen", setAdmin: "Nur Administratoren können Einstellungen ändern.", setPower: "Leistungssensor", setEnergy: "Energiesensor",
+    setNone: "Keine Erzeugungssensoren konfiguriert.", setReset: "Zurücksetzen",
+    negWarn: "Achtung: {names} liefert negative Werte und wird nur mit den positiven Werten gezählt. Meldet der Sensor das Laden bzw. Entladen als negative Werte, aktiviere im Schritt „Leistungssensoren“ die Option „In-/Aus-Speicher-Sensoren liefern negative Werte“. Sensoren mit beiden Vorzeichen (Laden und Entladen in einem) gehören in „Kombi-Speichersensoren“.",
+    powerTab: "Leistung", ofMax: "von max.", pwrNote: "Maximum = die in den Einstellungen eingetragene Max.-Leistung (Peak) des Strings, sonst die höchste je gemessene Leistung (Langzeitstatistik, mindestens der aktuelle Wert).", noString: "Keine Erzeugungs-Leistungssensoren konfiguriert.",
     fcGroup: "Prognose (kWh)", fcToday: "Prognose heute", fcTomorrow: "Prognose morgen", fcRemaining: "Prognose Rest heute",
     fcReached: "Von Prognose erreicht", directShare: "Anteil an Erzeugung",
     storage: "Speicher", storageNet: "Speicher (+ Entladen / − Laden)", loading: "Lade …", noData: "Keine Daten im Zeitraum.",
@@ -36,8 +40,12 @@ const T = {
     yearNote: "The monthly average only uses real, completed months of the selected years. The year forecast is the sum of these monthly averages. The current and future months do not count.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
-    negWarn: "Note: {names} reports negative values but only its positive values are counted here. Sensors with a sign (e.g. a battery with charge and discharge in one) belong in the field for combined storage sensors.",
-    powerTab: "Power", ofMax: "of max.", pwrNote: "Maximum = highest power ever measured for the string (long-term statistics, at least the current value).", noString: "No production power sensors configured.",
+    settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
+    setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
+    setError: "Saving failed", setAdmin: "Only administrators can change settings.", setPower: "Power sensor", setEnergy: "Energy sensor",
+    setNone: "No production sensors configured.", setReset: "Reset",
+    negWarn: "Note: {names} reports negative values and only its positive values are counted. If the sensor reports charging or discharging as negative values, enable the option \"Storage in/out sensors report negative values\" in the power step. Sensors with both signs (charge and discharge in one) belong in the combined storage sensors.",
+    powerTab: "Power", ofMax: "of max.", pwrNote: "Maximum = the max. power (peak) of the string entered in the settings, otherwise the highest power ever measured (long-term statistics, at least the current value).", noString: "No production power sensors configured.",
     fcGroup: "Forecast (kWh)", fcToday: "Forecast today", fcTomorrow: "Forecast tomorrow", fcRemaining: "Forecast rest of today",
     fcReached: "Of forecast reached", directShare: "Share of production",
     storage: "Storage", storageNet: "Storage (+ discharge / − charge)", loading: "Loading …", noData: "No data in this range.",
@@ -155,11 +163,27 @@ class PVAssistantPanel extends HTMLElement {
           .gauge i { display:block; height:100%; border-radius:5px; background:var(--pva-prod); }
           .pw-val { font-size:2em; font-weight:500; }
           .pw-sub { color:var(--secondary-text-color); font-size:.9em; display:flex; justify-content:space-between; gap:8px; }
+          .setcard { background:var(--card-background-color); border-radius:12px; padding:16px; margin-bottom:12px; }
+          .setcard h3 { margin:0 0 2px; font-size:1em; font-weight:500; }
+          .setcard .eid { color:var(--secondary-text-color); font-size:.85em; margin-bottom:10px; word-break:break-all; }
+          .setrow { display:grid; grid-template-columns:minmax(120px,200px) 1fr; gap:8px 12px; align-items:center; margin:6px 0; }
+          .setrow label { color:var(--secondary-text-color); }
+          .setrow input { font:inherit; color:var(--primary-text-color); background:var(--secondary-background-color);
+                  border:1px solid var(--divider-color); border-radius:8px; padding:6px 10px; min-width:0; max-width:320px; box-sizing:border-box; width:100%; }
+          .setrow input:disabled { opacity:.6; }
+          .setrow .hint { grid-column:2; color:var(--secondary-text-color); font-size:.85em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+          .setbtn { font:inherit; color:var(--primary-text-color); background:transparent; border:1px solid var(--divider-color);
+                  border-radius:16px; padding:3px 12px; cursor:pointer; }
+          .setbtn:hover:not(:disabled) { background:var(--secondary-background-color); }
+          .setbtn.primary { background:var(--primary-color); border-color:var(--primary-color); color:var(--text-primary-color,#fff); font-weight:500; padding:6px 20px; }
+          .setbtn:disabled { opacity:.5; cursor:default; }
+          .setbar { display:flex; gap:12px; align-items:center; margin-top:8px; }
+          @media (max-width:560px) { .setrow { grid-template-columns:1fr; } .setrow .hint { grid-column:1; } }
           p.empty { color:var(--secondary-text-color); margin:16px 0; }
         </style>
         <header><span id="menu"></span><span id="title"></span></header>
         <nav id="tabs" role="tablist"></nav>
-        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div></main>`;
+        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
       const menu = document.createElement("ha-menu-button");
       this._root.getElementById("menu").appendChild(menu);
       this._menu = menu;
@@ -188,6 +212,7 @@ class PVAssistantPanel extends HTMLElement {
     this._last = null;
     this._buildHistory();
     this._buildYears();
+    this._buildSettings();
     this._buildTabs();
     this._render();
     this._loadHistory();
@@ -214,7 +239,7 @@ class PVAssistantPanel extends HTMLElement {
     // Energy sensors: show the glitch-filtered copy when it exists.
     const src = this._hass.states[id];
     const s = this._hass.states[this._cfg.filtered?.[id]] || src;
-    const name = src?.attributes.friendly_name || id;
+    const name = this._cfg.settings?.strings?.[id]?.name || src?.attributes.friendly_name || id;
     const n = s ? parseFloat(s.state) : NaN;
     const unit = s?.attributes.unit_of_measurement || "";
     return { id, name, unit, value: n, base: isNaN(n) ? NaN : n * (FACTOR[unit] ?? 1) };
@@ -276,6 +301,7 @@ class PVAssistantPanel extends HTMLElement {
       comb: list(c[`storage_combined_${suffix}_sensors`]),
       inv: !!c[suffix === "power" ? "invert_storage_combined_power" : "invert_storage_combined"],
       invFeed: suffix === "power" && !!c.invert_feed_in_power,
+      absStorage: suffix === "power" && !!c.abs_storage_power,
     });
     return { P: g("power"), E: g("energy") };
   }
@@ -402,8 +428,10 @@ class PVAssistantPanel extends HTMLElement {
     // single-direction sensors (production, storage in, storage out) only count positive values;
     // sensors with a sign belong in the combined storage field
     const nz = (v) => Math.max(v, 0);
+    // storage in/out sensors that report their direction as negative values: use the magnitude
+    const ns = P.absStorage ? (v) => Math.abs(v) : nz;
     const pProd = sum(P.prod, pr, "mean", nz), pFeed = sum(P.feed, pr, "mean", feedFn);
-    const pSin = sum(P.sin, pr, "mean", nz), pSout = sum(P.sout, pr, "mean", nz);
+    const pSin = sum(P.sin, pr, "mean", ns), pSout = sum(P.sout, pr, "mean", ns);
     const pComb = sum(P.comb, pr, "mean", (v) => (P.inv ? -v : v));
     let pNet = merge(merge(pSout, pSin, -1), pComb);
     // PV used directly = production - feed-in - charging power (never below 0)
@@ -411,7 +439,7 @@ class PVAssistantPanel extends HTMLElement {
     const pCharge = merge(pSin, cP.neg);
     const pDirect = new Map();
     for (const [ts, v] of pProd) pDirect.set(ts, Math.min(v, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)))); // never above the production
-    const pNetParts = [...each(P.sout, pr, "mean", nz), ...each(P.sin, pr, "mean", (v) => -nz(v)), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
+    const pNetParts = [...each(P.sout, pr, "mean", ns), ...each(P.sin, pr, "mean", (v) => -ns(v)), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
     const pDirectParts = [
       { name: this._t("production"), values: pProd },
       { name: `− ${this._t("feed")}`, values: neg(pFeed) },
@@ -422,7 +450,9 @@ class PVAssistantPanel extends HTMLElement {
     const lines = [
       { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean", nz) },
       { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(P.feed, pr, "mean", feedFn) },
-      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
+      { name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", colorNeg: "--pva-bin",
+        legendItems: [{ name: `${this._t("sout")} (+)`, color: "--pva-bout" }, { name: `${this._t("sin")} (−)`, color: "--pva-bin" }],
+        points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
       { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect), parts: pDirectParts },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
@@ -435,7 +465,7 @@ class PVAssistantPanel extends HTMLElement {
     });
 
     // hint when a single-direction sensor reports negative values (misplaced signed sensor)
-    const neg1 = [...P.prod, ...P.sin, ...P.sout].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
+    const neg1 = [...P.prod, ...(P.absStorage ? [] : [...P.sin, ...P.sout])].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
     if (neg1.length) {
       const warn = document.createElement("p");
       warn.className = "note warn";
@@ -636,6 +666,7 @@ class PVAssistantPanel extends HTMLElement {
     if (this._keys().P.prod.length) list.push(["powerTab", "pwr", "power"]);
     if (this._hist) list.push(["history", "hist", "history"]);
     if (this._yearsOn) list.push(["years", "yearsec", "years"]);
+    if (this._keys().P.prod.length || this._keys().E.prod.length) list.push(["settingsTab", "setsec", "settings"]);
     this._tabs = list;
     let saved = null;
     try { saved = localStorage.getItem("pv_assistant_tab"); } catch (e) { /* storage unavailable */ }
@@ -694,6 +725,7 @@ class PVAssistantPanel extends HTMLElement {
     }
     this._pmax = max;
     this._renderPower();
+    if (this._setMeasured) this._setMeasured();
   }
 
   _renderPower() {
@@ -705,7 +737,8 @@ class PVAssistantPanel extends HTMLElement {
       const r = this._read(id);
       const cur = isNaN(r.base) ? null : Math.max(r.base, 0);
       const stat = this._pmax?.[id];
-      const max = cur == null ? stat : Math.max(stat ?? 0, cur);
+      const peak = this._cfg.settings?.strings?.[id]?.peak; // entered by the user, wins over the measured maximum
+      const max = peak > 0 ? peak : cur == null ? stat : Math.max(stat ?? 0, cur);
       const pct = cur != null && max > 0 ? Math.min(100, (cur / max) * 100) : 0;
       const val = cur == null ? `<span class="muted">${esc(this._t("missing"))}</span>` : `${esc(this._fmt(cur))} W`;
       const sub = max != null
@@ -718,6 +751,94 @@ class PVAssistantPanel extends HTMLElement {
     }).join("");
     const html = `<div class="grid">${cards}</div><p class="note">${esc(this._t("pwrNote"))}</p>`;
     if (html !== this._lastPwr) { this._lastPwr = html; box.innerHTML = html; }
+  }
+
+  // ---------------------------------------------------------------- settings tab
+
+  _buildSettings() {
+    const box = this._root.getElementById("setsec");
+    const { P, E } = this._keys();
+    box.replaceChildren();
+    if (!P.prod.length && !E.prod.length) return;
+    const isAdmin = !!this._hass.user?.is_admin;
+    const strings = this._cfg.settings?.strings || {};
+    const inputs = []; // {id, name, peak, take}
+    const mk = (tag, attrs = {}, text) => {
+      const n = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      if (text !== undefined) n.textContent = text; // names are untrusted: textContent / value only
+      return n;
+    };
+    box.append(mk("h2", {}, this._t("setStrings")), mk("p", { class: "note" }, this._t("setIntro")));
+    if (!isAdmin) box.append(mk("p", { class: "note warn" }, this._t("setAdmin")));
+
+    const card = (id, kind, withPeak) => {
+      const st = this._hass.states[id];
+      const c = mk("div", { class: "setcard" });
+      c.append(mk("h3", {}, st?.attributes.friendly_name || id), mk("div", { class: "eid" }, `${id} · ${this._t(kind)}`));
+      const nameRow = mk("div", { class: "setrow" });
+      const nameId = `set-name-${id}`;
+      const name = mk("input", { type: "text", id: nameId, maxlength: "60", placeholder: st?.attributes.friendly_name || id });
+      name.value = strings[id]?.name || "";
+      name.disabled = !isAdmin;
+      nameRow.append(mk("label", { for: nameId }, this._t("setName")), name);
+      c.append(nameRow);
+      let peak = null, take = null;
+      if (withPeak) {
+        const row = mk("div", { class: "setrow" });
+        const peakId = `set-peak-${id}`;
+        peak = mk("input", { type: "number", id: peakId, min: "0", step: "10", inputmode: "decimal" });
+        peak.value = strings[id]?.peak > 0 ? String(strings[id].peak) : "";
+        peak.disabled = !isAdmin;
+        const hint = mk("div", { class: "hint" });
+        take = mk("button", { type: "button", class: "setbtn" }, this._t("setTake"));
+        take.disabled = !isAdmin;
+        hint.append(mk("span", { "data-measured": id }, ""), take);
+        row.append(mk("label", { for: peakId }, this._t("setPeak")), peak, hint);
+        c.append(row);
+        take.addEventListener("click", () => { const m = this._pmax?.[id]; if (m > 0) peak.value = String(Math.round(m)); });
+      }
+      box.append(c);
+      inputs.push({ id, name, peak });
+    };
+    P.prod.forEach((id) => card(id, "setPower", true));
+    E.prod.forEach((id) => card(id, "setEnergy", false));
+
+    const bar = mk("div", { class: "setbar" });
+    const save = mk("button", { type: "button", class: "setbtn primary" }, this._t("setSave"));
+    save.disabled = !isAdmin;
+    const status = mk("span", { class: "muted", role: "status" });
+    bar.append(save, status);
+    box.append(bar);
+    this._setMeasured = () => {
+      box.querySelectorAll("[data-measured]").forEach((el) => {
+        const m = this._pmax?.[el.getAttribute("data-measured")];
+        el.textContent = m > 0 ? `${this._t("setMeasured")}: ${this._fmt(m)} W` : "";
+      });
+    };
+    this._setMeasured();
+    save.addEventListener("click", async () => {
+      const payload = {};
+      for (const { id, name, peak } of inputs) {
+        const e = {};
+        if (name.value.trim()) e.name = name.value.trim();
+        const pv = peak ? parseFloat(peak.value.replace(",", ".")) : NaN;
+        if (pv > 0) e.peak = pv;
+        payload[id] = e;
+      }
+      save.disabled = true;
+      status.textContent = "";
+      try {
+        const res = await this._hass.callWS({ type: "pv_assistant/set_settings", strings: payload });
+        this._cfg.settings = res;
+        status.textContent = this._t("setSaved");
+        this._lastPwr = null; this._last = null;
+        this._render(); this._renderPower(); this._draw(); this._drawYears();
+      } catch (err) {
+        status.textContent = `${this._t("setError")}: ${err?.message || err}`;
+      }
+      save.disabled = false;
+    });
   }
 }
 customElements.define("pv-assistant-panel", PVAssistantPanel);

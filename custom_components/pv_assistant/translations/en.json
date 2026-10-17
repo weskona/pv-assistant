@@ -27,7 +27,8 @@
           "storage_out_power_sensors": "From storage (power, optional)",
           "storage_combined_power_sensors": "Combined storage sensors (in and out, power, optional)",
           "invert_storage_combined_power": "Combined storage sensors: positive = into storage (default: positive = from storage)",
-          "invert_feed_in_power": "Feed-in sensor reports feed-in as negative values (invert sign; default: positive = feed-in)"
+          "invert_feed_in_power": "Feed-in sensor reports feed-in as negative values (invert sign; default: positive = feed-in)",
+          "abs_storage_power": "Storage in/out sensors report negative values (use the magnitude; default: only positive values count)"
         },
         "data_description": {
           "production_power_sensors": "Select one sensor per string, not a total across different orientations."
@@ -75,7 +76,8 @@
           "storage_out_power_sensors": "From storage (power, optional)",
           "storage_combined_power_sensors": "Combined storage sensors (in and out, power, optional)",
           "invert_storage_combined_power": "Combined storage sensors: positive = into storage (default: positive = from storage)",
-          "invert_feed_in_power": "Feed-in sensor reports feed-in as negative values (invert sign; default: positive = feed-in)"
+          "invert_feed_in_power": "Feed-in sensor reports feed-in as negative values (invert sign; default: positive = feed-in)",
+          "abs_storage_power": "Storage in/out sensors report negative values (use the magnitude; default: only positive values count)"
         },
         "data_description": {
           "production_power_sensors": "Select one sensor per string, not a total across different orientations."

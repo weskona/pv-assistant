@@ -18,12 +18,19 @@ CONF_INVERT_STORAGE_COMBINED_POWER = "invert_storage_combined_power"  # default:
 
 CONF_INVERT_FEED_IN_POWER = "invert_feed_in_power"  # feed-in power sensor reports feed-in as negative values
 
+CONF_ABS_STORAGE_POWER = "abs_storage_power"  # storage in/out power sensors report their direction as negative values (use the magnitude)
+
 CONF_FORECAST_TODAY = "forecast_today_energy_sensors"  # list, optional, forecast energy for today (kWh)
 CONF_FORECAST_TOMORROW = "forecast_tomorrow_energy_sensors"  # list, optional, forecast energy for tomorrow (kWh)
 CONF_FORECAST_REMAINING = "forecast_remaining_energy_sensors"  # list, optional, forecast energy for the rest of today (kWh)
 
 CONF_RESET_CONFIRM_MINUTES = "reset_confirm_minutes"  # energy filter: minutes a lower value must persist
 DEFAULT_RESET_CONFIRM_MINUTES = 10
+
+SETTINGS_STORE_KEY = "pv_assistant.settings"
+SETTINGS_STORE_VERSION = 1
+MAX_NAME_LENGTH = 60
+MAX_PEAK_W = 10_000_000
 
 PANEL_URL = "pv-assistant"
 PANEL_ELEMENT = "pv-assistant-panel"
