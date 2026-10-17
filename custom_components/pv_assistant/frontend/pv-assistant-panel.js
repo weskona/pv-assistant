@@ -31,7 +31,7 @@ const T = {
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
-    genFromSensor: "Aktuell vom Sensor „{name}“: {value}. Dieser feste Wert gilt nur, wenn im Config Flow kein Preis-Sensor gewählt ist – das Feld bleibt deshalb leer.",
+    genFromSensor: "Preis vom Sensor „{name}“ (Config Flow): {value}. Nicht änderbar; ein fester Wert gilt nur, wenn dort kein Preis-Sensor gewählt ist.",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
     setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
     anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
@@ -93,7 +93,7 @@ const T = {
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
-    genFromSensor: "Currently from the sensor \"{name}\": {value}. This fixed value only applies when no price sensor is chosen in the config flow, so the field stays empty.",
+    genFromSensor: "Price from the sensor \"{name}\" (config flow): {value}. Not editable; a fixed value only applies when no price sensor is chosen there.",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
     setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
     anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
@@ -1347,6 +1347,7 @@ class PVAssistantPanel extends HTMLElement {
     if (id === "history") this._draw();
     if (id === "storage") this._loadStorage();
     if (id === "forecast") this._loadForecast();
+    if (id === "settings") this._refreshPrices?.();
     if (id === "years") this._drawYears();
   }
 
@@ -1486,6 +1487,8 @@ class PVAssistantPanel extends HTMLElement {
     const genInputs = {};
     const gc = mk("div", { class: "setcard" });
     gc.append(mk("h3", {}, this._t("genTitle")));
+    const priceRefresh = [];
+    this._refreshPrices = () => priceRefresh.forEach((f) => f());
     const priceSensor = { price_import: this._keys().G.priceImp, price_feed_in: this._keys().G.priceFeed };
     for (const [key, label, step, ph] of [
       ["storage_capacity_kwh", "genCap", "0.1", ""], ["price_import", "genPriceImport", "0.001", ""], ["price_feed_in", "genPriceFeed", "0.001", ""],
@@ -1501,12 +1504,21 @@ class PVAssistantPanel extends HTMLElement {
       input.disabled = !isAdmin;
       row.append(mk("label", { for: id }, this._t(label)), input);
       const sid = priceSensor[key];
-      if (sid) { // a price sensor from the config flow is in use; this fixed value is only the fallback
-        const st = this._hass.states[sid];
-        const val = parseFloat(st?.state);
-        row.append(mk("div", { class: "hint" }, this._t("genFromSensor")
-          .replace("{name}", st?.attributes?.friendly_name || sid)
-          .replace("{value}", Number.isNaN(val) ? this._t("missing") : `${val.toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 4 })} ${st?.attributes?.unit_of_measurement || "€/kWh"}`)));
+      if (sid) { // a price sensor from the config flow is in use: show its price, not editable (the fixed value is only the fallback)
+        const hint = mk("div", { class: "hint" });
+        const show = () => {
+          const st = this._hass.states[sid];
+          const val = parseFloat(st?.state);
+          input.value = Number.isNaN(val) ? "" : String(val);
+          hint.textContent = this._t("genFromSensor")
+            .replace("{name}", st?.attributes?.friendly_name || sid)
+            .replace("{value}", Number.isNaN(val) ? this._t("missing") : `${val.toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 4 })} ${st?.attributes?.unit_of_measurement || "€/kWh"}`);
+        };
+        show();
+        input.disabled = true;
+        input.dataset.fromSensor = "1";
+        row.append(hint);
+        priceRefresh.push(show);
       }
       gc.append(row);
       genInputs[key] = input;
@@ -1546,6 +1558,7 @@ class PVAssistantPanel extends HTMLElement {
       try {
         const generalPayload = {};
         for (const [key, input] of Object.entries(genInputs)) {
+          if (input.dataset.fromSensor) continue; // shown from the price sensor, the stored fallback stays untouched
           const v = parseFloat(input.value.replace(",", "."));
           generalPayload[key] = key === "latitude" || key === "longitude" ? (Number.isNaN(v) ? 0 : v) : v > 0 ? v : 0; // 0 clears the value
         }
