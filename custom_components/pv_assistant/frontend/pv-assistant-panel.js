@@ -27,7 +27,7 @@ const T = {
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
     socRange: "Ladestand min–max", pr: "Performance Ratio",
-    analysisTab: "Analyse", d90: "90 Tage", d365: "12 Monate", dYear: "Dieses Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
+    analysisTab: "Analyse", d90: "90 Tage", d365: "12 Monate", dYear: "Dieses Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastMonth: "Prognose gegen Ist (kWh je Monat)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
@@ -88,7 +88,7 @@ const T = {
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
     socRange: "Level min–max", pr: "Performance ratio",
-    analysisTab: "Analysis", d90: "90 days", d365: "12 months", dYear: "This year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastDev: "Deviation of actual from forecast (%)",
+    analysisTab: "Analysis", d90: "90 days", d365: "12 months", dYear: "This year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastMonth: "Forecast vs actual (kWh per month)", anaForecastMonth: "Forecast vs actual (kWh per month)", anaForecastDev: "Deviation of actual from forecast (%)",
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
@@ -483,6 +483,17 @@ class PVAssistantPanel extends HTMLElement {
       tickStep: days === 1 ? 3 * H : days === 7 ? 24 * H : 5 * 24 * H };
   }
 
+  // categories (one per month of a long range) and a converter from {bucket start -> value} to one value per month
+  _monthAxis(rd, tz, fMon) {
+    const ymFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "numeric", timeZone: tz });
+    const ymKey = (ts) => { const q = Object.fromEntries(ymFmt.formatToParts(ts).map((x) => [x.type, x.value])); return `${q.year}-${q.month}`; };
+    const months = [];
+    for (let t = new Date(rd.t0); t.getTime() < rd.t1; t = new Date(t.getFullYear(), t.getMonth() + 1, 1)) months.push(new Date(t.getFullYear(), t.getMonth(), 15, 12).getTime());
+    const idx = new Map(months.map((ts, i) => [ymKey(ts), i]));
+    const toArr = (m) => { const out = months.map(() => null); for (const [ts, v] of m) { const i = idx.get(ymKey(ts)); if (i != null) out[i] = (out[i] || 0) + v; } return out; };
+    return { categories: months.map((ts) => fMon.format(ts)), toArr };
+  }
+
   async _stats(ids, period, type, units, rd) {
     ids = [...new Set(ids)];
     if (!ids.length) return {};
@@ -724,14 +735,9 @@ class PVAssistantPanel extends HTMLElement {
     if (houseE) bars.push({ name: houseMeasuredE ? this._t(houseMixedE ? "houseMixed" : "house") : this._t("houseDerived"), color: "--pva-house", values: houseE, parts: houseMeasuredE && !houseMixedE ? each(G.houseE, er("change"), "change") : undefined });
     if (rd.long) {
       // one group of bars per month (daily bars would be far too dense for a year)
-      const ymFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "numeric", timeZone: tz });
-      const ymKey = (ts) => { const q = Object.fromEntries(ymFmt.formatToParts(ts).map((x) => [x.type, x.value])); return `${q.year}-${q.month}`; };
-      const months = [];
-      for (let t = new Date(rd.t0); t.getTime() < rd.t1; t = new Date(t.getFullYear(), t.getMonth() + 1, 1)) months.push(new Date(t.getFullYear(), t.getMonth(), 15, 12).getTime());
-      const idx = new Map(months.map((ts, i) => [ymKey(ts), i]));
-      const toArr = (m) => { const out = months.map(() => null); for (const [ts, v] of m) { const i = idx.get(ymKey(ts)); if (i != null) out[i] = (out[i] || 0) + v; } return out; };
+      const { categories, toArr } = this._monthAxis(rd, tz, fMon);
       categoryBarChart(this._root.getElementById("echart"), {
-        categories: months.map((ts) => fMon.format(ts)),
+        categories,
         series: bars.map((b) => ({ name: b.name, color: b.color, values: toArr(b.values), parts: b.parts && b.parts.map((x) => ({ ...x, values: toArr(x.values) })) })),
         fmtValue: (v, axis) => `${num(v, axis)}${axis ? "" : " kWh"}`,
         empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("energyChart")} (kWh)`,
@@ -787,9 +793,9 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch">${esc(this._t("stoEnergy"))} (kWh)</h3><div class="chart" id="soen"></div>` : ""}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
-    for (const r of ["today", "yesterday", "d7", "d30"]) {
+    for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
       const b = document.createElement("button");
-      b.textContent = this._t(r);
+      b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
       b.dataset.range = r;
       b.setAttribute("aria-pressed", String(r === this._srange));
       b.addEventListener("click", () => {
@@ -812,7 +818,7 @@ class PVAssistantPanel extends HTMLElement {
     this._root.querySelectorAll("#sto .chart").forEach((c) => c.classList.add("loading"));
     const [pres, eres] = await Promise.all([
       this._stats([...P.sin, ...P.sout, ...P.comb, ...G.soc], rd.pPeriod, "mean", { power: "W" }, rd),
-      this._stats(energyAll, rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
+      this._stats(energyAll, rd.long ? "month" : rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
     ]);
     if (token !== this._stoken) return;
     this._sdata = { rd, pres, eres, filt };
@@ -846,7 +852,8 @@ class PVAssistantPanel extends HTMLElement {
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
     const sum = (m) => [...m.values()].reduce((a, v) => a + v, 0);
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
-    const tickFmt = rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
+    const fMon = fm(new Date(rd.t0).getFullYear() === new Date(rd.t1 - 1).getFullYear() ? { month: "short" } : { month: "short", year: "2-digit" });
+    const tickFmt = rd.long ? (t) => fMon.format(t + 15 * 24 * 3600e3) : rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
 
     // sign convention of the combined sensors: positive = from storage unless inverted
     const nz = (v) => Math.max(v, 0);
@@ -886,7 +893,16 @@ class PVAssistantPanel extends HTMLElement {
     const eOut = total(outE), eIn = total(inE);
     const hourly = rd.eBucket === 3600e3;
     const enBox = root.getElementById("soen");
-    if (enBox) barChart(enBox, {
+    if (enBox && rd.long) {
+      const { categories, toArr } = this._monthAxis(rd, tz, fMon);
+      const mk = (s) => ({ ...s, values: toArr(s.values), parts: s.parts && s.parts.map((x) => ({ ...x, values: toArr(x.values) })) });
+      categoryBarChart(enBox, {
+        categories,
+        series: [mk({ name: this._t("sin"), color: "--pva-bin", values: eIn, parts: inE }), mk({ name: this._t("sout"), color: "--pva-bout", values: eOut, parts: outE })],
+        fmtValue: (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`,
+        empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("stoEnergy")} (kWh)`,
+      });
+    } else if (enBox) barChart(enBox, {
       series: [
         { name: this._t("sin"), color: "--pva-bin", values: eIn, parts: inE },
         { name: this._t("sout"), color: "--pva-bout", values: eOut, parts: outE },
@@ -931,10 +947,10 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._forecastOn) { box.replaceChildren(); return; }
     if (!this._fdays) this._fdays = 30;
     box.innerHTML = `<div class="filters" id="franges"></div><div class="tiles" id="ftiles"></div>
-      <h3 class="ch">${esc(this._t("anaForecast"))}</h3><div class="chart" id="fcchart"></div>
+      <h3 class="ch" id="fchead">${esc(this._t("anaForecast"))}</h3><div class="chart" id="fcchart"></div>
       <h3 class="ch">${esc(this._t("anaForecastDev"))}</h3><div class="chart" id="fcdev"></div>`;
     const ranges = box.querySelector("#franges");
-    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], [365, "d365"]]) {
+    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]]) {
       const b = document.createElement("button");
       b.textContent = this._t(label);
       b.setAttribute("aria-pressed", String(d === this._fdays));
@@ -952,7 +968,7 @@ class PVAssistantPanel extends HTMLElement {
     const token = (this._ftoken = (this._ftoken || 0) + 1);
     const { E } = this._keys();
     const filt = this._cfg.filtered || {};
-    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (this._fdays - 1));
+    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - ((this._fdays === "ytd" ? Math.floor((start - new Date(start.getFullYear(), 0, 1)) / 86400e3) + 1 : this._fdays) - 1));
     const ids = [...new Set(E.prod.concat(E.prod.map((i) => filt[i]).filter(Boolean)))];
     this._root.querySelectorAll("#fcs .chart").forEach((c) => c.classList.add("loading"));
     const todayIds = list(this._cfg.forecast_today_energy_sensors);
@@ -1009,17 +1025,28 @@ class PVAssistantPanel extends HTMLElement {
     if (!fcDays.length) {
       for (const b of [fcBox, fdBox]) b.innerHTML = `<p class="empty">${esc(this._t(list(this._cfg.forecast_today_energy_sensors).length ? "anaNoForecastYet" : "anaNoForecast"))}</p>`;
     } else {
-      const cats = fcDays.map(dayLabel);
       const fc = fcDays.map((day) => log[day]), ist = fcDays.map((day) => actual.get(day));
       const dev = fcDays.map((day, i) => ((ist[i] - fc[i]) / fc[i]) * 100);
+      // up to 90 days one bar group per day, beyond that per month (sums), otherwise it is unreadable
+      let cats = fcDays.map(dayLabel), fcBars = fc, istBars = ist, devBars = dev;
+      if (fcDays.length > 90) {
+        const groups = new Map();
+        fcDays.forEach((day, i) => { const k = day.slice(0, 7); const g = groups.get(k) || [0, 0]; g[0] += fc[i]; g[1] += ist[i]; groups.set(k, g); });
+        const monthFmt = new Intl.DateTimeFormat(lang, fcDays[0].slice(0, 4) === fcDays.at(-1).slice(0, 4) ? { month: "short" } : { month: "short", year: "2-digit" });
+        cats = [...groups.keys()].map((k) => monthFmt.format(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 15)));
+        fcBars = [...groups.values()].map((g) => g[0]);
+        istBars = [...groups.values()].map((g) => g[1]);
+        devBars = [...groups.values()].map((g) => ((g[1] - g[0]) / g[0]) * 100);
+      }
+      root.getElementById("fchead").textContent = this._t(fcDays.length > 90 ? "anaForecastMonth" : "anaForecast");
       categoryBarChart(fcBox, {
         categories: cats,
-        series: [{ name: this._t("fcForecast"), color: "--pva-s1", values: fc }, { name: this._t("fcActual"), color: "--pva-prod", values: ist }],
+        series: [{ name: this._t("fcForecast"), color: "--pva-s1", values: fcBars }, { name: this._t("fcActual"), color: "--pva-prod", values: istBars }],
         fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("anaForecast"),
       });
       categoryBarChart(fdBox, {
         categories: cats,
-        series: [{ name: this._t("anaForecastDev"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: dev }],
+        series: [{ name: this._t("anaForecastDev"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: devBars }],
         legendItems: [{ name: this._t("aboveFc"), color: "--pva-pos" }, { name: this._t("belowFc"), color: "--pva-neg" }],
         fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis ? 0 : 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("anaForecastDev"),
       });
