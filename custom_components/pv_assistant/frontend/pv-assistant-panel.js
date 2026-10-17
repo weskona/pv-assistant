@@ -121,30 +121,42 @@ class PVAssistantPanel extends HTMLElement {
       this._root = this.attachShadow({ mode: "open" });
       this._root.innerHTML = `
         <style>
-          :host { display:block; background:var(--primary-background-color);
-                  color:var(--primary-text-color); min-height:100vh; box-sizing:border-box; }
-          header { display:flex; align-items:center; gap:8px; height:56px; padding:0 12px;
-                   background:var(--app-header-background-color, var(--primary-color));
-                   color:var(--app-header-text-color, #fff); font-size:20px; }
-          nav { display:flex; overflow-x:auto; background:var(--app-header-background-color, var(--primary-color));
-                color:var(--app-header-text-color, #fff); padding:0 8px; }
-          nav button { font:inherit; color:inherit; background:transparent; border:0; border-bottom:3px solid transparent;
-                padding:10px 16px 8px; opacity:.75; cursor:pointer; white-space:nowrap; }
-          nav button:hover { opacity:1; }
-          nav button[aria-selected="true"] { opacity:1; border-bottom-color:currentColor; font-weight:500; }
+          /* design tokens: layout and look follow the Glow dashboard (dark cards, large radii, glow bar);
+             in light mode the same shapes use the Home Assistant theme colors */
+          :host { --g-bg:var(--primary-background-color); --g-panel:var(--card-background-color);
+                  --g-panel-bg:var(--card-background-color); --g-line:var(--divider-color);
+                  --g-tile:var(--secondary-background-color); --g-tileb:var(--divider-color);
+                  --g-text:var(--primary-text-color); --g-muted:var(--secondary-text-color);
+                  --g-dim:var(--disabled-text-color, var(--secondary-text-color)); --g-accent:var(--primary-color);
+                  display:block; background:var(--g-bg); color:var(--g-text); min-height:100vh; box-sizing:border-box;
+                  font-family:'Outfit','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+          :host([data-dark]) { --g-bg:#0b0d12; --g-panel:#14171e; --g-panel-bg:linear-gradient(180deg,#161920,#12151b);
+                  --g-line:rgba(255,255,255,.065); --g-tile:rgba(255,255,255,.032); --g-tileb:rgba(255,255,255,.07);
+                  --g-text:#f3f5f9; --g-muted:#8b91a1; --g-dim:#5d6373; --g-accent:#f7b733;
+                  --card-background-color:#14171e; --divider-color:rgba(255,255,255,.065);
+                  --secondary-background-color:rgba(255,255,255,.05); --primary-text-color:#f3f5f9; --secondary-text-color:#8b91a1; }
+          header { display:flex; align-items:center; gap:8px; height:56px; padding:0 12px; background:var(--g-bg); color:var(--g-text);
+                   font-size:20px; font-weight:600; }
+          nav { display:flex; gap:8px; overflow-x:auto; background:var(--g-bg); padding:0 16px 4px; max-width:1100px; margin:0 auto; box-sizing:border-box; }
+          nav button { font:inherit; font-size:14px; font-weight:600; letter-spacing:.04em; color:var(--g-muted); background:var(--g-tile);
+                border:1px solid var(--g-tileb); border-radius:16px; padding:8px 16px; cursor:pointer; white-space:nowrap; }
+          nav button:hover { color:var(--g-text); }
+          nav button[aria-selected="true"] { color:var(--g-accent); background:color-mix(in srgb, var(--g-accent) 14%, transparent);
+                border-color:color-mix(in srgb, var(--g-accent) 38%, transparent); }
+          nav button:focus-visible, .filters button:focus-visible, .setbtn:focus-visible { outline:2px solid var(--g-accent); outline-offset:2px; }
           [role="tabpanel"][hidden] { display:none; }
           main { padding:16px; max-width:1100px; margin:0 auto; }
-          h2 { font-weight:400; font-size:1.2em; margin:24px 0 8px; }
+          h2 { font-weight:600; font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted); margin:28px 0 10px; }
           .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
-          .card { background:var(--card-background-color); border-radius:12px; padding:16px;
+          .card { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; padding:20px 22px;
                   box-shadow:var(--ha-card-box-shadow,none); }
-          .card h3 { margin:0 0 8px; font-size:1em; font-weight:500; display:flex; justify-content:space-between; }
-          .card h3 small { color:var(--secondary-text-color); font-weight:400; }
-          .row { display:flex; justify-content:space-between; gap:8px; padding:4px 0;
-                 border-top:1px solid var(--divider-color); }
+          .card h3 { margin:0 0 10px; font-size:15px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted);
+                     display:flex; justify-content:space-between; gap:8px; }
+          .card h3 small { color:var(--g-text); font-weight:500; letter-spacing:0; text-transform:none; font-size:15px; }
+          .row { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--g-line); }
           .row span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-          .sum { font-weight:500; }
-          .muted { color:var(--secondary-text-color); }
+          .sum { font-weight:600; }
+          .muted { color:var(--g-muted); }
           /* categorical slots 1-4 (blue, orange, aqua, yellow), light / dark stepped */
           /* entity colors (same as the Energy dashboard); --pva-grid is reserved for grid import */
           :host { --pva-prod:#ff9800; --pva-feed:#8353d1; --pva-grid:#488fc2; --pva-direct:#ffd700;
@@ -152,21 +164,21 @@ class PVAssistantPanel extends HTMLElement {
                   --pva-avg:color-mix(in srgb, #ff9800 45%, var(--card-background-color));
                   --pva-house:#8d8d8d; --pva-pos:#008300; --pva-neg:#e34948;
                   --pva-s1:#2a78d6; --pva-s2:#1baf7a; --pva-s3:#e87ba4; --pva-s4:#6250d6; --pva-s5:#008300; --pva-s6:#e34948; --pva-s7:#eda100; }
-          :host([data-dark]) { --pva-house:#bdbdbd; --pva-pos:#008300; --pva-neg:#e66767;
-                  --pva-s1:#3987e5; --pva-s2:#199e70; --pva-s3:#d55181; --pva-s4:#9085e9; --pva-s5:#008300; --pva-s6:#e66767; --pva-s7:#c98500; }
+          :host([data-dark]) { --pva-house:#bdbdbd; --pva-pos:#34d399; --pva-neg:#f87171;
+                  --pva-s1:#3987e5; --pva-s2:#199e70; --pva-s3:#d55181; --pva-s4:#9085e9; --pva-s5:#34d399; --pva-s6:#f87171; --pva-s7:#c98500; }
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
-          .filters button { font:inherit; color:var(--primary-text-color); background:transparent;
-                  border:1px solid var(--divider-color); border-radius:16px; padding:4px 14px; cursor:pointer; }
+          .filters button { font:inherit; font-weight:600; color:var(--g-muted); background:var(--g-tile);
+                  border:1px solid var(--g-tileb); border-radius:14px; padding:7px 15px; cursor:pointer; }
           .filters button:hover { background:var(--secondary-background-color); }
-          .filters button[aria-pressed="true"] { border-color:var(--primary-color); color:var(--primary-color); font-weight:500; }
+          .filters button[aria-pressed="true"] { border-color:color-mix(in srgb, var(--g-accent) 40%, transparent); color:var(--g-accent); background:color-mix(in srgb, var(--g-accent) 14%, transparent); }
           .tiles { display:flex; gap:12px; flex-wrap:wrap; margin:0 0 12px; }
-          .tile { background:var(--card-background-color); border-radius:12px; padding:10px 14px; min-width:120px; }
-          .tile b { display:block; font-size:1.4em; font-weight:500; }
-          .tile span { color:var(--secondary-text-color); font-size:.85em; }
-          .chart { background:var(--card-background-color); border-radius:12px; padding:12px 12px 8px;
+          .tile { background:var(--g-tile); border:1px solid var(--g-tileb); border-radius:15px; padding:9px 13px; min-width:120px; display:flex; flex-direction:column; gap:2px; }
+          .tile b { display:block; font-size:1.35em; font-weight:700; font-variant-numeric:tabular-nums; }
+          .tile span { color:var(--g-muted); font-size:.75em; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
+          .chart { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; padding:16px 18px 10px;
                    margin-bottom:16px; transition:opacity .15s; }
           .chart.loading { opacity:.5; }
-          h3.ch { font-weight:500; font-size:1em; margin:16px 0 8px; }
+          h3.ch { font-weight:600; font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted); margin:22px 0 10px; }
           .legend { display:flex; gap:16px; flex-wrap:wrap; margin:0 0 6px; font-size:.85em; color:var(--secondary-text-color); }
           .legend-item { display:inline-flex; align-items:center; gap:6px; }
           .key { display:inline-block; }
@@ -181,7 +193,7 @@ class PVAssistantPanel extends HTMLElement {
           svg .dot { stroke:var(--card-background-color); stroke-width:2; }
           svg .wash { fill:var(--secondary-text-color); opacity:.12; }
           .tip { position:absolute; pointer-events:none; z-index:2; background:var(--card-background-color);
-                 border:1px solid var(--divider-color); border-radius:8px; padding:8px 10px; font-size:.85em;
+                 border:1px solid var(--g-tileb); border-radius:14px; padding:8px 10px; font-size:.85em;
                  box-shadow:0 2px 8px rgba(0,0,0,.25); white-space:nowrap; }
           .tip-title { color:var(--secondary-text-color); margin-bottom:4px; }
           .tip-row { display:flex; align-items:center; gap:8px; }
@@ -196,8 +208,8 @@ class PVAssistantPanel extends HTMLElement {
           details.tableview th, details.tableview td { text-align:right; padding:3px 8px; border-top:1px solid var(--divider-color); }
           details.tableview th:first-child { text-align:left; font-weight:400; }
           .yearnav { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; }
-          .yearnav button { font:inherit; color:var(--primary-text-color); background:transparent; border:1px solid var(--divider-color);
-                  border-radius:16px; width:36px; height:32px; cursor:pointer; }
+          .yearnav button { font:inherit; color:var(--g-text); background:var(--g-tile); border:1px solid var(--g-tileb);
+                  border-radius:13px; width:36px; height:32px; cursor:pointer; }
           .yearnav button:hover:not(:disabled) { background:var(--secondary-background-color); }
           .yearnav button:disabled { opacity:.35; cursor:default; }
           .yearnav b { font-size:1.2em; font-weight:500; min-width:3.5em; text-align:center; }
@@ -207,29 +219,29 @@ class PVAssistantPanel extends HTMLElement {
           .note { color:var(--secondary-text-color); font-size:.85em; margin:0 0 16px; }
           .note.warn { color:var(--primary-text-color); border-left:3px solid var(--pva-neg); padding-left:8px; margin:8px 0 0; }
           .grid + .note { margin-top:16px; }
-          .gauge { height:10px; border-radius:5px; background:var(--divider-color); overflow:hidden; margin:10px 0 6px; }
-          .gauge i { display:block; height:100%; border-radius:5px; background:var(--pva-prod); }
-          .pw-val { font-size:2em; font-weight:500; }
+          .gauge { height:10px; border-radius:6px; background:rgba(127,127,127,.18); overflow:hidden; margin:10px 0 6px; }
+          .gauge i { display:block; height:100%; border-radius:6px; background:var(--pva-prod); box-shadow:0 0 12px color-mix(in srgb, var(--pva-prod) 55%, transparent); }
+          .pw-val { font-size:2.4em; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
           .pw-sub { color:var(--secondary-text-color); font-size:.9em; display:flex; justify-content:space-between; gap:8px; }
-          .setcard { background:var(--card-background-color); border-radius:12px; padding:16px; margin-bottom:12px; }
-          .setcard h3 { margin:0 0 2px; font-size:1em; font-weight:500; }
+          .setcard { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; padding:20px 22px; margin-bottom:16px; }
+          .setcard h3 { margin:0 0 2px; font-size:15px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted); }
           .setcard .eid { color:var(--secondary-text-color); font-size:.85em; margin-bottom:10px; word-break:break-all; }
           .setrow { display:grid; grid-template-columns:minmax(120px,200px) 1fr; gap:8px 12px; align-items:center; margin:6px 0; }
           .setrow label { color:var(--secondary-text-color); }
           .setrow input { font:inherit; color:var(--primary-text-color); background:var(--secondary-background-color);
-                  border:1px solid var(--divider-color); border-radius:8px; padding:6px 10px; min-width:0; max-width:320px; box-sizing:border-box; width:100%; }
+                  border:1px solid var(--g-tileb); border-radius:12px; padding:8px 12px; min-width:0; max-width:320px; box-sizing:border-box; width:100%; }
           .setrow input:disabled { opacity:.6; }
           .setrow .hint { grid-column:2; color:var(--secondary-text-color); font-size:.85em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-          .setbtn { font:inherit; color:var(--primary-text-color); background:transparent; border:1px solid var(--divider-color);
-                  border-radius:16px; padding:3px 12px; cursor:pointer; }
+          .setbtn { font:inherit; font-weight:600; color:var(--g-text); background:var(--g-tile); border:1px solid var(--g-tileb);
+                  border-radius:13px; padding:5px 14px; cursor:pointer; }
           .setbtn:hover:not(:disabled) { background:var(--secondary-background-color); }
-          .setbtn.primary { background:var(--primary-color); border-color:var(--primary-color); color:var(--text-primary-color,#fff); font-weight:500; padding:6px 20px; }
+          .setbtn.primary { background:color-mix(in srgb, var(--g-accent) 16%, transparent); border-color:color-mix(in srgb, var(--g-accent) 40%, transparent); color:var(--g-accent); font-weight:700; padding:8px 22px; }
           .setbtn:disabled { opacity:.5; cursor:default; }
           .setbar { display:flex; gap:12px; align-items:center; margin-top:8px; }
           @media (max-width:560px) { .setrow { grid-template-columns:1fr; } .setrow .hint { grid-column:1; } }
           .two { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
           .hints { margin:0 0 12px; padding:0; list-style:none; }
-          .hints li { border-left:3px solid var(--pva-neg); padding:4px 10px; margin:4px 0; background:var(--card-background-color); border-radius:0 8px 8px 0; }
+          .hints li { border-left:3px solid var(--pva-neg); padding:8px 14px; margin:6px 0; background:var(--g-tile); border-radius:0 15px 15px 0; }
           .hints li.info { border-left-color:var(--pva-s1); color:var(--secondary-text-color); }
           .strow { display:grid; grid-template-columns:minmax(120px,220px) 1fr auto; gap:12px; align-items:center; padding:6px 0; border-top:1px solid var(--divider-color); }
           .strow:first-child { border-top:0; }
