@@ -32,6 +32,15 @@ export function niceTicks(min, max, count = 4) {
   return ticks;
 }
 
+
+// A redraw replaces the chart contents; keep the table view open if the reader opened it.
+function wasTableOpen(container) {
+  return !!container.querySelector("details.tableview")?.open;
+}
+function restoreTable(container, open) {
+  if (open) container.querySelector("details.tableview")?.setAttribute("open", "");
+}
+
 function legend(series, kind) {
   const box = html("div", "legend");
   for (const s of series.flatMap((x) => x.legendItems || [x])) {
@@ -111,6 +120,7 @@ function table(headers, rows) {
  */
 export function lineChart(container, opts) {
   const { series, t0, t1, height = 240, fmtValue, fmtTime, fmtTick, tickStep, step } = opts;
+  const tableOpen = wasTableOpen(container);
   container.replaceChildren();
   const live = series.filter((s) => s.points.length);
   if (!live.length) { container.append(html("p", "empty", opts.empty)); return; }
@@ -217,6 +227,7 @@ export function lineChart(container, opts) {
   const rows = [...byHour.entries()].sort((a, b) => a[0] - b[0]).map(([h, e]) =>
     [fmtTime(h), ...e.map(([sum, n]) => (n ? fmtValue(sum / n) : "–"))]);
   container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...live.map((s) => s.name)] }, rows));
+  restoreTable(container, tableOpen);
 }
 
 /**
@@ -225,6 +236,7 @@ export function lineChart(container, opts) {
  */
 export function barChart(container, opts) {
   const { series, t0, t1, bucket, height = 240, fmtValue, fmtTime, fmtTick, tickStep } = opts;
+  const tableOpen = wasTableOpen(container);
   container.replaceChildren();
   const live = series.filter((s) => s.values.size);
   if (!live.length) { container.append(html("p", "empty", opts.empty)); return; }
@@ -282,6 +294,7 @@ export function barChart(container, opts) {
   container.append(legend(live, "bar"), wrap);
   container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...live.map((s) => s.name)] },
     times.map((ts) => [fmtTime(ts), ...live.map((s) => fmtValue(s.values.get(ts) ?? 0))])));
+  restoreTable(container, tableOpen);
 }
 
 /**
@@ -291,6 +304,7 @@ export function barChart(container, opts) {
  */
 export function categoryBarChart(container, opts) {
   const { categories, series, height = 240, fmtValue } = opts;
+  const tableOpen = wasTableOpen(container);
   container.replaceChildren();
   const all = series.flatMap((s) => s.values.filter((v) => v != null));
   if (!all.length) { container.append(html("p", "empty", opts.empty)); return; }
@@ -345,4 +359,5 @@ export function categoryBarChart(container, opts) {
   container.append(legend(opts.legendItems || series, "bar"), wrap);
   container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...series.map((s) => s.name)] },
     categories.map((c, i) => [c, ...series.map((s) => (s.values[i] == null ? "–" : fmtValue(s.values[i])))])));
+  restoreTable(container, tableOpen);
 }

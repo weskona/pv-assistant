@@ -198,6 +198,10 @@ class PVAssistantPanel extends HTMLElement {
       this._menu = menu;
     }
     this._ro = new ResizeObserver(() => {
+      // only a width change needs a redraw; opening the table view only changes the height
+      const w = this.clientWidth;
+      if (w === this._lastW) return;
+      this._lastW = w;
       cancelAnimationFrame(this._raf);
       this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); });
     });
