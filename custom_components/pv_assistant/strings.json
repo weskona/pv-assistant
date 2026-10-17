@@ -55,6 +55,16 @@
           "irradiance_sensor": "Solar irradiance (optional)",
           "price_import": "Grid import price per kWh (sensor or input_number, optional)",
           "price_feed_in": "Feed-in tariff per kWh (sensor or input_number, optional)"
+        },
+        "data_description": {
+          "grid_import_energy_sensors": "Energy bought from the grid (kWh). Several meters are summed.",
+          "grid_import_power_sensors": "Power drawn from the grid (W), only needed if there is no energy sensor.",
+          "house_energy_sensors": "Total consumption of the house (kWh) including everything behind the meter, such as wallbox, heat pump and the like. Use the same scope as the grid import so that autarky and direct consumption add up. If the wallbox is measured separately and not included here, add its sensor as well (several sensors are summed).",
+          "house_power_sensors": "Same as the energy field, as power (W). Used for the live curves.",
+          "battery_soc_sensor": "Charge level of the battery in %. Only used for the battery curve and the min–max tile.",
+          "irradiance_sensor": "Solar irradiance in W/m² from a pyranometer or a weather station (device class irradiance). Used for the performance ratio on the Analysis tab: the yield is compared with what the irradiance should have produced, which separates weather from plant problems. It needs the peak power of the strings (Settings tab). Not the same as a forecast sensor.",
+          "price_import": "Current electricity price in €/kWh, used for the savings. A fixed price can be entered under Settings → Plant instead.",
+          "price_feed_in": "Feed-in tariff in €/kWh, used for the feed-in revenue."
         }
       }
     },
@@ -118,6 +128,16 @@
           "irradiance_sensor": "Solar irradiance (optional)",
           "price_import": "Grid import price per kWh (sensor or input_number, optional)",
           "price_feed_in": "Feed-in tariff per kWh (sensor or input_number, optional)"
+        },
+        "data_description": {
+          "grid_import_energy_sensors": "Energy bought from the grid (kWh). Several meters are summed.",
+          "grid_import_power_sensors": "Power drawn from the grid (W), only needed if there is no energy sensor.",
+          "house_energy_sensors": "Total consumption of the house (kWh) including everything behind the meter, such as wallbox, heat pump and the like. Use the same scope as the grid import so that autarky and direct consumption add up. If the wallbox is measured separately and not included here, add its sensor as well (several sensors are summed).",
+          "house_power_sensors": "Same as the energy field, as power (W). Used for the live curves.",
+          "battery_soc_sensor": "Charge level of the battery in %. Only used for the battery curve and the min–max tile.",
+          "irradiance_sensor": "Solar irradiance in W/m² from a pyranometer or a weather station (device class irradiance). Used for the performance ratio on the Analysis tab: the yield is compared with what the irradiance should have produced, which separates weather from plant problems. It needs the peak power of the strings (Settings tab). Not the same as a forecast sensor.",
+          "price_import": "Current electricity price in €/kWh, used for the savings. A fixed price can be entered under Settings → Plant instead.",
+          "price_feed_in": "Feed-in tariff in €/kWh, used for the feed-in revenue."
         }
       }
     }
