@@ -55,6 +55,16 @@
           "irradiance_sensor": "Sonneneinstrahlung (optional)",
           "price_import": "Strompreis Netzbezug je kWh (Sensor oder input_number, optional)",
           "price_feed_in": "Einspeisevergütung je kWh (Sensor oder input_number, optional)"
+        },
+        "data_description": {
+          "grid_import_energy_sensors": "Energie, die aus dem Netz bezogen wurde (kWh). Mehrere Zähler werden addiert.",
+          "grid_import_power_sensors": "Leistung aus dem Netz (W), nur nötig, wenn es keinen Energiesensor gibt.",
+          "house_energy_sensors": "Gesamtverbrauch des Hauses (kWh) inklusive allem hinter dem Zähler, z. B. Wallbox, Wärmepumpe usw. Nimm denselben Umfang wie beim Netzbezug, damit Autarkie und Direktverbrauch zusammenpassen. Wird die Wallbox separat gemessen und ist hier nicht enthalten, füge ihren Sensor zusätzlich hinzu (mehrere Sensoren werden addiert).",
+          "house_power_sensors": "Wie das Energiefeld, als Leistung (W). Wird für die Live-Kurven verwendet.",
+          "battery_soc_sensor": "Ladestand der Batterie in %. Wird nur für die Ladestandskurve und die Min–Max-Kachel genutzt.",
+          "irradiance_sensor": "Sonneneinstrahlung in W/m² von einem Pyranometer oder einer Wetterstation (Geräteklasse Einstrahlung). Damit berechnet der Tab „Analyse“ die Performance Ratio: Der Ertrag wird mit dem verglichen, was die Einstrahlung hätte liefern sollen. So lassen sich Wetter und Anlagenprobleme trennen. Dafür braucht es die Peak-Leistung der Strings (Tab „Einstellungen“). Nicht zu verwechseln mit einem Prognose-Sensor.",
+          "price_import": "Aktueller Strompreis in €/kWh für die Ersparnis. Ein fester Preis kann stattdessen unter Einstellungen → Anlage eingetragen werden.",
+          "price_feed_in": "Einspeisevergütung in €/kWh für den Einspeiseerlös."
         }
       }
     },
@@ -118,6 +128,16 @@
           "irradiance_sensor": "Sonneneinstrahlung (optional)",
           "price_import": "Strompreis Netzbezug je kWh (Sensor oder input_number, optional)",
           "price_feed_in": "Einspeisevergütung je kWh (Sensor oder input_number, optional)"
+        },
+        "data_description": {
+          "grid_import_energy_sensors": "Energie, die aus dem Netz bezogen wurde (kWh). Mehrere Zähler werden addiert.",
+          "grid_import_power_sensors": "Leistung aus dem Netz (W), nur nötig, wenn es keinen Energiesensor gibt.",
+          "house_energy_sensors": "Gesamtverbrauch des Hauses (kWh) inklusive allem hinter dem Zähler, z. B. Wallbox, Wärmepumpe usw. Nimm denselben Umfang wie beim Netzbezug, damit Autarkie und Direktverbrauch zusammenpassen. Wird die Wallbox separat gemessen und ist hier nicht enthalten, füge ihren Sensor zusätzlich hinzu (mehrere Sensoren werden addiert).",
+          "house_power_sensors": "Wie das Energiefeld, als Leistung (W). Wird für die Live-Kurven verwendet.",
+          "battery_soc_sensor": "Ladestand der Batterie in %. Wird nur für die Ladestandskurve und die Min–Max-Kachel genutzt.",
+          "irradiance_sensor": "Sonneneinstrahlung in W/m² von einem Pyranometer oder einer Wetterstation (Geräteklasse Einstrahlung). Damit berechnet der Tab „Analyse“ die Performance Ratio: Der Ertrag wird mit dem verglichen, was die Einstrahlung hätte liefern sollen. So lassen sich Wetter und Anlagenprobleme trennen. Dafür braucht es die Peak-Leistung der Strings (Tab „Einstellungen“). Nicht zu verwechseln mit einem Prognose-Sensor.",
+          "price_import": "Aktueller Strompreis in €/kWh für die Ersparnis. Ein fester Preis kann stattdessen unter Einstellungen → Anlage eingetragen werden.",
+          "price_feed_in": "Einspeisevergütung in €/kWh für den Einspeiseerlös."
         }
       }
     }
