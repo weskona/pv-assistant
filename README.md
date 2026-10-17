@@ -4,7 +4,7 @@ Ausführliche Dokumentation: [Wiki](https://github.com/weskona/pv-assistant/wiki
 
 Home-Assistant-Integration mit eigenem Sidebar-Panel für PV-Energiefluss.
 
-> **Beta:** Die Integration befindet sich im Beta-Status. Funktionen und Einstellungen können sich noch ändern, und es kann Fehler geben. Alle Releases sind als Vorabversion (Pre-release) markiert und tragen das Suffix `-beta` (z. B. `v0.6.4-beta`); in HACS dafür „Beta-Versionen anzeigen“ aktivieren oder die Version beim Herunterladen von Hand wählen. Rückmeldungen bitte als Issue melden.
+> **Beta:** Die Integration befindet sich im Beta-Status. Funktionen und Einstellungen können sich noch ändern, und es kann Fehler geben. Alle Releases sind als Vorabversion (Pre-release) markiert und tragen das Suffix `-beta` (z. B. `v0.6.4-beta`); in HACS dafür „Beta-Versionen anzeigen“ aktivieren oder die Version beim Herunterladen von Hand wählen. Fehler und Wünsche bitte im [Issue-Tracker](https://github.com/weskona/pv-assistant/issues/new/choose) melden (Formulare für Fehler und Ideen).
 
 Konfiguration in vier Schritten: (1) Energiesensoren (kWh), (2) Leistungssensoren (W) – beide mit gleichem Aufbau –, (3) optional Prognose-Energiesensoren (heute, morgen, Rest heute; je beliebig viele, z. B. von Forecast.Solar oder Solcast), (4) optional Netzbezug (Energie/Leistung), Hausverbrauch (Energie/Leistung), Batterie-Ladestand, Einstrahlung sowie Strompreis und Einspeisevergütung (Sensor oder input_number). Je: Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein/raus oder kombiniert mit umschaltbarem Vorzeichen (mehrere).
 

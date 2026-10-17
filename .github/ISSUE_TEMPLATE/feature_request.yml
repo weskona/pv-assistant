@@ -1,0 +1,38 @@
+name: Wunsch oder Idee
+description: Eine neue Funktion oder eine Verbesserung vorschlagen.
+title: "[Wunsch] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Was möchtest du erreichen?
+      description: Beschreibe das Problem oder die Frage, die du mit deiner PV-Anlage hast, nicht nur die Lösung.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Wie könnte es aussehen?
+      description: Ein Tab, eine Kennzahl, ein Diagramm, eine Einstellung ... Skizzen und Screenshots helfen.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Wo passt es hin?
+      options:
+        - Config Flow / Einrichtung
+        - Tab Aktuell
+        - Tab Leistung
+        - Tab Analyse
+        - Tab Verlauf
+        - Tab Speicher
+        - Tab Prognose
+        - Tab Jahresübersicht
+        - Tab Einstellungen
+        - Neuer Bereich
+        - Sonstiges
+  - type: textarea
+    id: data
+    attributes:
+      label: Welche Daten braucht es?
+      description: Welche Sensoren oder Werte wären dafür nötig (zum Beispiel Wallbox, Wärmepumpe, Wetterstation)?

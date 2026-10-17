@@ -1,0 +1,73 @@
+name: Fehler melden
+description: Etwas funktioniert nicht oder zeigt falsche Werte.
+title: "[Fehler] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für die Meldung! Bitte schau vorher kurz in die [Fehlersuche im Wiki](https://github.com/weskona/pv-assistant/wiki/Fehlersuche).
+        Das Projekt ist im Beta-Status; bitte keine Zugangsdaten, Tokens oder persönlichen Daten in Screenshots oder Logs.
+  - type: input
+    id: version
+    attributes:
+      label: Version von PV Assistant
+      description: Zu finden in HACS oder in `custom_components/pv_assistant/manifest.json`, zum Beispiel `0.9.9-beta`.
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home-Assistant-Version und Browser
+      placeholder: "2025.10.1, Chrome 130"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Wo tritt der Fehler auf?
+      options:
+        - Config Flow / Einrichtung
+        - Tab Aktuell
+        - Tab Leistung
+        - Tab Analyse
+        - Tab Verlauf
+        - Tab Speicher
+        - Tab Prognose
+        - Tab Jahresübersicht
+        - Tab Einstellungen
+        - Sensoren (bereinigt, String-Störung)
+        - Sonstiges
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Was passiert?
+      description: "Was siehst du, und was hast du erwartet? Bei falschen Zahlen: welche Werte stehen im Panel und welche im Energy-Dashboard oder am Gerät (mit Zeitraum)?"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zum Nachstellen
+      placeholder: |
+        1. Tab Speicher öffnen
+        2. Zeitraum „Dieses Jahr“ wählen
+        3. ...
+  - type: textarea
+    id: setup
+    attributes:
+      label: Betroffene Sensoren und Einstellungen
+      description: Welche Sensoren sind in den Config-Flow-Schritten gewählt (Erzeugung, Einspeisung, Speicher, Hausverbrauch ...)? Sind Schalter für negative Werte aktiv? Sind Peak, Ausrichtung und Neigung eingetragen?
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Bilder hier hineinziehen oder einfügen.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs und Konsole
+      description: Fehler aus Einstellungen → System → Protokolle (Suche nach `pv_assistant`) und, bei Anzeigeproblemen, aus der Browser-Konsole (F12).
+      render: text
