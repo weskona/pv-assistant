@@ -21,6 +21,11 @@
 | Einspeiseerlös | Einspeisung × Einspeisevergütung |
 | CO₂ vermieden | Erzeugung × CO₂-Faktor |
 
+## Jahreszeiträume (Dieses Jahr, 12 Monate)
+- **Leistung (Tagesmittel):** aus der Tagesenergie berechnet (Energie ÷ 24 h). Das ist exakt und behält die Richtung von Sensoren mit Vorzeichen. Ein Tagesmittel eines solchen Leistungssensors würde Bezug und Einspeisung oder Laden und Entladen gegeneinander aufheben.
+- **Effektive Leistung:** die Tagesspitze (höchstes Stundenmittel des Tages ÷ Peak). Ein Tagesmittel enthält die Nacht und käme nie in die Nähe des Peaks.
+- **Speicher:** Tageshöchstwert, Tagesdurchschnitt und Tagestiefstwert des Ladestands sowie die Tagesspitzen der Leistung aus den Höchst- und Tiefstwerten der Statistik.
+
 ## Energiezähler und Leistungssensoren
 Gesamtwerte (z. B. Erzeugung in der Analyse) kommen aus den **Energiezählern**, weil sie mit dem Energy-Dashboard übereinstimmen. Der String-Vergleich und die Heatmap nutzen die **Leistungssensoren** (Stundenmittel). Eine bereinigte Kopie eines Sensors und das Original werden je Zeitabschnitt zusammengeführt (die Kopie gewinnt, wo sie Daten hat).
 
