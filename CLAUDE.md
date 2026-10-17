@@ -19,3 +19,6 @@
   deutschen Abschnitt mit gleichem Inhalt; bei jeder Änderung beide Sprachen pflegen. Seitennamen sind englisch.
 - Auch die `README.md` ist immer zweisprachig (Abschnitte `English` und `Deutsch` mit gleichem Inhalt); beide gemeinsam pflegen.
 - Auch die Issue-Formulare (`.github/ISSUE_TEMPLATE/`) sind zweisprachig: jeder Text steht als `English / Deutsch`.
+- Code (Bezeichner, Kommentare, Docstrings, Commit-Messages) wird ausschließlich auf Englisch geschrieben.
+- `CHANGELOG.md` folgt Keep a Changelog: Einträge auf Englisch, direkt darunter die deutsche Übersetzung kursiv (`<br>*...*`).
+  Jeder PR ergänzt einen Eintrag für die neue Version (gleiche Version wie in `manifest.json`).
