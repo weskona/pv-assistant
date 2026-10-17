@@ -75,6 +75,9 @@ def _as_list(value) -> list[str]:
             vol.Optional("price_feed_in"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
             vol.Optional("system_cost_eur"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000000)),
             vol.Optional("co2_g_per_kwh"): vol.All(vol.Coerce(float), vol.Range(min=0, max=2000)),
+            # plant location, overrides the Home Assistant home location (0 / empty = use Home Assistant)
+            vol.Optional("latitude"): vol.All(vol.Coerce(float), vol.Range(min=-90, max=90)),
+            vol.Optional("longitude"): vol.All(vol.Coerce(float), vol.Range(min=-180, max=180)),
         },
     }
 )
@@ -110,7 +113,7 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
     general = dict(store.get("settings", {}).get("general", {}))
     if "general" in msg:
         for key, value in msg["general"].items():
-            if value and value > 0:
+            if value and (value > 0 or key in ("latitude", "longitude")):  # coordinates may be negative
                 general[key] = value
             else:
                 general.pop(key, None)

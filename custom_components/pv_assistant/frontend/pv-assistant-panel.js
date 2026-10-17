@@ -1,5 +1,5 @@
 import { lineChart, barChart, categoryBarChart } from "./pv-assistant-charts.js";
-import { localKeyFn, median, plateauDays, heatmap, orientationFactor } from "./pv-assistant-analysis.js";
+import { localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } from "./pv-assistant-analysis.js";
 
 const T = {
   de: {
@@ -31,6 +31,7 @@ const T = {
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
+    genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
     setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
     anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
     anaNoOrient: "Trage bei den Strings Ausrichtung und Neigung ein (Einstellungen), dann wird der Vergleich um die Ausrichtung bereinigt (Ost/West erzeugt weniger als Süd).",
@@ -50,7 +51,7 @@ const T = {
     fcAvgDev: "Ø Abweichung", fcHit: "Trefferquote (±20 %)", fcDays: "Tage mit Prognose", fcForecast: "Prognose", fcActual: "Ist", anaLoading: "Lade Analyse …",
     genTitle: "Anlage", genCap: "Speicherkapazität (kWh)", genPriceImport: "Strompreis Netzbezug (€/kWh)", genPriceFeed: "Einspeisevergütung (€/kWh)",
     genCost: "Anlagenkosten (€)", genCo2: "CO₂-Faktor des Strommix (g/kWh)",
-    genHint: "Die Preise gelten nur, wenn im Config Flow kein Preis-Sensor gewählt wurde. Kapazität: für die Zyklen des Speichers. Kosten: für die Amortisation. CO₂-Faktor: Standard 380 g/kWh.",
+    genHint: "Die Preise gelten nur, wenn im Config Flow kein Preis-Sensor gewählt wurde. Standort: leer = Standort von Home Assistant, genutzt für die Sonnenstand-Auswertung der Strings. Kapazität: für die Zyklen des Speichers. Kosten: für die Amortisation. CO₂-Faktor: Standard 380 g/kWh.",
     settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
     setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
     setError: "Speichern fehlgeschlagen", setAdmin: "Nur Administratoren können Einstellungen ändern.", setPower: "Leistungssensor", setEnergy: "Energiesensor",
@@ -91,6 +92,7 @@ const T = {
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
+    genLat: "Latitude (optional)", genLon: "Longitude (optional)",
     setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
     anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
     anaNoOrient: "Enter orientation and tilt of the strings (Settings) and the comparison is corrected for the orientation (east/west yields less than south).",
@@ -110,7 +112,7 @@ const T = {
     fcAvgDev: "Avg. deviation", fcHit: "Hit rate (±20 %)", fcDays: "Days with forecast", fcForecast: "Forecast", fcActual: "Actual", anaLoading: "Loading analysis …",
     genTitle: "Plant", genCap: "Storage capacity (kWh)", genPriceImport: "Grid import price (€/kWh)", genPriceFeed: "Feed-in tariff (€/kWh)",
     genCost: "System cost (€)", genCo2: "CO₂ factor of the power mix (g/kWh)",
-    genHint: "The prices only apply when no price sensor was chosen in the config flow. Capacity: for the storage cycles. Cost: for the payback. CO₂ factor: default 380 g/kWh.",
+    genHint: "The prices only apply when no price sensor was chosen in the config flow. Location: empty = Home Assistant location, used for the sun-position analysis of the strings. Capacity: for the storage cycles. Cost: for the payback. CO₂ factor: default 380 g/kWh.",
     settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
     setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
     setError: "Saving failed", setAdmin: "Only administrators can change settings.", setPower: "Power sensor", setEnergy: "Energy sensor",
@@ -1432,11 +1434,14 @@ class PVAssistantPanel extends HTMLElement {
     for (const [key, label, step, ph] of [
       ["storage_capacity_kwh", "genCap", "0.1", ""], ["price_import", "genPriceImport", "0.001", ""], ["price_feed_in", "genPriceFeed", "0.001", ""],
       ["system_cost_eur", "genCost", "100", ""], ["co2_g_per_kwh", "genCo2", "1", "380"],
+      ["latitude", "genLat", "0.0001", this._hass.config?.latitude != null ? String(this._hass.config.latitude) : ""],
+      ["longitude", "genLon", "0.0001", this._hass.config?.longitude != null ? String(this._hass.config.longitude) : ""],
     ]) {
       const row = mk("div", { class: "setrow" });
       const id = `set-gen-${key}`;
-      const input = mk("input", { type: "number", id, min: "0", step, inputmode: "decimal", placeholder: ph });
-      input.value = general[key] > 0 ? String(general[key]) : "";
+      const signed = key === "latitude" || key === "longitude";
+      const input = mk("input", { type: "number", id, min: signed ? (key === "latitude" ? "-90" : "-180") : "0", step, inputmode: "decimal", placeholder: ph });
+      input.value = general[key] ? String(general[key]) : "";
       input.disabled = !isAdmin;
       row.append(mk("label", { for: id }, this._t(label)), input);
       gc.append(row);
@@ -1478,7 +1483,7 @@ class PVAssistantPanel extends HTMLElement {
         const generalPayload = {};
         for (const [key, input] of Object.entries(genInputs)) {
           const v = parseFloat(input.value.replace(",", "."));
-          generalPayload[key] = v > 0 ? v : 0; // 0 clears the value
+          generalPayload[key] = key === "latitude" || key === "longitude" ? (Number.isNaN(v) ? 0 : v) : v > 0 ? v : 0; // 0 clears the value
         }
         const res = await this._hass.callWS({ type: "pv_assistant/set_settings", strings: payload, general: generalPayload });
         this._cfg.settings = res;
@@ -1617,9 +1622,17 @@ class PVAssistantPanel extends HTMLElement {
       for (const s of peaked) s.spec = common.reduce((a, ts) => a + s.m.get(ts), 0) / 1000 / (s.peak / 1000);
     }
     // expected yield of the orientation (azimuth / tilt from the settings); strings without it count as 1
+    // plant location: own value from the settings, otherwise the Home Assistant home location
+    const genSet = this._cfg.settings?.general || {};
+    const lat = genSet.latitude || this._hass.config?.latitude, lon = genSet.longitude || this._hass.config?.longitude;
+    const located = typeof lat === "number" && typeof lon === "number";
+    const refYield = located && common ? expectedYield(common, lat, lon, 0, 35) : 0;
     for (const s of peaked) {
       const o = this._cfg.settings?.strings?.[s.id];
-      s.factor = o && o.azimuth != null && o.tilt != null ? orientationFactor(o.azimuth, o.tilt) : null;
+      const known = o && o.azimuth != null && o.tilt != null;
+      // with the location: clear-sky irradiance on the plane of the string over exactly the hours compared
+      // (follows the season of the range); without it: rough annual table
+      s.factor = !known ? null : refYield > 0 ? expectedYield(common, lat, lon, o.azimuth, o.tilt) / refYield : orientationFactor(o.azimuth, o.tilt);
       s.eff = s.spec / (s.factor || 1);
     }
     const usesOrient = peaked.some((s) => s.factor);
@@ -1635,10 +1648,15 @@ class PVAssistantPanel extends HTMLElement {
           .replace("{own}", num(s.spec)).replace("{top}", num(top.spec)).replace("{med}", num(median(peaked.map((x) => x.spec))))
           + (usesOrient ? ` ${this._t("anaOrientUsed")}` : ""));
         // improvement suggestion from the time of day in which the string falls behind
-        const part = (ts) => { const h = key(ts).hour; return h <= 10 ? 0 : h <= 14 ? 1 : 2; };
+        // sector of the sun (east / south / west) with the location, otherwise the time of day
+        const part = (ts) => {
+          if (located) { const { el, az } = sunPosition(ts + 1800e3, lat, lon); return el < 3 ? -1 : az < -20 ? 0 : az <= 20 ? 1 : 2; }
+          const h = key(ts).hour; return h <= 10 ? 0 : h <= 14 ? 1 : 2;
+        };
         const sums = [[0, 0], [0, 0], [0, 0]];
         for (const ts of common) {
           const k = part(ts);
+          if (k < 0) continue;
           sums[k][0] += s.m.get(ts) / s.peak / (s.factor || 1);
           sums[k][1] += top.m.get(ts) / top.peak / (top.factor || 1);
         }
