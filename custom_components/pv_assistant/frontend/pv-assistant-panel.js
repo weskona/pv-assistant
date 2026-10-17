@@ -24,6 +24,7 @@ const T = {
     gridImp: "Netzbezug", gridImpShort: "Netz", house: "Hausverbrauch", houseDerived: "Hausverbrauch (berechnet)", houseMixed: "Hausverbrauch (teils berechnet)", houseShort: "Haus",
     forecastTab: "Prognose", fcSoFar: "Bisher erzeugt (heute)", fcRangeDays: "Tage",
     stoSocMax: "Tageshöchstwert", stoSocAvg: "Tagesdurchschnitt", stoSocMin: "Tagestiefstwert", stoPeakPower: "Spitzenleistung (Tagesspitzen)", stoPeakOut: "Aus Speicher (Spitze)", stoPeakIn: "In Speicher (Spitze)",
+    pwrTipNote: "Prozentwerte im Tooltip: bei einem String der Anteil an seinem eingetragenen Peak, bei der Gesamtanlage der Anteil an der Summe der Peaks, darunter der Anteil jedes Strings an der Gesamtleistung (zusammen 100 %).",
     pwrChart: "Leistung je String",
     storageTab: "Speicher", stoPower: "Speicherleistung", stoEnergy: "Geladen und entladen", stoMaxCharge: "Max. Ladeleistung", stoMaxDis: "Max. Entladeleistung", stoAvgSoc: "Ø Ladestand", stoNow: "Ladestand jetzt", stoNoCap: "Trage die Speicherkapazität im Tab „Einstellungen“ unter „Anlage“ ein, dann werden die Zyklen berechnet.", stoNote: "Wirkungsgrad = entladen ÷ geladen im Zeitraum; er ist nur aussagekräftig, wenn der Ladestand am Anfang und Ende ähnlich ist (längere Zeiträume).",
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
@@ -90,6 +91,7 @@ const T = {
     gridImp: "Grid import", gridImpShort: "Grid", house: "House consumption", houseDerived: "House consumption (calculated)", houseMixed: "House consumption (partly calculated)", houseShort: "House",
     forecastTab: "Forecast", fcSoFar: "Produced so far (today)", fcRangeDays: "days",
     stoSocMax: "Daily high", stoSocAvg: "Daily average", stoSocMin: "Daily low", stoPeakPower: "Peak power (daily peaks)", stoPeakOut: "From storage (peak)", stoPeakIn: "Into storage (peak)",
+    pwrTipNote: "Percentages in the tooltip: for a string the share of its entered peak, for the plant the share of the sum of the peaks, below it the share of each string in the plant power (adds up to 100 %).",
     pwrChart: "Power per string",
     storageTab: "Storage", stoPower: "Storage power", stoEnergy: "Charged and discharged", stoMaxCharge: "Max charge power", stoMaxDis: "Max discharge power", stoAvgSoc: "Avg level", stoNow: "Level now", stoNoCap: "Enter the storage capacity in the Settings tab under \"Plant\" to get the cycles.", stoNote: "Efficiency = discharged ÷ charged in the range; it is only meaningful when the level at the start and end is similar (longer ranges).",
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
@@ -1479,7 +1481,7 @@ class PVAssistantPanel extends HTMLElement {
     const html = `<div class="grid">${total}${cards}</div>`;
     if (!this._pwrInit) { // cards on top are re-rendered with every value, the chart below is built once
       this._pwrInit = true;
-      box.innerHTML = `<div id="pwrcards"></div><h3 class="ch">${esc(this._t("pwrChart"))} (W)</h3><div class="filters" id="pwranges"></div><div class="chart" id="pwrchart"></div><p class="note">${esc(this._t("pwrNote"))}</p>`;
+      box.innerHTML = `<div id="pwrcards"></div><h3 class="ch">${esc(this._t("pwrChart"))} (W)</h3><div class="filters" id="pwranges"></div><div class="chart" id="pwrchart"></div><p class="note">${esc(this._t("pwrTipNote"))}</p><p class="note">${esc(this._t("pwrNote"))}</p>`;
       if (!this._prange) this._prange = "today";
       const ranges = box.querySelector("#pwranges");
       for (const r of ["today", "yesterday", "d7"]) {
@@ -1532,8 +1534,14 @@ class PVAssistantPanel extends HTMLElement {
     const total = new Map();
     for (const s of perId) for (const [ts, v] of s.values) total.set(ts, (total.get(ts) || 0) + v);
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
-    const series = perId.map((s, k) => ({ name: s.name, short: `${s.name.slice(0, 11)}${s.name.length > 11 ? "…" : ""}`, color: `--pva-s${(k % 7) + 1}`, points: toPts(s.values) }));
-    if (perId.length > 1) series.push({ name: this._t("effTotal"), short: this._t("effTotal"), color: "--pva-prod", points: toPts(total), parts: perId.map((s) => ({ name: s.name, values: s.values, peak: s.peak })) });
+    // percentages in the tooltip: a string = share of its own peak, the plant = share of the sum of the peaks,
+    // the split below the plant = share of the plant power (adds up to 100 %)
+    const pct = (v, ref) => (ref > 0 ? `${Math.round((v / ref) * 100)} %` : undefined);
+    const sumPeak = perId.filter((s) => s.peak > 0).reduce((a, s) => a + s.peak, 0);
+    const series = perId.map((s, k) => ({ name: s.name, short: `${s.name.slice(0, 11)}${s.name.length > 11 ? "…" : ""}`, color: `--pva-s${(k % 7) + 1}`, points: toPts(s.values), rowNote: (v) => pct(v, s.peak) }));
+    if (perId.length > 1) series.push({ name: this._t("effTotal"), short: this._t("effTotal"), color: "--pva-prod", points: toPts(total),
+      rowNote: (v) => pct(v, sumPeak), partNote: (v, ts) => pct(v, total.get(ts)),
+      parts: perId.map((s) => ({ name: s.name, values: s.values })) });
     box.classList.remove("loading");
     lineChart(box, {
       series, t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
