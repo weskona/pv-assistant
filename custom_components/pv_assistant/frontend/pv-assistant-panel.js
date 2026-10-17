@@ -23,6 +23,7 @@ const T = {
     yearStar: "* nur Monate mit Daten (laufendes Jahr: abgeschlossene Monate); verglichen wird mit denselben Monaten im Schnitt.",
     gridImp: "Netzbezug", gridImpShort: "Netz", house: "Hausverbrauch", houseDerived: "Hausverbrauch (berechnet)", houseMixed: "Hausverbrauch (teils berechnet)", houseShort: "Haus",
     forecastTab: "Prognose", fcSoFar: "Bisher erzeugt (heute)", fcRangeDays: "Tage",
+    stoSocMax: "Höchststand", stoSocMin: "Tiefststand", stoPeakPower: "Spitzenleistung (Tagesspitzen)", stoPeakOut: "Aus Speicher (Spitze)", stoPeakIn: "In Speicher (Spitze)",
     storageTab: "Speicher", stoPower: "Speicherleistung", stoEnergy: "Geladen und entladen", stoMaxCharge: "Max. Ladeleistung", stoMaxDis: "Max. Entladeleistung", stoAvgSoc: "Ø Ladestand", stoNow: "Ladestand jetzt", stoNoCap: "Trage die Speicherkapazität im Tab „Einstellungen“ unter „Anlage“ ein, dann werden die Zyklen berechnet.", stoNote: "Wirkungsgrad = entladen ÷ geladen im Zeitraum; er ist nur aussagekräftig, wenn der Ladestand am Anfang und Ende ähnlich ist (längere Zeiträume).",
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
@@ -85,6 +86,7 @@ const T = {
     yearStar: "* only months with data (current year: completed months); compared with the same months of the average.",
     gridImp: "Grid import", gridImpShort: "Grid", house: "House consumption", houseDerived: "House consumption (calculated)", houseMixed: "House consumption (partly calculated)", houseShort: "House",
     forecastTab: "Forecast", fcSoFar: "Produced so far (today)", fcRangeDays: "days",
+    stoSocMax: "Highest level", stoSocMin: "Lowest level", stoPeakPower: "Peak power (daily peaks)", stoPeakOut: "From storage (peak)", stoPeakIn: "Into storage (peak)",
     storageTab: "Storage", stoPower: "Storage power", stoEnergy: "Charged and discharged", stoMaxCharge: "Max charge power", stoMaxDis: "Max discharge power", stoAvgSoc: "Avg level", stoNow: "Level now", stoNoCap: "Enter the storage capacity in the Settings tab under \"Plant\" to get the cycles.", stoNote: "Efficiency = discharged ÷ charged in the range; it is only meaningful when the level at the start and end is similar (longer ranges).",
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
@@ -794,7 +796,7 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._srange) this._srange = "today";
     box.innerHTML = `<div class="filters" id="sranges"></div><div class="tiles" id="stiles"></div>${G.soc.length ? `
       <h3 class="ch">${esc(this._t("socChart"))}</h3><div class="chart" id="sosoc"></div>` : ""}${has(P) ? `
-      <h3 class="ch">${esc(this._t("stoPower"))} (W)</h3><div class="chart" id="sopow"></div>` : ""}${has(E) ? `
+      <h3 class="ch" id="sopowh">${esc(this._t("stoPower"))} (W)</h3><div class="chart" id="sopow"></div>` : ""}${has(E) ? `
       <h3 class="ch">${esc(this._t("stoEnergy"))} (kWh)</h3><div class="chart" id="soen"></div>` : ""}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
@@ -821,19 +823,25 @@ class PVAssistantPanel extends HTMLElement {
     const energyIds = [...E.sin, ...E.sout, ...E.comb];
     const energyAll = energyIds.concat(energyIds.map((i) => filt[i]).filter(Boolean));
     this._root.querySelectorAll("#sto .chart").forEach((c) => c.classList.add("loading"));
-    const [pres, eres] = await Promise.all([
-      this._stats([...P.sin, ...P.sout, ...P.comb, ...G.soc], rd.pPeriod, "mean", { power: "W" }, rd),
+    const powIds = [...P.sin, ...P.sout, ...P.comb];
+    // means hide the peaks (a full battery for one hour is no 100 % in a daily mean), so the extremes are read as well
+    const [pres, eres, smax, smin, pmax, pmin] = await Promise.all([
+      this._stats([...powIds, ...G.soc], rd.pPeriod, "mean", { power: "W" }, rd),
       this._stats(energyAll, rd.long ? "month" : rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
+      this._stats(G.soc, rd.pPeriod, "max", {}, rd),
+      this._stats(G.soc, rd.pPeriod, "min", {}, rd),
+      this._stats(powIds, rd.pPeriod, "max", { power: "W" }, rd),
+      this._stats(powIds, rd.pPeriod, "min", { power: "W" }, rd),
     ]);
     if (token !== this._stoken) return;
-    this._sdata = { rd, pres, eres, filt };
+    this._sdata = { rd, pres, eres, filt, smax, smin, pmax, pmin };
     this._drawStorage();
   }
 
   _drawStorage() {
     const d = this._sdata;
     if (!d || !this._storageOn || !this._root.getElementById("sranges")) return;
-    const { rd, pres, eres, filt } = d;
+    const { rd, pres, eres, filt, smax, smin, pmax, pmin } = d;
     const { P, E, G } = this._keys();
     const root = this._root;
     const lang = this._hass.locale?.language || this._hass.language;
@@ -871,25 +879,59 @@ class PVAssistantPanel extends HTMLElement {
     for (const [ts, v] of total(inP)) add(netP, ts, -v);
     const netParts = [...each(P.sout, pr, "mean", ns), ...each(P.sin, pr, "mean", (v) => -ns(v)), ...each(P.comb, pr, "mean", w(P.inv))];
 
+    // peak power per bucket from the max / min statistics (sum over the storages)
+    const mmRows = (res, id, field) => new Map(get(res, id, field).map((r) => [r.start, r[field]]));
+    const peakOut = new Map(), peakIn = new Map();
+    for (const id of [...P.sin, ...P.sout]) {
+      const mx = mmRows(pmax, id, "max"), mn = mmRows(pmin, id, "min");
+      const target = P.sout.includes(id) ? peakOut : peakIn;
+      for (const [ts, v] of mx) add(target, ts, P.absStorage ? Math.max(Math.abs(v), Math.abs(mn.get(ts) ?? 0)) : Math.max(v, 0));
+    }
+    for (const id of P.comb) { // default: positive = from storage, negative = into storage
+      const mx = mmRows(pmax, id, "max"), mn = mmRows(pmin, id, "min");
+      for (const ts of new Set([...mx.keys(), ...mn.keys()])) {
+        const hi = mx.get(ts) ?? 0, lo = mn.get(ts) ?? 0;
+        add(peakOut, ts, Math.max(P.inv ? -lo : hi, 0));
+        add(peakIn, ts, Math.max(P.inv ? hi : -lo, 0));
+      }
+    }
     // level
     const socRows = G.soc.length ? pr(G.soc[0]) : [];
+    const socMaxRows = G.soc.length ? get(smax, G.soc[0], "max") : [], socMinRows = G.soc.length ? get(smin, G.soc[0], "min") : [];
     const soc = socRows.map((r) => r.mean);
     const socBox = root.getElementById("sosoc");
+    const socPts = (rows, field) => toPts(new Map(rows.map((r) => [r.start, r[field]])));
     if (socBox) lineChart(socBox, {
-      series: [{ name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: toPts(new Map(socRows.map((r) => [r.start, r.mean]))) }],
+      series: rd.long && socMaxRows.length
+        ? [{ name: this._t("stoSocMax"), short: this._t("stoSocMax"), color: "--pva-s2", points: socPts(socMaxRows, "max") },
+           { name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: socPts(socRows, "mean") },
+           { name: this._t("stoSocMin"), short: this._t("stoSocMin"), color: "--pva-s3", points: socPts(socMinRows, "min") }]
+        : [{ name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: toPts(new Map(socRows.map((r) => [r.start, r.mean]))) }],
       t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
       fmtValue: (v, axis) => `${num(v, axis ? 1 : 0)} %`, fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
       empty: this._t("noData"), tableLabels: timeLabels, label: this._t("socChart"),
     });
     const powBox = root.getElementById("sopow");
-    if (powBox) lineChart(powBox, {
+    if (powBox && rd.long) {
+      root.getElementById("sopowh").textContent = `${this._t("stoPeakPower")} (W)`;
+      lineChart(powBox, {
+        series: [{ name: this._t("stoPeakOut"), short: this._t("sout"), color: "--pva-bout", points: toPts(peakOut) },
+                 { name: this._t("stoPeakIn"), short: this._t("sin"), color: "--pva-bin", points: toPts(new Map([...peakIn].map(([k, v]) => [k, -v]))) }],
+        t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
+        fmtValue: (v, axis) => `${num(v, axis ? 1 : 0)}${axis ? "" : " W"}`, fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
+        empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("stoPeakPower")} (W)`,
+      });
+    } else if (powBox) {
+      root.getElementById("sopowh").textContent = `${this._t("stoPower")} (W)`;
+      lineChart(powBox, {
       series: [{ name: this._t("storageNet"), short: this._t("storage"), color: "--pva-bout", colorNeg: "--pva-bin",
         legendItems: [{ name: `${this._t("sout")} (+)`, color: "--pva-bout" }, { name: `${this._t("sin")} (−)`, color: "--pva-bin" }],
         points: toPts(netP), parts: netParts }],
       t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
       fmtValue: (v, axis) => `${num(v, axis ? 1 : 0)}${axis ? "" : " W"}`, fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
       empty: this._t("noData"), tableLabels: timeLabels, label: `${this._t("stoPower")} (W)`,
-    });
+      });
+    }
 
     // energy per hour / day
     const flip = (inv) => (v) => (inv ? -v : v);
@@ -929,12 +971,14 @@ class PVAssistantPanel extends HTMLElement {
     if (tOut > 0) tiles.push([`${num(tOut)} kWh`, this._t("sout")]);
     if (tIn > 0 && tOut > 0) tiles.push([`${num((tOut / tIn) * 100, 0)} %`, this._t("storEff")]);
     if (gen.storage_capacity_kwh > 0 && tIn > 0) tiles.push([num(tIn / gen.storage_capacity_kwh, 1), this._t("cycles")]);
-    const maxIn = Math.max(0, ...total(inP).values()), maxOut = Math.max(0, ...total(outP).values());
+    const maxIn = Math.max(0, ...peakIn.values()), maxOut = Math.max(0, ...peakOut.values());
     if (maxIn > 0) tiles.push([`${num(maxIn, 0)} W`, this._t("stoMaxCharge")]);
     if (maxOut > 0) tiles.push([`${num(maxOut, 0)} W`, this._t("stoMaxDis")]);
     const vals = soc.filter((v) => v != null);
     if (vals.length) {
-      tiles.push([`${num(Math.min(...vals), 0)}–${num(Math.max(...vals), 0)} %`, this._t("socRange")]);
+      const hi = socMaxRows.length ? Math.max(...socMaxRows.map((r) => r.max)) : Math.max(...vals);
+      const lo = socMinRows.length ? Math.min(...socMinRows.map((r) => r.min)) : Math.min(...vals);
+      tiles.push([`${num(lo, 0)}–${num(hi, 0)} %`, this._t("socRange")]);
       tiles.push([`${num(vals.reduce((a, v) => a + v, 0) / vals.length, 0)} %`, this._t("stoAvgSoc")]);
     }
     root.getElementById("stiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
@@ -1278,8 +1322,10 @@ class PVAssistantPanel extends HTMLElement {
       // last 12 completed months and everything recorded so far
       const done = [];
       for (let y = minY; y <= latest; y++) for (let m = 0; m < 12; m++) if (complete(y, m)) { const b = benefit(y, m); if (b != null) done.push(b); }
-      if (done.length >= 12) {
-        const last12 = done.slice(-12).reduce((a, v) => a + v, 0);
+      // the last 12 completed calendar months, only when every one of them has data
+      const lastMonths = Array.from({ length: 12 }, (_, i) => { const t = new Date(cy, cm - 12 + i, 1); return benefit(t.getFullYear(), t.getMonth()); });
+      if (lastMonths.every((b) => b != null)) {
+        const last12 = lastMonths.reduce((a, v) => a + v, 0);
         extra.push([eur(last12), this._t("yBenefit12")]);
         if (gen.system_cost_eur > 0 && last12 > 0) {
           const paid = done.reduce((a, v) => a + v, 0);
@@ -1796,7 +1842,10 @@ class PVAssistantPanel extends HTMLElement {
 
     // best / weakest complete days
     const sumPeak = series.every((s) => s.peak) && series.length ? series.reduce((a, s) => a + s.peak, 0) : null;
-    const complete = days.filter((day) => day !== todayKey).map((day) => ({ day, kwh: byDay.get(day).reduce((a, w) => a + w, 0) / 1000 })).filter((x) => x.kwh >= 0.1); // days that show as 0 kWh (outage, no data) are left out
+    // daily yields from the energy counters (same basis as the total); the power sum is the fallback
+    const startDayKey = key(start.getTime()).day;
+    const fromCounters = [...actual].filter(([day]) => day >= startDayKey && day !== todayKey).map(([day, kwh]) => ({ day, kwh })).filter((x) => x.kwh >= 0.1);
+    const complete = fromCounters.length ? fromCounters : days.filter((day) => day !== todayKey).map((day) => ({ day, kwh: byDay.get(day).reduce((a, w) => a + w, 0) / 1000 })).filter((x) => x.kwh >= 0.1); // days that show as 0 kWh (outage, no data) are left out
     const rows = (list) => `<table class="dtable"><thead><tr><th>${esc(this._t("anaDay"))}</th><th>kWh</th>${sumPeak ? `<th>${esc(this._t("anaSpec"))}</th>` : ""}</tr></thead><tbody>${
       list.map((x) => `<tr><td>${esc(dayLabelY(x.day))}</td><td>${esc(num(x.kwh))}</td>${sumPeak ? `<td>${esc(num(x.kwh / (sumPeak / 1000), 2))}</td>` : ""}</tr>`).join("")}</tbody></table>`;
     const bySize = [...complete].sort((a, b) => b.kwh - a.kwh);
