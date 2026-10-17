@@ -66,6 +66,7 @@ function fillTip(tip, title, rows, fmt) {
     const key = html("i", "key line");
     key.style.background = `var(${r.color})`;
     row.append(key, html("b", "", r.value == null ? "–" : fmt(r.value)), html("span", "", r.name));
+    if (r.note) row.append(html("b", "tip-note", r.note));
     tip.append(row);
     // source split: the sensors / components behind this value (names are untrusted: textContent)
     for (const p of r.parts || []) {
@@ -83,7 +84,9 @@ function partsAt(s, key) {
   const out = s.parts
     .map((p) => {
       const value = p.values instanceof Map ? p.values.get(key) : p.values[key];
-      return { name: p.name, value, note: p.peak > 0 && value != null ? `${Math.round((value / p.peak) * 100)} %` : undefined };
+      // s.partNote(value, key) overrides the default note (share of the entered peak of the source)
+      const note = value == null ? undefined : s.partNote ? s.partNote(value, key) : p.peak > 0 ? `${Math.round((value / p.peak) * 100)} %` : undefined;
+      return { name: p.name, value, note };
     })
     .filter((p) => p.value != null && p.value !== 0 && !Number.isNaN(p.value));
   return out.length ? out : undefined;
@@ -208,7 +211,7 @@ export function lineChart(container, opts) {
         dots[i].setAttribute("fill", `var(${s.colorNeg && v < 0 ? s.colorNeg : s.color})`);
       }
     });
-    fillTip(tip, fmtTime(ts), live.map((s, i) => { const v = maps[i].get(ts); return { name: s.name, color: s.colorNeg && v < 0 ? s.colorNeg : s.color, value: v, parts: partsAt(s, ts) }; }), fmtValue);
+    fillTip(tip, fmtTime(ts), live.map((s, i) => { const v = maps[i].get(ts); return { name: s.name, color: s.colorNeg && v < 0 ? s.colorNeg : s.color, value: v, note: s.rowNote && v != null ? s.rowNote(v, ts) : undefined, parts: partsAt(s, ts) }; }), fmtValue);
     placeTip(tip, wrap, (x(ts) / W) * r.width, ((ev.clientY - r.top)));
   };
   const hide = () => { tip.hidden = true; hair.setAttribute("visibility", "hidden"); dots.forEach((d) => d.setAttribute("visibility", "hidden")); };
