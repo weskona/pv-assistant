@@ -1,5 +1,14 @@
 # PV Assistant
 
+[![Validate](https://img.shields.io/github/actions/workflow/status/weskona/pv-assistant/validate.yml?branch=main&label=hassfest%20%7C%20HACS%20%7C%20checks)](https://github.com/weskona/pv-assistant/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/weskona/pv-assistant?include_prereleases&label=release)](https://github.com/weskona/pv-assistant/releases)
+[![Status: beta](https://img.shields.io/badge/status-beta-yellow)](#english)
+[![HACS: custom repository](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
+[![Home Assistant 2024.8+](https://img.shields.io/badge/Home%20Assistant-2024.8%2B-41BDF5)](https://www.home-assistant.io)
+[![Wiki](https://img.shields.io/badge/docs-Wiki%20(EN%20%7C%20DE)-blue)](https://github.com/weskona/pv-assistant/wiki)
+[![Issues](https://img.shields.io/github/issues/weskona/pv-assistant)](https://github.com/weskona/pv-assistant/issues)
+[![License: MIT](https://img.shields.io/github/license/weskona/pv-assistant)](LICENSE)
+
 [English](#english) · [Deutsch](#deutsch)
 
 Full documentation / Ausführliche Dokumentation: **[Wiki](https://github.com/weskona/pv-assistant/wiki)** (English and German, sources in [`wiki/`](wiki)). Bugs and ideas / Fehler und Wünsche: **[Issue tracker](https://github.com/weskona/pv-assistant/issues/new/choose)**.
