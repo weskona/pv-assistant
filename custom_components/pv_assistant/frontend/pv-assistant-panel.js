@@ -13,7 +13,7 @@ const T = {
     years: "Jahresübersicht", avgOver: "Schnitt über", yearsUnit: "Jahre", all: "alle", yearProd: "Erzeugung", sofar: "bisher",
     forecast: "Jahresprognose", avgMonth: "Ø Monat", monthly: "Erzeugung je Monat (kWh)", deviation: "Abweichung zum Schnitt (%)",
     avg: "Ø", above: "über Schnitt", below: "unter Schnitt", running: "laufender Monat",
-    yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der letzten Jahre (Anzahl einstellbar) bis zum aktuellsten Jahr mit Daten, unabhängig vom angezeigten Jahr. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit.",
+    yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der letzten Jahre (Anzahl einstellbar) bis zum aktuellsten Jahr mit Daten, unabhängig vom angezeigten Jahr. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit. Nutzen und Amortisation rechnen mit den aktuellen Preisen (Ersparnis = nicht eingespeiste Erzeugung × Strompreis, plus Einspeiseerlös); der Trend der Jahressumme ist wetterabhängig.",
     prevYear: "Vorheriges Jahr", nextYear: "Nächstes Jahr",
     direct: "Direkt verbraucht", directShort: "Direkt",
     effChart: "Effektive Leistung (%)", effTotal: "Gesamtanlage", effNote: "Effektive Leistung = Leistung ÷ eingetragener Peak × 100, nur für Strings mit eingetragenem Peak (Einstellungen).",
@@ -32,6 +32,7 @@ const T = {
     anaPlateauHint: "An {n} Tagen bleibt die Leistung mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
     anaPrHint: "Die Performance Ratio vergleicht den Ertrag mit dem, was bei der gemessenen Einstrahlung theoretisch möglich wäre; typisch sind 75 bis 85 %.",
     anaNoForecast: "Noch keine Prognose-Daten. Wähle im Config Flow (Schritt 3) Prognose-Sensoren; das Panel merkt sich die Prognose dann täglich.",
+    yBenefit: "Nutzen", yBenefit12: "Nutzen (letzte 12 Monate)", yPaidPct: "Amortisiert zu", yPaidLeft: "Noch bis zur Amortisation", yYears: "Jahre", yTrend: "Trend der Jahressumme", yTrendUnit: "pro Jahr",
     aboveFc: "über Prognose", belowFc: "unter Prognose",
     fcAvgDev: "Ø Abweichung", fcHit: "Trefferquote (±20 %)", fcDays: "Tage mit Prognose", fcForecast: "Prognose", fcActual: "Ist", anaLoading: "Lade Analyse …",
     genTitle: "Anlage", genCap: "Speicherkapazität (kWh)", genPriceImport: "Strompreis Netzbezug (€/kWh)", genPriceFeed: "Einspeisevergütung (€/kWh)",
@@ -59,7 +60,7 @@ const T = {
     years: "Yearly overview", avgOver: "Average over", yearsUnit: "years", all: "all", yearProd: "Production", sofar: "so far",
     forecast: "Year forecast", avgMonth: "Avg. month", monthly: "Production per month (kWh)", deviation: "Deviation from average (%)",
     avg: "Avg", above: "above average", below: "below average", running: "current month",
-    yearNote: "The monthly average only uses real, completed months of the last years (number selectable) up to the latest year with data, independent of the displayed year. The year forecast is the sum of these monthly averages. The current and future months do not count.",
+    yearNote: "The monthly average only uses real, completed months of the last years (number selectable) up to the latest year with data, independent of the displayed year. The year forecast is the sum of these monthly averages. The current and future months do not count. Benefit and payback use the current prices (savings = production not fed in × import price, plus feed-in revenue); the trend of the yearly total depends on the weather.",
     prevYear: "Previous year", nextYear: "Next year",
     direct: "Used directly", directShort: "Direct",
     effChart: "Effective power (%)", effTotal: "Whole system", effNote: "Effective power = power ÷ entered peak × 100, only for strings with an entered peak (settings).",
@@ -78,6 +79,7 @@ const T = {
     anaPlateauHint: "On {n} days the power stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
     anaPrHint: "The performance ratio compares the yield with what would be theoretically possible at the measured irradiance; 75 to 85 % is typical.",
     anaNoForecast: "No forecast data yet. Choose forecast sensors in the config flow (step 3); the panel then remembers the forecast every day.",
+    yBenefit: "Benefit", yBenefit12: "Benefit (last 12 months)", yPaidPct: "Paid back", yPaidLeft: "Still until payback", yYears: "years", yTrend: "Trend of the yearly total", yTrendUnit: "per year",
     aboveFc: "above forecast", belowFc: "below forecast",
     fcAvgDev: "Avg. deviation", fcHit: "Hit rate (±20 %)", fcDays: "Days with forecast", fcForecast: "Forecast", fcActual: "Actual", anaLoading: "Loading analysis …",
     genTitle: "Plant", genCap: "Storage capacity (kWh)", genPriceImport: "Grid import price (€/kWh)", genPriceFeed: "Feed-in tariff (€/kWh)",
@@ -730,7 +732,8 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._yearsOn) return;
     const filt = this._cfg.filtered || {};
     const ids = this._keys().E.prod;
-    const all = ids.concat(ids.map((i) => filt[i]).filter(Boolean));
+    const fids = this._keys().E.feed;
+    const all = [...ids, ...fids].concat([...ids, ...fids].map((i) => filt[i]).filter(Boolean));
     const start = new Date(); start.setFullYear(start.getFullYear() - 15, 0, 1); start.setHours(0, 0, 0, 0);
     let res = {};
     try {
@@ -754,7 +757,14 @@ class PVAssistantPanel extends HTMLElement {
       for (const [ts, v] of own) { const [y, m] = ym(ts); const k = `${y}-${m}`; months.set(k, (months.get(k) || 0) + v); mine.set(k, v); }
       byId.set(id, mine);
     }
-    this._ydata = { months, byId, ids };
+    const feedMonths = new Map(); // feed-in energy per month (needed for savings and revenue)
+    for (const id of fids) {
+      const own = new Map();
+      for (const r of res[id] || []) if (r.change != null) own.set(r.start, r.change);
+      for (const r of res[filt[id]] || []) if (r.change != null) own.set(r.start, r.change);
+      for (const [ts, v] of own) { const [y, m] = ym(ts); const k = `${y}-${m}`; feedMonths.set(k, (feedMonths.get(k) || 0) + v); }
+    }
+    this._ydata = { months, byId, ids, feedMonths, hasFeed: fids.length > 0 };
     this._drawYears();
   }
 
@@ -877,6 +887,47 @@ class PVAssistantPanel extends HTMLElement {
     if (yi >= 0 && yDev[yi] != null) {
       root.getElementById("ytiles").insertAdjacentHTML("beforeend",
         `<div class="tile"><b>${esc(`${yDev[yi] > 0 ? "+" : ""}${num(yDev[yi], false, 1)} %`)}</b><span>${esc(`${this._t("devTile")} ${Y}${yCats[yi].endsWith("*") ? "*" : ""}`)}</span></div>`);
+    }
+
+    // ---- benefit, payback and trend
+    const extra = [];
+    const gen = this._cfg.settings?.general || {};
+    const Gk = this._keys().G;
+    const numOf = (id) => { const v = parseFloat(this._hass.states[id]?.state); return Number.isNaN(v) ? null : v; };
+    const priceImp = (Gk.priceImp && numOf(Gk.priceImp)) || gen.price_import || null;
+    const priceFeed = (Gk.priceFeed && numOf(Gk.priceFeed)) || gen.price_feed_in || null;
+    if (d.hasFeed && (priceImp || priceFeed)) {
+      const benefit = (y, m) => {
+        const prod = val(y, m), feed = d.feedMonths.get(`${y}-${m}`);
+        if (prod == null || feed == null) return null;
+        return Math.max(prod - feed, 0) * (priceImp || 0) + feed * (priceFeed || 0);
+      };
+      const eur = (v) => `${num(v, false, 0)} €`;
+      let yearSum = 0, yearHas = false;
+      for (let m = 0; m < 12; m++) { const b = benefit(Y, m); if (b != null) { yearSum += b; yearHas = true; } }
+      if (yearHas) extra.push([eur(yearSum) + (Y === cy ? "*" : ""), `${this._t("yBenefit")} ${Y}`]);
+      // last 12 completed months and everything recorded so far
+      const done = [];
+      for (let y = minY; y <= latest; y++) for (let m = 0; m < 12; m++) if (complete(y, m)) { const b = benefit(y, m); if (b != null) done.push(b); }
+      if (done.length >= 12) {
+        const last12 = done.slice(-12).reduce((a, v) => a + v, 0);
+        extra.push([eur(last12), this._t("yBenefit12")]);
+        if (gen.system_cost_eur > 0 && last12 > 0) {
+          const paid = done.reduce((a, v) => a + v, 0);
+          extra.push([`${num((paid / gen.system_cost_eur) * 100, false, 0)} %`, this._t("yPaidPct")]);
+          if (paid < gen.system_cost_eur) extra.push([`${num((gen.system_cost_eur - paid) / last12, false, 1)} ${this._t("yYears")}`, this._t("yPaidLeft")]);
+        }
+      }
+    }
+    // trend of the yearly total (least squares over years with at least 9 months; depends on the weather)
+    const trendYears = yearList.map((y, i) => [y, yDev[i], monthsOf(y).length]).filter(([, dv, n]) => dv != null && n >= 9);
+    if (trendYears.length >= 3) {
+      const mx = trendYears.reduce((a, [y]) => a + y, 0) / trendYears.length, my = trendYears.reduce((a, [, dv]) => a + dv, 0) / trendYears.length;
+      const sxx = trendYears.reduce((a, [y]) => a + (y - mx) ** 2, 0), sxy = trendYears.reduce((a, [y, dv]) => a + (y - mx) * (dv - my), 0);
+      if (sxx > 0) extra.push([`${sxy / sxx > 0 ? "+" : ""}${num(sxy / sxx, false, 1)} % ${this._t("yTrendUnit")}`, this._t("yTrend")]);
+    }
+    if (extra.length) {
+      root.getElementById("ytiles").insertAdjacentHTML("beforeend", extra.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join(""));
     }
 
     if (Y === cy) root.getElementById("ychart").append(Object.assign(document.createElement("p"), { className: "note", textContent: `* ${this._t("running")}` }));
