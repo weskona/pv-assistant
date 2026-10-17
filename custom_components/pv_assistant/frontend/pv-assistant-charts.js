@@ -32,6 +32,15 @@ export function niceTicks(min, max, count = 4) {
   return ticks;
 }
 
+
+// A redraw replaces the chart contents; keep the table view open if the reader opened it.
+function wasTableOpen(container) {
+  return !!container.querySelector("details.tableview")?.open;
+}
+function restoreTable(container, open) {
+  if (open) container.querySelector("details.tableview")?.setAttribute("open", "");
+}
+
 function legend(series, kind) {
   const box = html("div", "legend");
   for (const s of series.flatMap((x) => x.legendItems || [x])) {
@@ -62,6 +71,7 @@ function fillTip(tip, title, rows, fmt) {
     for (const p of r.parts || []) {
       const sub = html("div", "tip-sub");
       sub.append(html("span", "", fmt(p.value)), html("span", "", p.name));
+      if (p.note) sub.append(html("b", "tip-note", p.note));
       tip.append(sub);
     }
   }
@@ -71,7 +81,10 @@ function fillTip(tip, title, rows, fmt) {
 function partsAt(s, key) {
   if (!s.parts || s.parts.length < 2) return undefined;
   const out = s.parts
-    .map((p) => ({ name: p.name, value: p.values instanceof Map ? p.values.get(key) : p.values[key] }))
+    .map((p) => {
+      const value = p.values instanceof Map ? p.values.get(key) : p.values[key];
+      return { name: p.name, value, note: p.peak > 0 && value != null ? `${Math.round((value / p.peak) * 100)} %` : undefined };
+    })
     .filter((p) => p.value != null && p.value !== 0 && !Number.isNaN(p.value));
   return out.length ? out : undefined;
 }
@@ -107,6 +120,7 @@ function table(headers, rows) {
  */
 export function lineChart(container, opts) {
   const { series, t0, t1, height = 240, fmtValue, fmtTime, fmtTick, tickStep, step } = opts;
+  const tableOpen = wasTableOpen(container);
   container.replaceChildren();
   const live = series.filter((s) => s.points.length);
   if (!live.length) { container.append(html("p", "empty", opts.empty)); return; }
@@ -166,6 +180,8 @@ export function lineChart(container, opts) {
   if (labelW) {
     const ends = live.map((s) => ({ s, y: y(s.points.at(-1)[1]) })).sort((a, b) => a.y - b.y);
     for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+    const over = ends.at(-1).y - (M.t + ph + 8); // keep the labels inside the chart area
+    if (over > 0) ends.forEach((e) => { e.y -= over; });
     for (const e of ends) svg.append(el("text", { x: M.l + pw + 6, y: e.y + 4, class: "endlabel" }, e.s.short || e.s.name));
   }
   const hair = el("line", { y1: M.t, y2: M.t + ph, class: "hair", visibility: "hidden" });
@@ -211,6 +227,7 @@ export function lineChart(container, opts) {
   const rows = [...byHour.entries()].sort((a, b) => a[0] - b[0]).map(([h, e]) =>
     [fmtTime(h), ...e.map(([sum, n]) => (n ? fmtValue(sum / n) : "–"))]);
   container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...live.map((s) => s.name)] }, rows));
+  restoreTable(container, tableOpen);
 }
 
 /**
@@ -219,6 +236,7 @@ export function lineChart(container, opts) {
  */
 export function barChart(container, opts) {
   const { series, t0, t1, bucket, height = 240, fmtValue, fmtTime, fmtTick, tickStep } = opts;
+  const tableOpen = wasTableOpen(container);
   container.replaceChildren();
   const live = series.filter((s) => s.values.size);
   if (!live.length) { container.append(html("p", "empty", opts.empty)); return; }
@@ -276,6 +294,7 @@ export function barChart(container, opts) {
   container.append(legend(live, "bar"), wrap);
   container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...live.map((s) => s.name)] },
     times.map((ts) => [fmtTime(ts), ...live.map((s) => fmtValue(s.values.get(ts) ?? 0))])));
+  restoreTable(container, tableOpen);
 }
 
 /**
@@ -285,6 +304,7 @@ export function barChart(container, opts) {
  */
 export function categoryBarChart(container, opts) {
   const { categories, series, height = 240, fmtValue } = opts;
+  const tableOpen = wasTableOpen(container);
   container.replaceChildren();
   const all = series.flatMap((s) => s.values.filter((v) => v != null));
   if (!all.length) { container.append(html("p", "empty", opts.empty)); return; }
@@ -339,4 +359,5 @@ export function categoryBarChart(container, opts) {
   container.append(legend(opts.legendItems || series, "bar"), wrap);
   container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...series.map((s) => s.name)] },
     categories.map((c, i) => [c, ...series.map((s) => (s.values[i] == null ? "–" : fmtValue(s.values[i])))])));
+  restoreTable(container, tableOpen);
 }

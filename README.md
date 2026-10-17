@@ -26,6 +26,9 @@ Die Prognose-Sensoren erscheinen im Tab „Aktuell“ als Karten (mit Summe, Wh/
 ## Leistung je String
 Der Tab „Leistung“ zeigt für jeden Erzeugungs-Leistungssensor (String) die aktuelle Leistung als Balken im Verhältnis zur höchsten je gemessenen Leistung dieses Strings (aus den Langzeitstatistiken von Home Assistant, mindestens der aktuelle Wert).
 
+## Effektive Leistung der Strings
+Für Strings mit eingetragenem Peak (Tab „Einstellungen“) wird die effektive Leistung in Prozent berechnet (Leistung ÷ Peak × 100): als Diagramm im Tab „Verlauf“ (eine Linie je String plus „Gesamtanlage“ = Summe ÷ Summe der Peaks), im Tab „Leistung“ als Karte „Gesamtanlage“ und im Tooltip des Leistungsdiagramms hinter jedem String. Strings ohne eingetragenen Peak werden dabei nicht berücksichtigt.
+
 ## Einstellungen im Panel
 Im Tab „Einstellungen“ (nur Administratoren dürfen speichern) kannst du für jeden Erzeugungssensor (String) einen eigenen **Anzeigenamen** vergeben, der im ganzen Panel statt des Home-Assistant-Namens erscheint (Karten, Diagramme, Tooltips). Bei Leistungssensoren lässt sich zusätzlich die **Max.-Leistung (Peak)** eintragen; sie ersetzt im Tab „Leistung“ das gemessene Maximum (mit „übernehmen“ kannst du den gemessenen Wert eintragen). Die Einstellungen werden in Home Assistant gespeichert (`.storage/pv_assistant.settings`) und gelten für alle Geräte. Leere Felder setzen auf den Standard zurück.
 
