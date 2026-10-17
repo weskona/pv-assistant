@@ -1,38 +1,42 @@
-name: Wunsch oder Idee
-description: Eine neue Funktion oder eine Verbesserung vorschlagen.
-title: "[Wunsch] "
+name: Wish or idea / Wunsch oder Idee
+description: "Suggest a new feature or an improvement. / Eine neue Funktion oder eine Verbesserung vorschlagen."
+title: "[Idea] "
 labels: ["enhancement"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        **English / Deutsch:** You may write in English or German. / Du kannst auf Englisch oder Deutsch schreiben.
   - type: textarea
     id: problem
     attributes:
-      label: Was möchtest du erreichen?
-      description: Beschreibe das Problem oder die Frage, die du mit deiner PV-Anlage hast, nicht nur die Lösung.
+      label: "What do you want to achieve? / Was möchtest du erreichen?"
+      description: "Describe the problem or question you have with your PV system, not only the solution. / Beschreibe das Problem oder die Frage, die du mit deiner PV-Anlage hast, nicht nur die Lösung."
     validations:
       required: true
   - type: textarea
     id: idea
     attributes:
-      label: Wie könnte es aussehen?
-      description: Ein Tab, eine Kennzahl, ein Diagramm, eine Einstellung ... Skizzen und Screenshots helfen.
+      label: "What could it look like? / Wie könnte es aussehen?"
+      description: "A tab, a key figure, a chart, a setting ... Sketches and screenshots help. / Ein Tab, eine Kennzahl, ein Diagramm, eine Einstellung ... Skizzen und Screenshots helfen."
   - type: dropdown
     id: area
     attributes:
-      label: Wo passt es hin?
+      label: "Where does it belong? / Wo passt es hin?"
       options:
-        - Config Flow / Einrichtung
-        - Tab Aktuell
-        - Tab Leistung
-        - Tab Analyse
-        - Tab Verlauf
-        - Tab Speicher
-        - Tab Prognose
-        - Tab Jahresübersicht
-        - Tab Einstellungen
-        - Neuer Bereich
-        - Sonstiges
+        - Config flow / Einrichtung
+        - Tab Now / Aktuell
+        - Tab Power / Leistung
+        - Tab Analysis / Analyse
+        - Tab History / Verlauf
+        - Tab Storage / Speicher
+        - Tab Forecast / Prognose
+        - Tab Yearly overview / Jahresübersicht
+        - Tab Settings / Einstellungen
+        - New area / Neuer Bereich
+        - Other / Sonstiges
   - type: textarea
     id: data
     attributes:
-      label: Welche Daten braucht es?
-      description: Welche Sensoren oder Werte wären dafür nötig (zum Beispiel Wallbox, Wärmepumpe, Wetterstation)?
+      label: "Which data is needed? / Welche Daten braucht es?"
+      description: "Which sensors or values would be needed (for example wallbox, heat pump, weather station)? / Welche Sensoren oder Werte wären dafür nötig (zum Beispiel Wallbox, Wärmepumpe, Wetterstation)?"

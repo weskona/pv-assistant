@@ -1,73 +1,74 @@
-name: Fehler melden
-description: Etwas funktioniert nicht oder zeigt falsche Werte.
-title: "[Fehler] "
+name: Report a bug / Fehler melden
+description: "Something does not work or shows wrong values. / Etwas funktioniert nicht oder zeigt falsche Werte."
+title: "[Bug] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Danke für die Meldung! Bitte schau vorher kurz in die [Fehlersuche im Wiki](https://github.com/weskona/pv-assistant/wiki/Troubleshooting).
-        Das Projekt ist im Beta-Status; bitte keine Zugangsdaten, Tokens oder persönlichen Daten in Screenshots oder Logs.
+        **English:** Thanks for the report! Please check the [troubleshooting page in the wiki](https://github.com/weskona/pv-assistant/wiki/Troubleshooting) first. The project is in beta. Please do not include credentials, tokens or personal data in screenshots or logs. You may write in English or German.
+
+        **Deutsch:** Danke für die Meldung! Bitte schau vorher kurz in die [Fehlersuche im Wiki](https://github.com/weskona/pv-assistant/wiki/Troubleshooting). Das Projekt ist im Beta-Status. Bitte keine Zugangsdaten, Tokens oder persönlichen Daten in Screenshots oder Logs. Du kannst auf Englisch oder Deutsch schreiben.
   - type: input
     id: version
     attributes:
-      label: Version von PV Assistant
-      description: Zu finden in HACS oder in `custom_components/pv_assistant/manifest.json`, zum Beispiel `0.9.9-beta`.
+      label: "Version of PV Assistant / Version von PV Assistant"
+      description: "See HACS or custom_components/pv_assistant/manifest.json, for example 0.9.9-beta. / Zu finden in HACS oder in custom_components/pv_assistant/manifest.json, zum Beispiel 0.9.9-beta."
     validations:
       required: true
   - type: input
     id: ha_version
     attributes:
-      label: Home-Assistant-Version und Browser
+      label: "Home Assistant version and browser / Home-Assistant-Version und Browser"
       placeholder: "2025.10.1, Chrome 130"
     validations:
       required: true
   - type: dropdown
     id: area
     attributes:
-      label: Wo tritt der Fehler auf?
+      label: "Where does the bug occur? / Wo tritt der Fehler auf?"
       options:
-        - Config Flow / Einrichtung
-        - Tab Aktuell
-        - Tab Leistung
-        - Tab Analyse
-        - Tab Verlauf
-        - Tab Speicher
-        - Tab Prognose
-        - Tab Jahresübersicht
-        - Tab Einstellungen
-        - Sensoren (bereinigt, String-Störung)
-        - Sonstiges
+        - Config flow / Einrichtung
+        - Tab Now / Aktuell
+        - Tab Power / Leistung
+        - Tab Analysis / Analyse
+        - Tab History / Verlauf
+        - Tab Storage / Speicher
+        - Tab Forecast / Prognose
+        - Tab Yearly overview / Jahresübersicht
+        - Tab Settings / Einstellungen
+        - Sensors (filtered, string fault) / Sensoren (bereinigt, String-Störung)
+        - Other / Sonstiges
     validations:
       required: true
   - type: textarea
     id: what
     attributes:
-      label: Was passiert?
-      description: "Was siehst du, und was hast du erwartet? Bei falschen Zahlen: welche Werte stehen im Panel und welche im Energy-Dashboard oder am Gerät (mit Zeitraum)?"
+      label: "What happens? / Was passiert?"
+      description: "What do you see and what did you expect? For wrong numbers: which values does the panel show and which the Energy dashboard or the device (with period)? / Was siehst du, und was hast du erwartet? Bei falschen Zahlen: welche Werte stehen im Panel und welche im Energy-Dashboard oder am Gerät (mit Zeitraum)?"
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Schritte zum Nachstellen
+      label: "Steps to reproduce / Schritte zum Nachstellen"
       placeholder: |
-        1. Tab Speicher öffnen
-        2. Zeitraum „Dieses Jahr“ wählen
+        1. Open the tab Storage / Tab Speicher öffnen
+        2. Choose the range "This year" / Zeitraum „Dieses Jahr“ wählen
         3. ...
   - type: textarea
     id: setup
     attributes:
-      label: Betroffene Sensoren und Einstellungen
-      description: Welche Sensoren sind in den Config-Flow-Schritten gewählt (Erzeugung, Einspeisung, Speicher, Hausverbrauch ...)? Sind Schalter für negative Werte aktiv? Sind Peak, Ausrichtung und Neigung eingetragen?
+      label: "Affected sensors and settings / Betroffene Sensoren und Einstellungen"
+      description: "Which sensors are chosen in the config flow steps (production, feed-in, storage, house consumption ...)? Are the switches for negative values active? Are peak, orientation and tilt entered? / Welche Sensoren sind in den Config-Flow-Schritten gewählt (Erzeugung, Einspeisung, Speicher, Hausverbrauch ...)? Sind Schalter für negative Werte aktiv? Sind Peak, Ausrichtung und Neigung eingetragen?"
   - type: textarea
     id: screenshots
     attributes:
-      label: Screenshots
-      description: Bilder hier hineinziehen oder einfügen.
+      label: "Screenshots / Screenshots"
+      description: "Drag or paste images here. / Bilder hier hineinziehen oder einfügen."
   - type: textarea
     id: logs
     attributes:
-      label: Logs und Konsole
-      description: Fehler aus Einstellungen → System → Protokolle (Suche nach `pv_assistant`) und, bei Anzeigeproblemen, aus der Browser-Konsole (F12).
+      label: "Logs and console / Logs und Konsole"
+      description: "Errors from Settings → System → Logs (search for pv_assistant) and, for display problems, from the browser console (F12). / Fehler aus Einstellungen → System → Protokolle (Suche nach pv_assistant) und, bei Anzeigeproblemen, aus der Browser-Konsole (F12)."
       render: text
