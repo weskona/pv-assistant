@@ -20,6 +20,13 @@ const T = {
     setNoPeak: "Trage in den Einstellungen für die Strings die Max.-Leistung (Peak) ein, dann erscheint hier die effektive Leistung in %.", ofPeakSum: "von Σ Peak", peakCount: "Strings mit Peak",
     yearTotal: "Gesamterzeugung je Jahr (kWh)", yearDev: "Abweichung der Jahressumme zum Schnitt (%)", avgSame: "Ø (gleiche Monate)", devTile: "Abweichung",
     yearStar: "* nur Monate mit Daten (laufendes Jahr: abgeschlossene Monate); verglichen wird mit denselben Monaten im Schnitt.",
+    gridImp: "Netzbezug", gridImpShort: "Netz", house: "Hausverbrauch", houseDerived: "Hausverbrauch (berechnet)", houseShort: "Haus",
+    socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
+    storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
+    socRange: "Ladestand min–max", pr: "Performance Ratio",
+    genTitle: "Anlage", genCap: "Speicherkapazität (kWh)", genPriceImport: "Strompreis Netzbezug (€/kWh)", genPriceFeed: "Einspeisevergütung (€/kWh)",
+    genCost: "Anlagenkosten (€)", genCo2: "CO₂-Faktor des Strommix (g/kWh)",
+    genHint: "Die Preise gelten nur, wenn im Config Flow kein Preis-Sensor gewählt wurde. Kapazität: für die Zyklen des Speichers. Kosten: für die Amortisation. CO₂-Faktor: Standard 380 g/kWh.",
     settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
     setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
     setError: "Speichern fehlgeschlagen", setAdmin: "Nur Administratoren können Einstellungen ändern.", setPower: "Leistungssensor", setEnergy: "Energiesensor",
@@ -50,6 +57,13 @@ const T = {
     setNoPeak: "Enter the max. power (peak) of the strings in the settings and the effective power in % appears here.", ofPeakSum: "of Σ peak", peakCount: "strings with peak",
     yearTotal: "Total production per year (kWh)", yearDev: "Deviation of the yearly total from the average (%)", avgSame: "Avg. (same months)", devTile: "Deviation",
     yearStar: "* only months with data (current year: completed months); compared with the same months of the average.",
+    gridImp: "Grid import", gridImpShort: "Grid", house: "House consumption", houseDerived: "House consumption (calculated)", houseShort: "House",
+    socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
+    storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
+    socRange: "Level min–max", pr: "Performance ratio",
+    genTitle: "Plant", genCap: "Storage capacity (kWh)", genPriceImport: "Grid import price (€/kWh)", genPriceFeed: "Feed-in tariff (€/kWh)",
+    genCost: "System cost (€)", genCo2: "CO₂ factor of the power mix (g/kWh)",
+    genHint: "The prices only apply when no price sensor was chosen in the config flow. Capacity: for the storage cycles. Cost: for the payback. CO₂ factor: default 380 g/kWh.",
     settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
     setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
     setError: "Saving failed", setAdmin: "Only administrators can change settings.", setPower: "Power sensor", setEnergy: "Energy sensor",
@@ -115,9 +129,9 @@ class PVAssistantPanel extends HTMLElement {
           :host { --pva-prod:#ff9800; --pva-feed:#8353d1; --pva-grid:#488fc2; --pva-direct:#ffd700;
                   --pva-bout:#4db6ac; --pva-bin:#f06292;
                   --pva-avg:color-mix(in srgb, #ff9800 45%, var(--card-background-color));
-                  --pva-pos:#008300; --pva-neg:#e34948;
+                  --pva-house:#8d8d8d; --pva-pos:#008300; --pva-neg:#e34948;
                   --pva-s1:#2a78d6; --pva-s2:#1baf7a; --pva-s3:#e87ba4; --pva-s4:#6250d6; --pva-s5:#008300; --pva-s6:#e34948; --pva-s7:#eda100; }
-          :host([data-dark]) { --pva-pos:#008300; --pva-neg:#e66767;
+          :host([data-dark]) { --pva-house:#bdbdbd; --pva-pos:#008300; --pva-neg:#e66767;
                   --pva-s1:#3987e5; --pva-s2:#199e70; --pva-s3:#d55181; --pva-s4:#9085e9; --pva-s5:#008300; --pva-s6:#e66767; --pva-s7:#c98500; }
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
           .filters button { font:inherit; color:var(--primary-text-color); background:transparent;
@@ -320,7 +334,13 @@ class PVAssistantPanel extends HTMLElement {
       invFeed: suffix === "power" && !!c.invert_feed_in_power,
       absStorage: suffix === "power" && !!c.abs_storage_power,
     });
-    return { P: g("power"), E: g("energy") };
+    const G = {
+      impE: list(c.grid_import_energy_sensors), impP: list(c.grid_import_power_sensors),
+      houseE: list(c.house_energy_sensors), houseP: list(c.house_power_sensors),
+      soc: list(c.battery_soc_sensor), irr: list(c.irradiance_sensor),
+      priceImp: c.price_import || null, priceFeed: c.price_feed_in || null,
+    };
+    return { P: g("power"), E: g("energy"), G };
   }
 
   _buildHistory() {
@@ -333,7 +353,8 @@ class PVAssistantPanel extends HTMLElement {
     h.innerHTML = `<div class="filters" id="ranges"></div>
       <div class="tiles" id="tiles"></div>
       <h3 class="ch">${esc(this._t("powerChart"))} (W)</h3><div class="chart" id="pchart"></div>
-      <h3 class="ch">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
+      <h3 class="ch">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>${this._keys().G.soc.length ? `
+      <h3 class="ch">${esc(this._t("socChart"))}</h3><div class="chart" id="schart"></div>` : ""}
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
     for (const r of ["today", "yesterday", "d7", "d30"]) {
@@ -384,10 +405,10 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._hist) return;
     const token = (this._token = (this._token || 0) + 1);
     const rd = this._rangeDef();
-    const { P, E } = this._keys();
+    const { P, E, G } = this._keys();
     const filt = this._cfg.filtered || {};
-    const powerIds = [...P.prod, ...P.feed, ...P.sin, ...P.sout, ...P.comb];
-    const energyIds = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb];
+    const powerIds = [...P.prod, ...P.feed, ...P.sin, ...P.sout, ...P.comb, ...G.impP, ...G.houseP, ...G.soc, ...G.irr];
+    const energyIds = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb, ...G.impE, ...G.houseE];
     const energyAll = energyIds.concat(energyIds.map((i) => filt[i]).filter(Boolean));
     this._root.querySelectorAll(".chart").forEach((c) => c.classList.add("loading"));
     const [pres, eres] = await Promise.all([
@@ -395,14 +416,14 @@ class PVAssistantPanel extends HTMLElement {
       this._stats(energyAll, rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
     ]);
     if (token !== this._token) return; // a newer range was requested meanwhile
-    this._data = { rd, P, E, pres, eres, filt };
+    this._data = { rd, P, E, G, pres, eres, filt };
     this._draw();
   }
 
   _draw() {
     const d = this._data;
     if (!d || !this._hist) return;
-    const { rd, P, E, pres, eres, filt } = d;
+    const { rd, P, E, G, pres, eres, filt } = d;
     const lang = this._hass.locale?.language || this._hass.language;
     const tz = this._hass.config?.time_zone;
     const fm = (o) => new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
@@ -458,13 +479,31 @@ class PVAssistantPanel extends HTMLElement {
     const pDirect = new Map();
     for (const [ts, v] of pProd) pDirect.set(ts, Math.min(v, Math.max(0, v - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)))); // never above the production
     const pNetParts = [...each(P.sout, pr, "mean", ns), ...each(P.sin, pr, "mean", (v) => -ns(v)), ...each(P.comb, pr, "mean", (v) => (P.inv ? -v : v))];
-    const pDirectParts = [
+    let pDirectParts = [
       { name: this._t("production"), values: pProd },
       { name: `− ${this._t("feed")}`, values: neg(pFeed) },
       { name: `− ${this._t("sin")}`, values: neg(pCharge) },
     ];
     const hasStorageP = P.sin.length || P.sout.length || P.comb.length;
     const toPts = (m) => [...m.entries()].sort((a, b) => a[0] - b[0]);
+    // grid import: own sensors, otherwise the positive part of a feed-in sensor that also reports import
+    const impP = G.impP.length ? sum(G.impP, pr, "mean", nz)
+      : P.invFeed && P.feed.length ? sum(P.feed, pr, "mean", (v) => Math.max(v, 0)) : null;
+    const pDis = merge(pSout, cP.pos); // discharge incl. the discharging part of combined sensors
+    const houseMeasuredP = G.houseP.length ? sum(G.houseP, pr, "mean", nz) : null;
+    let houseP = houseMeasuredP;
+    if (!houseP && impP) { // energy balance: production + import + discharge - feed-in - charge
+      houseP = new Map();
+      for (const [ts, v] of pProd) houseP.set(ts, Math.max(0, v + (impP.get(ts) || 0) + (pDis.get(ts) || 0) - (pFeed.get(ts) || 0) - (pCharge.get(ts) || 0)));
+    }
+    if (houseMeasuredP && impP) { // measured consumption makes the direct consumption exact
+      for (const [ts, v] of pProd) pDirect.set(ts, Math.min(v, Math.max(0, (houseMeasuredP.get(ts) || 0) - (impP.get(ts) || 0) - (pDis.get(ts) || 0))));
+      pDirectParts = [
+        { name: this._t("house"), values: houseMeasuredP },
+        { name: `− ${this._t("gridImp")}`, values: neg(impP) },
+        { name: `− ${this._t("sout")}`, values: neg(pDis) },
+      ];
+    }
     const lines = [
       { name: this._t("production"), short: this._t("production"), color: "--pva-prod", points: toPts(pProd), parts: each(P.prod, pr, "mean", nz).map((part, i) => ({ ...part, peak: this._cfg.settings?.strings?.[P.prod[i]]?.peak })) },
       { name: this._t("feed"), short: this._t("feed"), color: "--pva-feed", points: toPts(pFeed), parts: each(P.feed, pr, "mean", feedFn) },
@@ -472,6 +511,8 @@ class PVAssistantPanel extends HTMLElement {
         legendItems: [{ name: `${this._t("sout")} (+)`, color: "--pva-bout" }, { name: `${this._t("sin")} (−)`, color: "--pva-bin" }],
         points: hasStorageP ? toPts(pNet) : [], parts: pNetParts },
       { name: this._t("direct"), short: this._t("directShort"), color: "--pva-direct", points: toPts(pDirect), parts: pDirectParts },
+      { name: this._t("gridImp"), short: this._t("gridImpShort"), color: "--pva-grid", points: impP ? toPts(impP) : [] },
+      { name: houseMeasuredP ? this._t("house") : this._t("houseDerived"), short: this._t("houseShort"), color: "--pva-house", points: houseP ? toPts(houseP) : [] },
     ];
     const timeLabels = { summary: this._t("table"), time: this._t("time") };
     const tickFmt = rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t);
@@ -508,6 +549,17 @@ class PVAssistantPanel extends HTMLElement {
       this._root.getElementById("xchart").append(n);
     }
 
+    // ---- battery level
+    const socBox = this._root.getElementById("schart");
+    if (socBox && G.soc.length) {
+      lineChart(socBox, {
+        series: [{ name: this._t("socName"), short: this._t("socName"), color: "--pva-s1", points: toPts(new Map(pr(G.soc[0]).map((r) => [r.start, r.mean]))) }],
+        t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
+        fmtValue: (v, axis) => `${num(v, axis, 0)} %`, fmtTime: (t) => fDT.format(t), fmtTick: tickFmt,
+        empty: this._t("noData"), tableLabels: timeLabels, label: this._t("socChart"),
+      });
+    }
+
     // hint when a single-direction sensor reports negative values (misplaced signed sensor)
     const neg1 = [...P.prod, ...(P.absStorage ? [] : [...P.sin, ...P.sout])].filter((id) => pr(id).some((r) => r.mean < -1)).map((id) => this._read(id).name);
     if (neg1.length) {
@@ -528,11 +580,26 @@ class PVAssistantPanel extends HTMLElement {
     const wfn = (v) => (E.inv ? -v : v); // default positive = from storage
     const eSinParts = [...each(E.sin, er("change"), "change"), ...each(E.comb, er("change"), "change", (v) => Math.max(-wfn(v), 0))];
     const eSoutParts = [...each(E.sout, er("change"), "change"), ...each(E.comb, er("change"), "change", (v) => Math.max(wfn(v), 0))];
-    const eDirectParts = [
+    let eDirectParts = [
       { name: this._t("production"), values: eProd },
       { name: `− ${this._t("feed")}`, values: neg(eFeed) },
       { name: `− ${this._t("sin")}`, values: neg(eSin) },
     ];
+    const impE = G.impE.length ? sum(G.impE, er("change"), "change") : null;
+    const houseMeasuredE = G.houseE.length ? sum(G.houseE, er("change"), "change") : null;
+    let houseE = houseMeasuredE;
+    if (!houseE && impE) {
+      houseE = new Map();
+      for (const [ts, v] of eProd) houseE.set(ts, Math.max(0, v + (impE.get(ts) || 0) + (eSout.get(ts) || 0) - (eFeed.get(ts) || 0) - (eSin.get(ts) || 0)));
+    }
+    if (houseMeasuredE && impE) {
+      for (const [ts, v] of eProd) eDirect.set(ts, Math.min(v, Math.max(0, (houseMeasuredE.get(ts) || 0) - (impE.get(ts) || 0) - (eSout.get(ts) || 0))));
+      eDirectParts = [
+        { name: this._t("house"), values: houseMeasuredE },
+        { name: `− ${this._t("gridImp")}`, values: neg(impE) },
+        { name: `− ${this._t("sout")}`, values: neg(eSout) },
+      ];
+    }
     const bars = [
       { name: this._t("production"), color: "--pva-prod", values: eProd, parts: each(E.prod, er("change"), "change") },
       { name: this._t("feed"), color: "--pva-feed", values: eFeed, parts: each(E.feed, er("change"), "change") },
@@ -540,6 +607,8 @@ class PVAssistantPanel extends HTMLElement {
       { name: this._t("sout"), color: "--pva-bout", values: eSout, parts: eSoutParts },
       { name: this._t("direct"), color: "--pva-direct", values: eDirect, parts: eDirectParts },
     ];
+    if (impE) bars.push({ name: this._t("gridImp"), color: "--pva-grid", values: impE, parts: each(G.impE, er("change"), "change") });
+    if (houseE) bars.push({ name: houseMeasuredE ? this._t("house") : this._t("houseDerived"), color: "--pva-house", values: houseE, parts: houseMeasuredE ? each(G.houseE, er("change"), "change") : undefined });
     const hourly = rd.eBucket === 3600e3;
     barChart(this._root.getElementById("echart"), {
       series: bars, t0: rd.t0, t1: rd.t1, bucket: rd.eBucket, tickStep: hourly ? 3 * 3600e3 : rd.days === 7 ? 24 * 3600e3 : 5 * 24 * 3600e3,
@@ -562,7 +631,28 @@ class PVAssistantPanel extends HTMLElement {
       fcTiles = `<div class="tile"><b>${esc(num(fcSum, false, 1))} kWh</b><span>${esc(this._t("fcToday"))}</span></div>`;
       if (fcSum > 0 && prodTot > 0) fcTiles += `<div class="tile"><b>${esc(num(prodTot / fcSum * 100, false, 0))} %</b><span>${esc(this._t("fcReached"))}</span></div>`;
     }
-    this._root.getElementById("tiles").innerHTML = tiles + share + fcTiles;
+    // derived key figures of the range
+    const kwh = (m) => (m ? tot(m) : null);
+    const T = { prod: prodTot, feed: tot(eFeed), sin: tot(eSin), sout: tot(eSout), imp: kwh(impE), house: kwh(houseE) };
+    const gen = this._cfg.settings?.general || {};
+    const numOf = (id) => { const v = parseFloat(this._hass.states[id]?.state); return Number.isNaN(v) ? null : v; };
+    const priceImp = (G.priceImp && numOf(G.priceImp)) || gen.price_import || null;
+    const priceFeed = (G.priceFeed && numOf(G.priceFeed)) || gen.price_feed_in || null;
+    const more = [];
+    if (T.house > 0 && T.imp != null) more.push([`${num((1 - Math.min(T.imp, T.house) / T.house) * 100, false, 0)} %`, this._t("autarky")]);
+    if (T.prod > 0) more.push([`${num(((T.prod - Math.min(T.feed, T.prod)) / T.prod) * 100, false, 0)} %`, this._t("selfShare")]);
+    if (T.imp != null && T.feed > 0) more.push([`${num(Math.min(T.imp, T.feed))} kWh`, this._t("shift")]);
+    if (T.sin > 0 && T.sout > 0) more.push([`${num((T.sout / T.sin) * 100, false, 0)} %`, this._t("storEff")]);
+    if (gen.storage_capacity_kwh > 0 && T.sin > 0) more.push([num(T.sin / gen.storage_capacity_kwh, false, 1), this._t("cycles")]);
+    if (priceImp && T.prod > 0) more.push([`${num((T.prod - Math.min(T.feed, T.prod)) * priceImp, false, 2)} €`, this._t("saving")]);
+    if (priceFeed && T.feed > 0) more.push([`${num(T.feed * priceFeed, false, 2)} €`, this._t("revenue")]);
+    if (T.prod > 0) more.push([`${num((T.prod * (gen.co2_g_per_kwh || 380)) / 1000, false, 1)} kg`, this._t("co2")]);
+    if (socBox && G.soc.length) {
+      const vals = pr(G.soc[0]).map((r) => r.mean).filter((v) => v != null);
+      if (vals.length) more.push([`${num(Math.min(...vals), false, 0)}–${num(Math.max(...vals), false, 0)} %`, this._t("socRange")]);
+    }
+    const moreTiles = more.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+    this._root.getElementById("tiles").innerHTML = tiles + share + moreTiles + fcTiles;
     this._root.querySelectorAll(".chart").forEach((x) => x.classList.remove("loading"));
   }
 
@@ -921,6 +1011,27 @@ class PVAssistantPanel extends HTMLElement {
     P.prod.forEach((id) => card(id, "setPower", true));
     E.prod.forEach((id) => card(id, "setEnergy", false));
 
+    // plant-wide numbers
+    const general = this._cfg.settings?.general || {};
+    const genInputs = {};
+    const gc = mk("div", { class: "setcard" });
+    gc.append(mk("h3", {}, this._t("genTitle")));
+    for (const [key, label, step, ph] of [
+      ["storage_capacity_kwh", "genCap", "0.1", ""], ["price_import", "genPriceImport", "0.001", ""], ["price_feed_in", "genPriceFeed", "0.001", ""],
+      ["system_cost_eur", "genCost", "100", ""], ["co2_g_per_kwh", "genCo2", "1", "380"],
+    ]) {
+      const row = mk("div", { class: "setrow" });
+      const id = `set-gen-${key}`;
+      const input = mk("input", { type: "number", id, min: "0", step, inputmode: "decimal", placeholder: ph });
+      input.value = general[key] > 0 ? String(general[key]) : "";
+      input.disabled = !isAdmin;
+      row.append(mk("label", { for: id }, this._t(label)), input);
+      gc.append(row);
+      genInputs[key] = input;
+    }
+    gc.append(mk("p", { class: "note" }, this._t("genHint")));
+    box.append(gc);
+
     const bar = mk("div", { class: "setbar" });
     const save = mk("button", { type: "button", class: "setbtn primary" }, this._t("setSave"));
     save.disabled = !isAdmin;
@@ -946,7 +1057,12 @@ class PVAssistantPanel extends HTMLElement {
       save.disabled = true;
       status.textContent = "";
       try {
-        const res = await this._hass.callWS({ type: "pv_assistant/set_settings", strings: payload });
+        const generalPayload = {};
+        for (const [key, input] of Object.entries(genInputs)) {
+          const v = parseFloat(input.value.replace(",", "."));
+          generalPayload[key] = v > 0 ? v : 0; // 0 clears the value
+        }
+        const res = await this._hass.callWS({ type: "pv_assistant/set_settings", strings: payload, general: generalPayload });
         this._cfg.settings = res;
         status.textContent = this._t("setSaved");
         this._lastPwr = null; this._last = null;
