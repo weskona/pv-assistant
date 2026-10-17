@@ -27,7 +27,7 @@ const T = {
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
     socRange: "Ladestand min–max", pr: "Performance Ratio",
-    analysisTab: "Analyse", d90: "90 Tage", d365: "Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
+    analysisTab: "Analyse", d90: "90 Tage", d365: "12 Monate", dYear: "Dieses Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
@@ -78,7 +78,7 @@ const T = {
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
     socRange: "Level min–max", pr: "Performance ratio",
-    analysisTab: "Analysis", d90: "90 days", d365: "Year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastDev: "Deviation of actual from forecast (%)",
+    analysisTab: "Analysis", d90: "90 days", d365: "12 months", dYear: "This year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastDev: "Deviation of actual from forecast (%)",
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
@@ -1442,7 +1442,7 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch" id="aheath">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
       <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>`;
     const ranges = box.querySelector("#aranges");
-    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], [365, "d365"]]) {
+    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]]) {
       const b = document.createElement("button");
       b.textContent = this._t(label);
       b.setAttribute("aria-pressed", String(d === this._adays));
@@ -1460,7 +1460,7 @@ class PVAssistantPanel extends HTMLElement {
     const token = (this._atoken = (this._atoken || 0) + 1);
     const { P, E, G } = this._keys();
     const filt = this._cfg.filtered || {};
-    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (this._adays - 1));
+    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - ((this._adays === "ytd" ? Math.floor((start - new Date(start.getFullYear(), 0, 1)) / 86400e3) + 1 : this._adays) - 1));
     const call = async (ids, from, period, type, units) => {
       ids = [...new Set(ids)];
       if (!ids.length) return {};
