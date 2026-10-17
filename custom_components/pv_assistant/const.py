@@ -27,6 +27,11 @@ CONF_FORECAST_REMAINING = "forecast_remaining_energy_sensors"  # list, optional,
 CONF_RESET_CONFIRM_MINUTES = "reset_confirm_minutes"  # energy filter: minutes a lower value must persist
 DEFAULT_RESET_CONFIRM_MINUTES = 10
 
+SETTINGS_STORE_KEY = "pv_assistant.settings"
+SETTINGS_STORE_VERSION = 1
+MAX_NAME_LENGTH = 60
+MAX_PEAK_W = 10_000_000
+
 PANEL_URL = "pv-assistant"
 PANEL_ELEMENT = "pv-assistant-panel"
 STATIC_URL = "/pv_assistant_static"
