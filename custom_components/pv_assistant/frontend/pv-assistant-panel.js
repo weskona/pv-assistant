@@ -122,6 +122,14 @@ const FACTOR = { Wh: 0.001, kWh: 1, MWh: 1000, W: 1, kW: 1000, MW: 1e6 };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const list = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+// statistics rows of a sensor merged with its filtered copy per bucket (the copy wins where it has data;
+// it is usually younger, so older buckets must still come from the original sensor)
+const mergedRows = (res, id, filt, field) => {
+  const m = new Map();
+  for (const r of res[id] || []) if (r[field] != null) m.set(r.start, r);
+  for (const r of (filt[id] && res[filt[id]]) || []) if (r[field] != null) m.set(r.start, r);
+  return [...m.values()].sort((a, b) => a.start - b.start);
+};
 
 class PVAssistantPanel extends HTMLElement {
   connectedCallback() {
@@ -493,7 +501,7 @@ class PVAssistantPanel extends HTMLElement {
 
     // sums of per-bucket values across sensors; value fn may map the raw number
     const get = (res, id, field) => (res[id] || []).filter((r) => r[field] != null);
-    const pick = (id, field) => { const f = filt[id]; const a = f && get(eres, f, field).length ? get(eres, f, field) : get(eres, id, field); return a; };
+    const pick = (id, field) => mergedRows(eres, id, filt, field);
     const add = (m, ts, v) => m.set(ts, (m.get(ts) || 0) + v);
     const sum = (ids, rows, field, fn = (v) => v) => {
       const m = new Map();
@@ -753,7 +761,7 @@ class PVAssistantPanel extends HTMLElement {
     const num = (v, dec = 2) => v.toLocaleString(lang, { maximumFractionDigits: dec });
     const get = (res, id, field) => (res[id] || []).filter((r) => r[field] != null);
     const pr = (id) => get(pres, id, "mean");
-    const pickE = (id) => { const f = filt[id]; return f && get(eres, f, "change").length ? get(eres, f, "change") : get(eres, id, "change"); };
+    const pickE = (id) => mergedRows(eres, id, filt, "change");
     const add = (m, ts, v) => m.set(ts, (m.get(ts) || 0) + v);
     const each = (ids, rows, field, fn) => ids.map((id) => {
       const m = new Map();
@@ -900,7 +908,7 @@ class PVAssistantPanel extends HTMLElement {
     const todayKey = key(Date.now()).day;
     const actual = new Map(); // daily production from the energy counters (the filtered copy wins)
     for (const id of E.prod) {
-      const rows = (eres[filt[id]] || []).length ? eres[filt[id]] : eres[id] || [];
+      const rows = mergedRows(eres, id, filt, "change");
       for (const r of rows) if (r.change != null) { const day = key(r.start).day; actual.set(day, (actual.get(day) || 0) + r.change); }
     }
     const log = { ...(hist || {}), ...(this._cfg.settings?.forecast_log || {}) };
@@ -1526,7 +1534,7 @@ class PVAssistantPanel extends HTMLElement {
     // daily production from the energy statistics (counters; the filtered copy wins)
     const actual = new Map();
     for (const id of E.prod) {
-      const rows = (eres[filt[id]] || []).length ? eres[filt[id]] : eres[id] || [];
+      const rows = mergedRows(eres, id, filt, "change");
       for (const r of rows) if (r.change != null) { const day = key(r.start).day; actual.set(day, (actual.get(day) || 0) + r.change); }
     }
 
