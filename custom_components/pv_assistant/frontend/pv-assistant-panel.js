@@ -25,7 +25,7 @@ const T = {
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
     socRange: "Ladestand min–max", pr: "Performance Ratio",
-    analysisTab: "Analyse", d90: "90 Tage", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
+    analysisTab: "Analyse", d90: "90 Tage", d365: "Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
     anaWeakHint: "{name} liegt bei {pct} % des mittleren Strings (kWh/kWp). Mögliche Ursachen: Verschattung, Verschmutzung, Defekt.",
@@ -72,7 +72,7 @@ const T = {
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
     socRange: "Level min–max", pr: "Performance ratio",
-    analysisTab: "Analysis", d90: "90 days", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastDev: "Deviation of actual from forecast (%)",
+    analysisTab: "Analysis", d90: "90 days", d365: "Year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastDev: "Deviation of actual from forecast (%)",
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
     anaWeakHint: "{name} is at {pct} % of the median string (kWh/kWp). Possible causes: shading, dirt, defect.",
@@ -1184,12 +1184,12 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._adays) this._adays = 30;
     box.innerHTML = `<div class="filters" id="aranges"></div><ul class="hints" id="ahints"></ul><div class="tiles" id="atiles"></div>
       <h3 class="ch">${esc(this._t("anaStrings"))}</h3><div class="chart" id="astrings"></div>
-      <h3 class="ch">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
+      <h3 class="ch" id="aheath">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
       <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>
       <h3 class="ch">${esc(this._t("anaForecast"))}</h3><div class="chart" id="afc"></div>
       <h3 class="ch">${esc(this._t("anaForecastDev"))}</h3><div class="chart" id="afd"></div>`;
     const ranges = box.querySelector("#aranges");
-    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"]]) {
+    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], [365, "d365"]]) {
       const b = document.createElement("button");
       b.textContent = this._t(label);
       b.setAttribute("aria-pressed", String(d === this._adays));
@@ -1294,11 +1294,22 @@ class PVAssistantPanel extends HTMLElement {
       byDay.get(k.day)[k.hour] += w;
     }
     const days = [...byDay.keys()].sort();
-    const heatDays = days.slice(-90).map((day) => ({ label: dayLabel(day), cells: byDay.get(day).map((w) => w / 1000) }));
+    // up to 90 days one row per day; longer ranges one row per week (average per day) so that the year stays readable
+    let heatDays;
+    if (days.length <= 90) {
+      heatDays = days.map((day) => ({ label: dayLabel(day), cells: byDay.get(day).map((w) => w / 1000) }));
+    } else {
+      heatDays = [];
+      for (let i = 0; i < days.length; i += 7) {
+        const block = days.slice(i, i + 7);
+        heatDays.push({ label: dayLabel(block[0]), cells: Array.from({ length: 24 }, (_, h) => block.reduce((a, day) => a + byDay.get(day)[h], 0) / 1000 / block.length) });
+      }
+    }
     heatmap(root.getElementById("aheat"), {
       days: heatDays, colorVar: "--pva-prod", fmt: (v) => `${num(v, 2)} kWh`, hourLabel: (h) => `${String(h).padStart(2, "0")}:00`,
-      empty: this._t("noData"), label: this._t("anaHeat"),
+      empty: this._t("noData"), label: days.length > 90 ? `${this._t("anaHeat")} – ${this._t("anaHeatWeek")}` : this._t("anaHeat"),
     });
+    root.getElementById("aheath").textContent = days.length > 90 ? `${this._t("anaHeat")} – ${this._t("anaHeatWeek")}` : this._t("anaHeat");
     root.getElementById("aheat").classList.remove("loading");
 
     // best / weakest complete days
