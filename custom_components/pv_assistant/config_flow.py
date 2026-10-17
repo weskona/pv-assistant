@@ -1,5 +1,8 @@
 """Config flow for PV Assistant.
 
+Step 4 (grid and consumption, all optional): energy / power bought from the grid, house
+consumption (energy / power), battery level, irradiance, prices (sensor or input_number).
+
 Step 3 (forecast, all optional): forecast energy for today, for tomorrow and for the
 rest of today (any number of energy sensors each).
 
@@ -27,6 +30,14 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_BATTERY_SOC,
+    CONF_GRID_IMPORT_ENERGY,
+    CONF_GRID_IMPORT_POWER,
+    CONF_HOUSE_ENERGY,
+    CONF_HOUSE_POWER,
+    CONF_IRRADIANCE,
+    CONF_PRICE_FEED_IN,
+    CONF_PRICE_IMPORT,
     CONF_ABS_STORAGE_POWER,
     CONF_INVERT_FEED_IN_POWER,
     CONF_FORECAST_REMAINING,
@@ -69,7 +80,9 @@ _KEYS = {
     ),
 }
 _FORECAST = (CONF_FORECAST_TODAY, CONF_FORECAST_TOMORROW, CONF_FORECAST_REMAINING)
-_OPTIONAL = tuple(k for keys in _KEYS.values() for k in keys[2:5]) + _FORECAST
+_GRID_MULTI = (CONF_GRID_IMPORT_ENERGY, CONF_GRID_IMPORT_POWER, CONF_HOUSE_ENERGY, CONF_HOUSE_POWER)
+_GRID_SINGLE = (CONF_BATTERY_SOC, CONF_IRRADIANCE, CONF_PRICE_IMPORT, CONF_PRICE_FEED_IN)
+_OPTIONAL = tuple(k for keys in _KEYS.values() for k in keys[2:5]) + _FORECAST + _GRID_MULTI + _GRID_SINGLE
 
 
 def _sensor(device_class: str, multiple: bool) -> selector.EntitySelector:
@@ -131,6 +144,25 @@ def _forecast_schema(d: dict[str, Any]) -> vol.Schema:
     )
 
 
+def _grid_schema(d: dict[str, Any]) -> vol.Schema:
+    def sv(key: str) -> dict[str, Any]:
+        return {"suggested_value": d.get(key)}
+
+    price = selector.EntitySelector(selector.EntitySelectorConfig(domain=["sensor", "input_number"]))
+    return vol.Schema(
+        {
+            vol.Optional(CONF_GRID_IMPORT_ENERGY, description=sv(CONF_GRID_IMPORT_ENERGY)): _sensor("energy", True),
+            vol.Optional(CONF_GRID_IMPORT_POWER, description=sv(CONF_GRID_IMPORT_POWER)): _sensor("power", True),
+            vol.Optional(CONF_HOUSE_ENERGY, description=sv(CONF_HOUSE_ENERGY)): _sensor("energy", True),
+            vol.Optional(CONF_HOUSE_POWER, description=sv(CONF_HOUSE_POWER)): _sensor("power", True),
+            vol.Optional(CONF_BATTERY_SOC, description=sv(CONF_BATTERY_SOC)): _sensor("battery", False),
+            vol.Optional(CONF_IRRADIANCE, description=sv(CONF_IRRADIANCE)): _sensor("irradiance", False),
+            vol.Optional(CONF_PRICE_IMPORT, description=sv(CONF_PRICE_IMPORT)): price,
+            vol.Optional(CONF_PRICE_FEED_IN, description=sv(CONF_PRICE_FEED_IN)): price,
+        }
+    )
+
+
 class PVAssistantConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the initial setup."""
 
@@ -164,10 +196,19 @@ class PVAssistantConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Step 3: forecast energy sensors (all optional)."""
         if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_grid()
+        return self.async_show_form(step_id="forecast", data_schema=_forecast_schema({}))
+
+    async def async_step_grid(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Step 4: grid, consumption, battery level, irradiance and prices (all optional)."""
+        if user_input is not None:
             return self.async_create_entry(
                 title="PV Assistant", data={**self._data, **user_input}
             )
-        return self.async_show_form(step_id="forecast", data_schema=_forecast_schema({}))
+        return self.async_show_form(step_id="grid", data_schema=_grid_schema({}))
 
     @staticmethod
     @callback
@@ -208,6 +249,17 @@ class PVAssistantOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         if user_input is not None:
             self._data.update(user_input)
+            return await self.async_step_grid()
+        return self.async_show_form(
+            step_id="forecast",
+            data_schema=_forecast_schema(dict(self.config_entry.data)),
+        )
+
+    async def async_step_grid(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if user_input is not None:
+            self._data.update(user_input)
             data = {**self.config_entry.data, **self._data}
             for key in _OPTIONAL:  # cleared optional fields must be dropped
                 if key not in self._data:
@@ -215,6 +267,6 @@ class PVAssistantOptionsFlow(OptionsFlow):
             self.hass.config_entries.async_update_entry(self.config_entry, data=data)
             return self.async_create_entry(data={})
         return self.async_show_form(
-            step_id="forecast",
-            data_schema=_forecast_schema(dict(self.config_entry.data)),
+            step_id="grid",
+            data_schema=_grid_schema(dict(self.config_entry.data)),
         )

@@ -42,6 +42,20 @@
           "forecast_tomorrow_energy_sensors": "Forecast tomorrow (energy, optional)",
           "forecast_remaining_energy_sensors": "Forecast rest of today (energy, optional)"
         }
+      },
+      "grid": {
+        "title": "Grid, consumption and prices",
+        "description": "Optional. Grid import and house consumption enable autarky and exact self-consumption; the battery level, irradiance and prices enable the battery curve, the performance ratio and the savings. If your feed-in power sensor also reports grid import as positive values (see the option in the power step), the import is derived from it automatically.",
+        "data": {
+          "grid_import_energy_sensors": "Grid import (energy, optional)",
+          "grid_import_power_sensors": "Grid import (power, optional)",
+          "house_energy_sensors": "House consumption (energy, optional)",
+          "house_power_sensors": "House consumption (power, optional)",
+          "battery_soc_sensor": "Battery level (%, optional)",
+          "irradiance_sensor": "Solar irradiance (optional)",
+          "price_import": "Grid import price per kWh (sensor or input_number, optional)",
+          "price_feed_in": "Feed-in tariff per kWh (sensor or input_number, optional)"
+        }
       }
     },
     "abort": {
@@ -90,6 +104,20 @@
           "forecast_today_energy_sensors": "Forecast today (energy, optional)",
           "forecast_tomorrow_energy_sensors": "Forecast tomorrow (energy, optional)",
           "forecast_remaining_energy_sensors": "Forecast rest of today (energy, optional)"
+        }
+      },
+      "grid": {
+        "title": "Grid, consumption and prices",
+        "description": "Optional. Grid import and house consumption enable autarky and exact self-consumption; the battery level, irradiance and prices enable the battery curve, the performance ratio and the savings. If your feed-in power sensor also reports grid import as positive values (see the option in the power step), the import is derived from it automatically.",
+        "data": {
+          "grid_import_energy_sensors": "Grid import (energy, optional)",
+          "grid_import_power_sensors": "Grid import (power, optional)",
+          "house_energy_sensors": "House consumption (energy, optional)",
+          "house_power_sensors": "House consumption (power, optional)",
+          "battery_soc_sensor": "Battery level (%, optional)",
+          "irradiance_sensor": "Solar irradiance (optional)",
+          "price_import": "Grid import price per kWh (sensor or input_number, optional)",
+          "price_feed_in": "Feed-in tariff per kWh (sensor or input_number, optional)"
         }
       }
     }

@@ -62,12 +62,20 @@ def _as_list(value) -> list[str]:
                 vol.Optional("peak"): vol.All(vol.Coerce(float), vol.Range(min=0, max=MAX_PEAK_W)),
             }
         },
+        # plant-wide numbers (empty / 0 = not set)
+        vol.Optional("general"): {
+            vol.Optional("storage_capacity_kwh"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000)),
+            vol.Optional("price_import"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+            vol.Optional("price_feed_in"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+            vol.Optional("system_cost_eur"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000000)),
+            vol.Optional("co2_g_per_kwh"): vol.All(vol.Coerce(float), vol.Range(min=0, max=2000)),
+        },
     }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
 async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
-    """Save display names and peak power per string (merged per sensor, empty = reset)."""
+    """Save display names and peak power per string (merged per sensor, empty = reset) and the plant-wide numbers."""
     entries = hass.config_entries.async_entries(DOMAIN)
     if not entries:
         connection.send_error(msg["id"], "not_configured", "PV Assistant is not set up")
@@ -90,7 +98,14 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
             strings[entity_id] = clean
         else:
             strings.pop(entity_id, None)
-    store["settings"] = {"strings": strings}
+    general = dict(store.get("settings", {}).get("general", {}))
+    if "general" in msg:
+        for key, value in msg["general"].items():
+            if value and value > 0:
+                general[key] = value
+            else:
+                general.pop(key, None)
+    store["settings"] = {**store.get("settings", {}), "strings": strings, "general": general}
     await store["store"].async_save(store["settings"])
     connection.send_result(msg["id"], store["settings"])
 
