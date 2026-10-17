@@ -15,7 +15,8 @@ Für Energiesensoren gibt es nur den Anzeigenamen. Mit Ausrichtung und Neigung w
 ## Anlage
 | Feld | Bedeutung |
 |---|---|
-| Speicherkapazität (kWh) | für die Zyklen |
+| Speicherkapazität (kWh) | Gesamtkapazität des Speichers |
+| Mindest-Ladestand (%) | untere Entladegrenze; nutzbare Kapazität = Kapazität × (1 − Mindest-Ladestand), angezeigt im Tab „Speicher“. Zyklen und „Nutzbar jetzt“ rechnen damit |
 | Strompreis Netzbezug, Einspeisevergütung (€/kWh) | fester Ersatzwert. Ist im Config Flow ein Preis-Sensor gewählt, zeigt das Feld dessen Preis und ist gesperrt |
 | Anlagenkosten (€) | für die Amortisation |
 | CO₂-Faktor (g/kWh) | Standard 380 |
