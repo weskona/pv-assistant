@@ -18,6 +18,8 @@ const T = {
     effChart: "Effektive Leistung (%)", effTotal: "Gesamtanlage", effNote: "Effektive Leistung = Leistung ÷ eingetragener Peak × 100, nur für Strings mit eingetragenem Peak (Einstellungen).",
     setNoPeakShort: "Peak in den Einstellungen eintragen für die %-Anzeige",
     setNoPeak: "Trage in den Einstellungen für die Strings die Max.-Leistung (Peak) ein, dann erscheint hier die effektive Leistung in %.", ofPeakSum: "von Σ Peak", peakCount: "Strings mit Peak",
+    yearTotal: "Gesamterzeugung je Jahr (kWh)", yearDev: "Abweichung der Jahressumme zum Schnitt (%)", avgSame: "Ø (gleiche Monate)", devTile: "Abweichung",
+    yearStar: "* nur Monate mit Daten (laufendes Jahr: abgeschlossene Monate); verglichen wird mit denselben Monaten im Schnitt.",
     settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
     setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
     setError: "Speichern fehlgeschlagen", setAdmin: "Nur Administratoren können Einstellungen ändern.", setPower: "Leistungssensor", setEnergy: "Energiesensor",
@@ -46,6 +48,8 @@ const T = {
     effChart: "Effective power (%)", effTotal: "Whole system", effNote: "Effective power = power ÷ entered peak × 100, only for strings with an entered peak (settings).",
     setNoPeakShort: "Enter the peak in the settings for the % display",
     setNoPeak: "Enter the max. power (peak) of the strings in the settings and the effective power in % appears here.", ofPeakSum: "of Σ peak", peakCount: "strings with peak",
+    yearTotal: "Total production per year (kWh)", yearDev: "Deviation of the yearly total from the average (%)", avgSame: "Avg. (same months)", devTile: "Deviation",
+    yearStar: "* only months with data (current year: completed months); compared with the same months of the average.",
     settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
     setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
     setError: "Saving failed", setAdmin: "Only administrators can change settings.", setPower: "Power sensor", setEnergy: "Energy sensor",
@@ -589,6 +593,8 @@ class PVAssistantPanel extends HTMLElement {
       <div class="tiles" id="ytiles"></div>
       <h3 class="ch">${esc(this._t("monthly"))}</h3><div class="chart" id="ychart"></div>
       <h3 class="ch">${esc(this._t("deviation"))}</h3><div class="chart" id="dchart"></div>
+      <h3 class="ch">${esc(this._t("yearTotal"))}</h3><div class="chart" id="achart"></div>
+      <h3 class="ch">${esc(this._t("yearDev"))}</h3><div class="chart" id="adchart"></div>
       <p class="note">${esc(this._t("yearNote"))}</p>`;
     box.querySelector("#yprev").addEventListener("click", () => { this._yy -= 1; this._drawYears(); });
     box.querySelector("#ynext").addEventListener("click", () => { this._yy += 1; this._drawYears(); });
@@ -706,6 +712,48 @@ class PVAssistantPanel extends HTMLElement {
       legendItems: [{ name: this._t("above"), color: "--pva-pos" }, { name: this._t("below"), color: "--pva-neg" }],
       fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis, 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("deviation"),
     });
+    // ---- yearly totals and their deviation (like-for-like: only months that are complete and recorded
+    // for that year, compared with the same months of the monthly average)
+    const monthsOf = (y) => Array.from({ length: 12 }, (_, m) => m).filter((m) => complete(y, m) && val(y, m) != null && avg[m] != null);
+    const yearList = [];
+    for (let y = minY; y <= latest; y++) if (monthsOf(y).length) yearList.push(y);
+    const sumOver = (ms, f) => ms.reduce((a, m) => a + (f(m) || 0), 0);
+    const yCats = yearList.map((y) => (monthsOf(y).length < 12 ? `${y}*` : String(y)));
+    const yTot = yearList.map((y) => sumOver(monthsOf(y), (m) => val(y, m)));
+    const yRef = yearList.map((y) => sumOver(monthsOf(y), (m) => avg[m]));
+    const yDev = yTot.map((t, i) => (yRef[i] > 0 ? ((t - yRef[i]) / yRef[i]) * 100 : null));
+    const yPart = (fn) => d.ids.map((id) => ({ name: this._read(id).name, values: yearList.map((y) => fn(id, y, monthsOf(y))) }));
+    const totParts = yPart((id, y, ms) => sumOver(ms, (m) => sensorVal(id, y, m)));
+    const refParts = yPart((id, y, ms) => sumOver(ms, (m) => sensorAvg(id, m)));
+    const devOwnParts = yPart((id, y, ms) => {
+      let s = 0, r = 0;
+      for (const m of ms) { const v = sensorVal(id, y, m), a = ownAvg(id, m); if (v != null && a) { s += v; r += a; } }
+      return r > 0 ? ((s - r) / r) * 100 : null;
+    });
+    categoryBarChart(root.getElementById("achart"), {
+      categories: yCats,
+      series: [
+        { name: this._t("yearProd"), color: "--pva-prod", values: yTot, parts: totParts },
+        { name: this._t("avgSame"), color: "--pva-avg", values: yRef, parts: refParts },
+      ],
+      fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("yearTotal"),
+    });
+    categoryBarChart(root.getElementById("adchart"), {
+      categories: yCats,
+      series: [{ name: this._t("yearDev"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: yDev, parts: devOwnParts }],
+      legendItems: [{ name: this._t("above"), color: "--pva-pos" }, { name: this._t("below"), color: "--pva-neg" }],
+      fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis, 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("yearDev"),
+    });
+    if (yCats.some((c) => c.endsWith("*"))) {
+      for (const id of ["achart", "adchart"]) root.getElementById(id).append(Object.assign(document.createElement("p"), { className: "note", textContent: this._t("yearStar") }));
+    }
+    // tile: deviation of the selected year
+    const yi = yearList.indexOf(Y);
+    if (yi >= 0 && yDev[yi] != null) {
+      root.getElementById("ytiles").insertAdjacentHTML("beforeend",
+        `<div class="tile"><b>${esc(`${yDev[yi] > 0 ? "+" : ""}${num(yDev[yi], false, 1)} %`)}</b><span>${esc(`${this._t("devTile")} ${Y}${yCats[yi].endsWith("*") ? "*" : ""}`)}</span></div>`);
+    }
+
     if (Y === cy) root.getElementById("ychart").append(Object.assign(document.createElement("p"), { className: "note", textContent: `* ${this._t("running")}` }));
   }
 
