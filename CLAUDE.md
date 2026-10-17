@@ -18,3 +18,4 @@
 - Das Wiki (Ordner `wiki/`) ist immer zweisprachig, Englisch und Deutsch: jede Seite hat einen englischen und einen
   deutschen Abschnitt mit gleichem Inhalt; bei jeder Änderung beide Sprachen pflegen. Seitennamen sind englisch.
 - Auch die `README.md` ist immer zweisprachig (Abschnitte `English` und `Deutsch` mit gleichem Inhalt); beide gemeinsam pflegen.
+- Auch die Issue-Formulare (`.github/ISSUE_TEMPLATE/`) sind zweisprachig: jeder Text steht als `English / Deutsch`.

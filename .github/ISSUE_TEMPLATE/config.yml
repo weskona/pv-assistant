@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Hilfe und häufige Fragen (Wiki)
+  - name: Help and frequently asked questions (Wiki) / Hilfe und häufige Fragen (Wiki)
     url: https://github.com/weskona/pv-assistant/wiki/Troubleshooting
-    about: Abweichungen zum Energy-Dashboard, leere Prognose, Preisfelder und mehr.
+    about: "Differences to the Energy dashboard, empty forecast, price fields and more. / Abweichungen zum Energy-Dashboard, leere Prognose, Preisfelder und mehr."

@@ -34,7 +34,7 @@ Home Assistant integration with its own sidebar panel for the PV energy flow: pr
 ### The panel
 | Tab | Content |
 |---|---|
-| Now | current values and sums of all sensors and the forecast |
+| Now | live energy flow diagram (solar, home, grid, storage), current values and sums of all sensors and the forecast |
 | Power | power per string against its peak, whole plant, power chart per string |
 | Analysis | string comparison (kWh/kWp, corrected for orientation and tilt, with suggestions), heat map, best and weakest days, power plateaus, performance ratio |
 | History | power, effective power and energy charts for today up to 12 months, key figures such as autarky, self-consumption, savings, CO₂ |
@@ -71,7 +71,7 @@ Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: E
 ### Das Panel
 | Tab | Inhalt |
 |---|---|
-| Aktuell | aktuelle Werte und Summen aller Sensoren und der Prognose |
+| Aktuell | Live-Energiefluss (PV, Haus, Netz, Speicher), aktuelle Werte und Summen aller Sensoren und der Prognose |
 | Leistung | Leistung je String im Verhältnis zum Peak, Gesamtanlage, Leistungsdiagramm je String |
 | Analyse | String-Vergleich (kWh/kWp, bereinigt um Ausrichtung und Neigung, mit Vorschlägen), Heatmap, beste und schwächste Tage, Leistungs-Plateaus, Performance Ratio |
 | Verlauf | Leistungs-, Effektivleistungs- und Energiediagramme von heute bis 12 Monate, Kennzahlen wie Autarkie, Eigenverbrauch, Ersparnis, CO₂ |

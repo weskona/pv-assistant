@@ -28,6 +28,7 @@ const T = {
     pwrChart: "Leistung je String",
     powerChartMean: "Leistung (Tagesmittel)", effChartPeak: "Effektive Leistung (%) – Tagesspitze",
     effNoteLong: "Tagesspitze = höchstes Stundenmittel des Tages ÷ eingetragener Peak × 100 (Tagesmittel würden die Nacht mitzählen und nie in die Nähe des Peaks kommen). Die Gesamtanlage ist die höchste Summe aller Strings in einer Stunde, nur für Strings mit eingetragenem Peak.",
+    flowTitle: "Energiefluss", flowSolar: "PV", flowHome: "Haus", flowGrid: "Netz", flowBattery: "Speicher",
     storageTab: "Speicher", stoPower: "Speicherleistung", stoEnergy: "Geladen und entladen", stoMaxCharge: "Max. Ladeleistung", stoMaxDis: "Max. Entladeleistung", stoAvgSoc: "Ø Ladestand", stoNow: "Ladestand jetzt", stoNoCap: "Trage die Speicherkapazität im Tab „Einstellungen“ unter „Anlage“ ein, dann werden die Zyklen berechnet.", stoNote: "Wirkungsgrad = entladen ÷ geladen im Zeitraum; er ist nur aussagekräftig, wenn der Ladestand am Anfang und Ende ähnlich ist (längere Zeiträume).",
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
@@ -97,6 +98,7 @@ const T = {
     pwrChart: "Power per string",
     powerChartMean: "Power (daily mean)", effChartPeak: "Effective power (%) – daily peak",
     effNoteLong: "Daily peak = highest hourly mean of the day ÷ entered peak × 100 (daily means would include the night and never get near the peak). The whole plant is the highest sum of all strings within an hour, only for strings with an entered peak.",
+    flowTitle: "Energy flow", flowSolar: "Solar", flowHome: "Home", flowGrid: "Grid", flowBattery: "Storage",
     storageTab: "Storage", stoPower: "Storage power", stoEnergy: "Charged and discharged", stoMaxCharge: "Max charge power", stoMaxDis: "Max discharge power", stoAvgSoc: "Avg level", stoNow: "Level now", stoNoCap: "Enter the storage capacity in the Settings tab under \"Plant\" to get the cycles.", stoNote: "Efficiency = discharged ÷ charged in the range; it is only meaningful when the level at the start and end is similar (longer ranges).",
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
@@ -274,6 +276,19 @@ class PVAssistantPanel extends HTMLElement {
           .note { color:var(--secondary-text-color); font-size:.85em; margin:0 0 16px; }
           .note.warn { color:var(--primary-text-color); border-left:3px solid var(--pva-neg); padding-left:8px; margin:8px 0 0; }
           .grid + .note { margin-top:16px; }
+          /* energy flow */
+          .flowcard { padding:8px 12px; }
+          svg.flow { display:block; width:100%; max-width:640px; margin:0 auto; color:var(--g-text); }
+          svg.flow .track { fill:none; stroke:currentColor; stroke-width:3; opacity:.12; }
+          svg.flow .run { fill:none; stroke-linecap:round; stroke-dasharray:1 14; animation:pvaflow 1.1s linear infinite; }
+          @keyframes pvaflow { to { stroke-dashoffset:-15; } }
+          @media (prefers-reduced-motion: reduce) { svg.flow .run { animation:none; stroke-dasharray:none; opacity:.8; } }
+          svg.flow .flowring { fill:var(--g-tile); stroke-width:3; }
+          svg.flow text { fill:var(--g-text); font-family:inherit; }
+          svg.flow .flowname { fill:var(--g-muted); font-size:13px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
+          svg.flow .flowval { font-size:19px; font-weight:700; }
+          svg.flow .flowsub { fill:var(--g-muted); font-size:12px; }
+          svg.flow .flowlbl { font-size:13px; font-weight:600; }
           .gauge { height:10px; border-radius:6px; background:rgba(127,127,127,.18); overflow:hidden; margin:10px 0 6px; }
           .gauge i { display:block; height:100%; border-radius:6px; background:var(--pva-prod); box-shadow:0 0 12px color-mix(in srgb, var(--pva-prod) 55%, transparent); }
           .pw-val { font-size:2.4em; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
@@ -353,6 +368,7 @@ class PVAssistantPanel extends HTMLElement {
     this._buildAnalysis();
     this._buildStorage();
     this._buildForecast();
+    this._flowBuilt = false;
     this._buildTabs();
     this._render();
     this._loadHistory();
@@ -425,8 +441,101 @@ class PVAssistantPanel extends HTMLElement {
       .map(([label, key]) => this._card(this._t(label), list(c[key]), "kWh")).join("");
     if (fc) html += `<h2>${esc(this._t("fcGroup"))}</h2><div class="grid">${fc}</div>`;
     if (!html) html = `<p class="muted">${esc(this._t("none"))}</p>`;
-    if (html !== this._last) { this._last = html; this._root.getElementById("now").innerHTML = html; }
+    const now = this._root.getElementById("now");
+    if (!now.querySelector("#nowcards")) now.innerHTML = '<div id="flow"></div><div id="nowcards"></div>';
+    if (html !== this._last) { this._last = html; now.querySelector("#nowcards").innerHTML = html; }
+    this._renderFlow();
     this._renderPower();
+  }
+
+  // ---------------------------------------------------------------- energy flow (current values)
+
+  _flowValues() {
+    const { P, G } = this._keys();
+    const w = (id) => { const b = this._read(id).base; return Number.isNaN(b) ? null : b; };
+    const sumOf = (ids, fn) => ids.reduce((a, id) => { const v = w(id); return v == null ? a : a + fn(v); }, 0);
+    const pos = (v) => Math.max(v, 0);
+    const prod = sumOf(P.prod, pos);
+    const feed = sumOf(P.feed, P.invFeed ? (v) => pos(-v) : pos);
+    const imp = G.impP.length ? sumOf(G.impP, pos) : P.invFeed && P.feed.length ? sumOf(P.feed, pos) : 0;
+    const ns = P.absStorage ? Math.abs : pos;
+    const sgn = (v) => (P.inv ? -v : v); // default positive = from storage
+    const out = sumOf(P.sout, ns) + sumOf(P.comb, (v) => pos(sgn(v)));
+    const inn = sumOf(P.sin, ns) + sumOf(P.comb, (v) => pos(-sgn(v)));
+    const measured = G.houseP.length ? G.houseP.map(w).filter((v) => v != null) : [];
+    const house = measured.length ? measured.reduce((a, v) => a + pos(v), 0) : pos(prod + imp + out - feed - inn);
+    const soc = G.soc.length ? w(G.soc[0]) : null;
+    return { prod, feed, imp, out, inn, house, soc,
+      hasGrid: P.feed.length > 0 || G.impP.length > 0, hasBat: P.sin.length + P.sout.length + P.comb.length > 0 };
+  }
+
+  _renderFlow() {
+    const box = this._root.getElementById("flow");
+    if (!box || !this._cfg) return;
+    if (!this._keys().P.prod.length) { box.replaceChildren(); this._flowBuilt = false; return; }
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (tag, attrs = {}, text) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text !== undefined) n.textContent = text; return n; };
+    if (!this._flowBuilt) {
+      this._flowBuilt = true;
+      this._flow = {};
+      box.innerHTML = `<h2>${esc(this._t("flowTitle"))}</h2>`;
+      const card = document.createElement("div");
+      card.className = "card flowcard";
+      const svg = el("svg", { viewBox: "0 0 640 425", class: "flow", role: "img", "aria-label": this._t("flowTitle") });
+      // flows: [key, path, color, label position]; every path runs from source to destination
+      const flows = [
+        ["sh", "M320,96 L320,154", "--pva-direct", [330, 130, "start"]],
+        ["gh", "M156,200 L274,200", "--pva-grid", [215, 190, "middle"]],
+        ["bh", "M320,298 L320,246", "--pva-bout", [330, 278, "start"]],
+        ["sg", "M284,66 C170,86 110,116 110,154", "--pva-feed", [172, 94, "middle"]],
+        ["sb", "M360,56 C620,56 620,342 364,342", "--pva-bin", [572, 205, "start"]],
+      ];
+      for (const [key, d, color, [x, y, anchor]] of flows) {
+        svg.append(el("path", { d, class: "track" }));
+        const run = el("path", { d, class: "run", stroke: `var(${color})`, visibility: "hidden" });
+        const label = el("text", { x, y, "text-anchor": anchor, class: "flowlbl" });
+        svg.append(run, label);
+        this._flow[key] = { run, label };
+      }
+      const nodes = [
+        ["solar", 320, 48, "--pva-prod", this._t("flowSolar")],
+        ["home", 320, 200, "--pva-house", this._t("flowHome")],
+        ["grid", 110, 200, "--pva-grid", this._t("flowGrid")],
+        ["bat", 320, 342, "--pva-bout", this._t("flowBattery")],
+      ];
+      for (const [key, x, y, color, name] of nodes) {
+        const g = el("g", { class: "flownode" });
+        g.append(el("circle", { cx: x, cy: y, r: 44, stroke: `var(${color})`, class: "flowring" }));
+        g.append(el("text", { x, y: y - 8, "text-anchor": "middle", class: "flowname" }, name));
+        const val = el("text", { x, y: y + 14, "text-anchor": "middle", class: "flowval" });
+        const sub = el("text", { x, y: y + 66, "text-anchor": "middle", class: "flowsub" }); // below the circle: it is longer than the circle is wide
+        g.append(val, sub);
+        svg.append(g);
+        this._flow[key] = { g, val, sub };
+      }
+      card.append(svg);
+      box.append(card);
+    }
+    const v = this._flowValues();
+    const fmt = (x) => (x >= 1000 ? `${(x / 1000).toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 2 })} kW` : `${Math.round(x)} W`);
+    const direct = Math.max(0, Math.min(v.prod, v.prod - v.feed - v.inn));
+    const toBat = Math.min(v.inn, Math.max(0, v.prod - v.feed));
+    const f = { sh: direct, gh: v.imp, bh: v.out, sg: v.feed, sb: toBat };
+    const max = Math.max(1, ...Object.values(f));
+    for (const [key, value] of Object.entries(f)) {
+      const { run, label } = this._flow[key];
+      const on = value >= 5 && (key === "sg" || key === "gh" ? v.hasGrid : key === "sb" || key === "bh" ? v.hasBat : true);
+      run.setAttribute("visibility", on ? "visible" : "hidden");
+      run.setAttribute("stroke-width", (3 + 7 * Math.min(1, value / max)).toFixed(1));
+      label.textContent = on ? fmt(value) : "";
+    }
+    const set = (key, val, sub = "") => { this._flow[key].val.textContent = val; this._flow[key].sub.textContent = sub; };
+    set("solar", fmt(v.prod));
+    set("home", fmt(v.house));
+    this._flow.grid.g.style.display = v.hasGrid ? "" : "none";
+    this._flow.bat.g.style.display = v.hasBat ? "" : "none";
+    if (v.hasGrid) set("grid", fmt(Math.max(v.imp, v.feed)), v.feed > v.imp ? `↑ ${this._t("feed")}` : v.imp > 0 ? `↓ ${this._t("gridImp")}` : "");
+    if (v.hasBat) set("bat", fmt(Math.max(v.out, v.inn)), [v.inn > v.out ? `↓ ${this._t("sin")}` : v.out > 0 ? `↑ ${this._t("sout")}` : "", v.soc != null ? `${Math.round(v.soc)} %` : ""].filter(Boolean).join(" · "));
   }
 
   // ---------------------------------------------------------------- history
