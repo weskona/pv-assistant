@@ -29,9 +29,9 @@ const T = {
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
-    anaWeakHint: "{name} liegt bei {pct} % des mittleren Strings (kWh/kWp). Mögliche Ursachen: Verschattung, Verschmutzung, Defekt.",
+    anaWeakHint: "{name} erzeugt pro installiertem kWp nur {rel} % des besten Strings ({best}): {own} gegen {top} kWh/kWp. Der typische String liegt bei {med} kWh/kWp. Mögliche Ursachen: Verschattung, Verschmutzung, andere Ausrichtung oder Neigung, falsch eingetragener Peak, Defekt.",
     anaPlateauHint: "An {n} Tagen bleibt die Leistung mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
-    anaPrHint: "Die Performance Ratio vergleicht den Ertrag mit dem, was bei der gemessenen Einstrahlung theoretisch möglich wäre; typisch sind 75 bis 85 %.",
+    anaPrHint: "Performance Ratio {pr} % – {verdict} Sie vergleicht den Ertrag mit dem, was bei der gemessenen Einstrahlung theoretisch möglich wäre (typisch 75 bis 85 %).", anaPrLow: "das liegt unter dem typischen Bereich. Mögliche Ursachen: Verschattung, Verschmutzung, Wechselrichter-Begrenzung, zu hoch eingetragene Peaks oder ein ungenauer Einstrahlungssensor.", anaPrOk: "das liegt im typischen Bereich.", anaPrHigh: "das liegt über dem typischen Bereich (prüfe, ob die Peaks zu niedrig eingetragen sind).",
     anaNoForecast: "Noch keine Prognose-Daten. Wähle im Config Flow (Schritt 3) Prognose-Sensoren; das Panel merkt sich die Prognose dann täglich.",
     yBenefit: "Nutzen", yBenefit12: "Nutzen (letzte 12 Monate)", yPaidPct: "Amortisiert zu", yPaidLeft: "Noch bis zur Amortisation", yYears: "Jahre", yTrend: "Trend der Jahressumme", yTrendUnit: "pro Jahr",
     aboveFc: "über Prognose", belowFc: "unter Prognose",
@@ -77,9 +77,9 @@ const T = {
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
-    anaWeakHint: "{name} is at {pct} % of the median string (kWh/kWp). Possible causes: shading, dirt, defect.",
+    anaWeakHint: "{name} produces only {rel} % per installed kWp of the best string ({best}): {own} vs {top} kWh/kWp. The typical string is at {med} kWh/kWp. Possible causes: shading, dirt, different orientation or tilt, wrong peak entered, defect.",
     anaPlateauHint: "On {n} days the power stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
-    anaPrHint: "The performance ratio compares the yield with what would be theoretically possible at the measured irradiance; 75 to 85 % is typical.",
+    anaPrHint: "Performance ratio {pr} % – {verdict} It compares the yield with what would be theoretically possible at the measured irradiance (typically 75 to 85 %).", anaPrLow: "that is below the typical range. Possible causes: shading, dirt, inverter limiting, peaks entered too high or an inaccurate irradiance sensor.", anaPrOk: "that is within the typical range.", anaPrHigh: "that is above the typical range (check whether the peaks are entered too low).",
     anaNoForecast: "No forecast data yet. Choose forecast sensors in the config flow (step 3); the panel then remembers the forecast every day.",
     yBenefit: "Benefit", yBenefit12: "Benefit (last 12 months)", yPaidPct: "Paid back", yPaidLeft: "Still until payback", yYears: "years", yTrend: "Trend of the yearly total", yTrendUnit: "per year",
     aboveFc: "above forecast", belowFc: "below forecast",
@@ -1274,7 +1274,9 @@ class PVAssistantPanel extends HTMLElement {
       const med = median(peaked.map((s) => s.spec));
       for (const s of peaked) if (med > 0 && s.spec < med * 0.85) {
         weak.add(s.id);
-        hints.push(this._t("anaWeakHint").replace("{name}", s.name).replace("{pct}", String(Math.round((s.spec / med) * 100))));
+        const top = peaked.reduce((a, x) => (x.spec > a.spec ? x : a), peaked[0]);
+        hints.push(this._t("anaWeakHint").replace(/\{name\}/g, s.name).replace("{rel}", String(Math.round((s.spec / top.spec) * 100))).replace("{best}", top.name)
+          .replace("{own}", num(s.spec)).replace("{top}", num(top.spec)).replace("{med}", num(med)));
       }
     }
 
@@ -1339,6 +1341,7 @@ class PVAssistantPanel extends HTMLElement {
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio
     const tiles = [];
+    let infoHint = null;
     const powerTotal = series.reduce((a, s) => a + s.kwh, 0);
     // the total comes from the energy counters (same as the Energy dashboard); the power sum is the fallback
     const startDay = key(start.getTime()).day;
@@ -1362,13 +1365,15 @@ class PVAssistantPanel extends HTMLElement {
         if (h > 0.5 && eb > 0) {
           const pr = (eb / (h * kwp)) * 100;
           tiles.push([`${num(pr, 0)} %`, this._t("anaPr")]);
-          hints.push(this._t("anaPrHint"));
+          const verdict = this._t(pr < 75 ? "anaPrLow" : pr > 85 ? "anaPrHigh" : "anaPrOk");
+          infoHint = this._t("anaPrHint").replace("{pr}", num(pr, 0)).replace("{verdict}", verdict);
+          hints.push(infoHint);
         }
       }
     }
     if (bySize.length) tiles.push([`${num(bySize[0].kwh)} kWh · ${dayLabel(bySize[0].day)}`, this._t("anaBestDay")]);
     root.getElementById("atiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-    root.getElementById("ahints").innerHTML = hints.map((h) => `<li${h === this._t("anaPrHint") ? ' class="info"' : ""}>${esc(h)}</li>`).join("");
+    root.getElementById("ahints").innerHTML = hints.map((h) => `<li${h === infoHint ? ' class="info"' : ""}>${esc(h)}</li>`).join("");
 
     // forecast against actual (daily production from the energy statistics)
     const log = this._cfg.settings?.forecast_log || {};
