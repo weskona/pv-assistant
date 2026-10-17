@@ -31,6 +31,7 @@ const T = {
     anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
     anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
+    genFromSensor: "Aktuell vom Sensor „{name}“: {value}. Dieser feste Wert gilt nur, wenn im Config Flow kein Preis-Sensor gewählt ist – das Feld bleibt deshalb leer.",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
     setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
     anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
@@ -92,6 +93,7 @@ const T = {
     anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
     anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
+    genFromSensor: "Currently from the sensor \"{name}\": {value}. This fixed value only applies when no price sensor is chosen in the config flow, so the field stays empty.",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
     setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
     anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
@@ -1484,11 +1486,12 @@ class PVAssistantPanel extends HTMLElement {
     const genInputs = {};
     const gc = mk("div", { class: "setcard" });
     gc.append(mk("h3", {}, this._t("genTitle")));
+    const priceSensor = { price_import: this._keys().G.priceImp, price_feed_in: this._keys().G.priceFeed };
     for (const [key, label, step, ph] of [
       ["storage_capacity_kwh", "genCap", "0.1", ""], ["price_import", "genPriceImport", "0.001", ""], ["price_feed_in", "genPriceFeed", "0.001", ""],
       ["system_cost_eur", "genCost", "100", ""], ["co2_g_per_kwh", "genCo2", "1", "380"],
-      ["latitude", "genLat", "0.0001", this._hass.config?.latitude != null ? String(this._hass.config.latitude) : ""],
-      ["longitude", "genLon", "0.0001", this._hass.config?.longitude != null ? String(this._hass.config.longitude) : ""],
+      ["latitude", "genLat", "0.0001", this._hass.config?.latitude != null ? String(Number(this._hass.config.latitude).toFixed(4)) : ""],
+      ["longitude", "genLon", "0.0001", this._hass.config?.longitude != null ? String(Number(this._hass.config.longitude).toFixed(4)) : ""],
     ]) {
       const row = mk("div", { class: "setrow" });
       const id = `set-gen-${key}`;
@@ -1497,6 +1500,14 @@ class PVAssistantPanel extends HTMLElement {
       input.value = general[key] ? String(general[key]) : "";
       input.disabled = !isAdmin;
       row.append(mk("label", { for: id }, this._t(label)), input);
+      const sid = priceSensor[key];
+      if (sid) { // a price sensor from the config flow is in use; this fixed value is only the fallback
+        const st = this._hass.states[sid];
+        const val = parseFloat(st?.state);
+        row.append(mk("div", { class: "hint" }, this._t("genFromSensor")
+          .replace("{name}", st?.attributes?.friendly_name || sid)
+          .replace("{value}", Number.isNaN(val) ? this._t("missing") : `${val.toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 4 })} ${st?.attributes?.unit_of_measurement || "€/kWh"}`)));
+      }
       gc.append(row);
       genInputs[key] = input;
     }
