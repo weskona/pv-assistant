@@ -272,6 +272,9 @@ class PVAssistantPanel extends HTMLElement {
           .setrow input { font:inherit; color:var(--primary-text-color); background:var(--secondary-background-color);
                   border:1px solid var(--g-tileb); border-radius:12px; padding:8px 12px; min-width:0; max-width:320px; box-sizing:border-box; width:100%; }
           .setrow input:disabled { opacity:.6; }
+          /* plain number entry without the up / down arrows */
+          .setrow input[type="number"] { -moz-appearance:textfield; appearance:textfield; }
+          .setrow input[type="number"]::-webkit-outer-spin-button, .setrow input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
           .setrow .hint { grid-column:2; color:var(--secondary-text-color); font-size:.85em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
           .setbtn { font:inherit; font-weight:600; color:var(--g-text); background:var(--g-tile); border:1px solid var(--g-tileb);
                   border-radius:13px; padding:5px 14px; cursor:pointer; }
