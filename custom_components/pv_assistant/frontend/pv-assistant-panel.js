@@ -42,8 +42,8 @@ const T = {
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
     setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
-    setModules: "Anzahl Module", setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit Anzahl und Modulleistung wird der Peak automatisch berechnet (Anzahl × Wp).",
-    setAz2: "2. Ausrichtung / Azimut (°)", setTilt2: "2. Neigung (°)", setShare2: "Anteil der 2. Ausrichtung (%)", setOrient2Hint: "Nur wenn ein Teil der Module anders ausgerichtet ist (z. B. zwei nach Ost, zwei nach West). Leer lassen bei nur einer Ausrichtung.", setShare2Hint: "Anteil des Peaks auf der 2. Ausrichtung, leer = 50 %.",
+    setModules: "Anzahl Module (gesamt)", setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit Anzahl und Modulleistung wird der Peak automatisch berechnet (Anzahl × Wp).",
+    setAz2: "2. Ausrichtung / Azimut (°)", setTilt2: "2. Neigung (°)", setModules2: "Module in 2. Ausrichtung", setOrient2Hint: "Nur wenn ein Teil der Module anders ausgerichtet ist (z. B. zwei nach Ost, zwei nach West). Leer lassen bei nur einer Ausrichtung.", setModules2Hint: "Wie viele der Module (von der Anzahl oben) in die 2. Ausrichtung zeigen; der Rest zeigt in die 1. Ausrichtung. Leer = Hälfte.",
     anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
     anaNoOrient: "Trage bei den Strings Ausrichtung und Neigung ein (Einstellungen), dann wird der Vergleich um die Ausrichtung bereinigt (Ost/West erzeugt weniger als Süd).",
     anaAdvPrefix: "Vorschlag für {name}:",
@@ -114,8 +114,8 @@ const T = {
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
     setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
-    setModules: "Number of modules", setModuleWp: "Power per module (Wp)", setModulesHint: "With count and module power the peak is calculated automatically (count × Wp).",
-    setAz2: "2nd orientation / azimuth (°)", setTilt2: "2nd tilt (°)", setShare2: "Share of the 2nd orientation (%)", setOrient2Hint: "Only if part of the modules face another way (e.g. two east, two west). Leave empty for a single orientation.", setShare2Hint: "Share of the peak on the 2nd orientation, empty = 50 %.",
+    setModules: "Number of modules (total)", setModuleWp: "Power per module (Wp)", setModulesHint: "With count and module power the peak is calculated automatically (count × Wp).",
+    setAz2: "2nd orientation / azimuth (°)", setTilt2: "2nd tilt (°)", setModules2: "Modules in 2nd orientation", setOrient2Hint: "Only if part of the modules face another way (e.g. two east, two west). Leave empty for a single orientation.", setModules2Hint: "How many of the modules (of the count above) face the 2nd orientation; the rest face the 1st. Empty = half.",
     anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
     anaNoOrient: "Enter orientation and tilt of the strings (Settings) and the comparison is corrected for the orientation (east/west yields less than south).",
     anaAdvPrefix: "Suggestion for {name}:",
@@ -1772,7 +1772,7 @@ class PVAssistantPanel extends HTMLElement {
         tilt = orient("tilt", "setTilt", 0, 90, 5, "setTiltHint");
         az2 = orient("azimuth2", "setAz2", -180, 180, 5, "setOrient2Hint");
         tilt2 = orient("tilt2", "setTilt2", 0, 90, 5, "setOrient2Hint");
-        share2 = orient("share2", "setShare2", 0, 100, 5, "setShare2Hint");
+        share2 = num2("modules2", "setModules2", 1, "setModules2Hint");
       }
       box.append(c);
       inputs.push({ id, name, peak, modules, moduleWp, az, tilt, az2, tilt2, share2 });
@@ -1868,7 +1868,8 @@ class PVAssistantPanel extends HTMLElement {
           const a2 = parseFloat(az2.value.replace(",", ".")), t2 = parseFloat(tilt2.value.replace(",", ".")), s2 = parseFloat(share2.value.replace(",", "."));
           e.azimuth2 = Number.isNaN(a2) ? null : a2;
           e.tilt2 = Number.isNaN(t2) ? null : t2;
-          e.share2 = Number.isNaN(s2) ? null : s2;
+          e.modules2 = Number.isNaN(s2) ? null : Math.round(s2);
+          e.share2 = null;
         }
         payload[id] = e;
       }
@@ -2031,7 +2032,7 @@ class PVAssistantPanel extends HTMLElement {
       const factorOf = (az, tl) => (refYield > 0 ? expectedYield(common, lat, lon, az, tl) / refYield : orientationFactor(az, tl));
       // part of the modules on a second orientation: weighted mix of both expectations
       const two = known && o.azimuth2 != null && o.tilt2 != null;
-      const w2 = two ? Math.min(1, Math.max(0, (o.share2 ?? 50) / 100)) : 0;
+      const w2 = two ? Math.min(1, Math.max(0, o.modules > 0 && o.modules2 != null ? o.modules2 / o.modules : (o.share2 ?? 50) / 100)) : 0;
       s.factor = !known ? null : two ? (1 - w2) * factorOf(o.azimuth, o.tilt) + w2 * factorOf(o.azimuth2, o.tilt2) : factorOf(o.azimuth, o.tilt);
       s.eff = s.spec / (s.factor || 1);
     }
