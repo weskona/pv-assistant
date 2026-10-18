@@ -42,6 +42,8 @@ const T = {
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
     setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
+    setModules: "Anzahl Module (gesamt)", setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit Anzahl und Modulleistung wird der Peak automatisch berechnet (Anzahl × Wp).",
+    setAz2: "2. Ausrichtung / Azimut (°)", setTilt2: "2. Neigung (°)", setModules2: "Module in 2. Ausrichtung", setOrient2Hint: "Nur wenn ein Teil der Module anders ausgerichtet ist (z. B. zwei nach Ost, zwei nach West). Leer lassen bei nur einer Ausrichtung.", setModules2Hint: "Wie viele der Module (von der Anzahl oben) in die 2. Ausrichtung zeigen; der Rest zeigt in die 1. Ausrichtung. Leer = Hälfte.",
     anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
     anaNoOrient: "Trage bei den Strings Ausrichtung und Neigung ein (Einstellungen), dann wird der Vergleich um die Ausrichtung bereinigt (Ost/West erzeugt weniger als Süd).",
     anaAdvPrefix: "Vorschlag für {name}:",
@@ -112,6 +114,8 @@ const T = {
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
     setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
+    setModules: "Number of modules (total)", setModuleWp: "Power per module (Wp)", setModulesHint: "With count and module power the peak is calculated automatically (count × Wp).",
+    setAz2: "2nd orientation / azimuth (°)", setTilt2: "2nd tilt (°)", setModules2: "Modules in 2nd orientation", setOrient2Hint: "Only if part of the modules face another way (e.g. two east, two west). Leave empty for a single orientation.", setModules2Hint: "How many of the modules (of the count above) face the 2nd orientation; the rest face the 1st. Empty = half.",
     anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
     anaNoOrient: "Enter orientation and tilt of the strings (Settings) and the comparison is corrected for the orientation (east/west yields less than south).",
     anaAdvPrefix: "Suggestion for {name}:",
@@ -1722,8 +1726,20 @@ class PVAssistantPanel extends HTMLElement {
       name.disabled = !isAdmin;
       nameRow.append(mk("label", { for: nameId }, this._t("setName")), name);
       c.append(nameRow);
-      let peak = null, take = null, az = null, tilt = null;
+      let peak = null, modules = null, moduleWp = null, take = null, az = null, tilt = null, az2 = null, tilt2 = null, share2 = null;
       if (withPeak) {
+        const num2 = (key, label, step, hintKey) => {
+          const r = mk("div", { class: "setrow" });
+          const oid = `set-${key}-${id}`;
+          const input = mk("input", { type: "number", id: oid, min: "0", step: String(step), inputmode: "decimal" });
+          input.value = strings[id]?.[key] > 0 ? String(strings[id][key]) : "";
+          input.disabled = !isAdmin;
+          r.append(mk("label", { for: oid }, this._t(label)), input, mk("div", { class: "hint" }, hintKey ? this._t(hintKey) : ""));
+          c.append(r);
+          return input;
+        };
+        modules = num2("modules", "setModules", 1, null);
+        moduleWp = num2("module_wp", "setModuleWp", 5, "setModulesHint");
         const row = mk("div", { class: "setrow" });
         const peakId = `set-peak-${id}`;
         peak = mk("input", { type: "number", id: peakId, min: "0", step: "10", inputmode: "decimal" });
@@ -1735,6 +1751,12 @@ class PVAssistantPanel extends HTMLElement {
         hint.append(mk("span", { "data-measured": id }, ""), take);
         row.append(mk("label", { for: peakId }, this._t("setPeak")), peak, hint);
         c.append(row);
+        const fromModules = () => {
+          const n = parseFloat(modules.value.replace(",", ".")), w = parseFloat(moduleWp.value.replace(",", "."));
+          if (n > 0 && w > 0) peak.value = String(Math.round(n * w));
+        };
+        modules.addEventListener("input", fromModules);
+        moduleWp.addEventListener("input", fromModules);
         take.addEventListener("click", () => { const m = this._pmax?.[id]; if (m > 0) peak.value = String(Math.round(m)); });
         const orient = (key, label, min, max, step, hintKey) => {
           const r = mk("div", { class: "setrow" });
@@ -1748,9 +1770,12 @@ class PVAssistantPanel extends HTMLElement {
         };
         az = orient("azimuth", "setAz", -180, 180, 5, "setAzHint");
         tilt = orient("tilt", "setTilt", 0, 90, 5, "setTiltHint");
+        az2 = orient("azimuth2", "setAz2", -180, 180, 5, "setOrient2Hint");
+        tilt2 = orient("tilt2", "setTilt2", 0, 90, 5, "setOrient2Hint");
+        share2 = num2("modules2", "setModules2", 1, "setModules2Hint");
       }
       box.append(c);
-      inputs.push({ id, name, peak, az, tilt });
+      inputs.push({ id, name, peak, modules, moduleWp, az, tilt, az2, tilt2, share2 });
     };
     P.prod.forEach((id) => card(id, "setPower", true));
     E.prod.forEach((id) => card(id, "setEnergy", false));
@@ -1826,15 +1851,25 @@ class PVAssistantPanel extends HTMLElement {
     this._setMeasured();
     save.addEventListener("click", async () => {
       const payload = {};
-      for (const { id, name, peak, az, tilt } of inputs) {
+      for (const { id, name, peak, modules, moduleWp, az, tilt, az2, tilt2, share2 } of inputs) {
         const e = {};
         if (name.value.trim()) e.name = name.value.trim();
         const pv = peak ? parseFloat(peak.value.replace(",", ".")) : NaN;
         if (pv > 0) e.peak = pv;
+        if (modules) {
+          const nv = parseFloat(modules.value.replace(",", ".")), wv = parseFloat(moduleWp.value.replace(",", "."));
+          e.modules = nv > 0 ? Math.round(nv) : null;
+          e.module_wp = wv > 0 ? wv : null;
+        }
         if (az) { // 0 is valid (south / flat); null clears
           const av = parseFloat(az.value.replace(",", ".")), tv = parseFloat(tilt.value.replace(",", "."));
           e.azimuth = Number.isNaN(av) ? null : av;
           e.tilt = Number.isNaN(tv) ? null : tv;
+          const a2 = parseFloat(az2.value.replace(",", ".")), t2 = parseFloat(tilt2.value.replace(",", ".")), s2 = parseFloat(share2.value.replace(",", "."));
+          e.azimuth2 = Number.isNaN(a2) ? null : a2;
+          e.tilt2 = Number.isNaN(t2) ? null : t2;
+          e.modules2 = Number.isNaN(s2) ? null : Math.round(s2);
+          e.share2 = null;
         }
         payload[id] = e;
       }
@@ -1994,7 +2029,11 @@ class PVAssistantPanel extends HTMLElement {
       const known = o && o.azimuth != null && o.tilt != null;
       // with the location: clear-sky irradiance on the plane of the string over exactly the hours compared
       // (follows the season of the range); without it: rough annual table
-      s.factor = !known ? null : refYield > 0 ? expectedYield(common, lat, lon, o.azimuth, o.tilt) / refYield : orientationFactor(o.azimuth, o.tilt);
+      const factorOf = (az, tl) => (refYield > 0 ? expectedYield(common, lat, lon, az, tl) / refYield : orientationFactor(az, tl));
+      // part of the modules on a second orientation: weighted mix of both expectations
+      const two = known && o.azimuth2 != null && o.tilt2 != null;
+      const w2 = two ? Math.min(1, Math.max(0, o.modules > 0 && o.modules2 != null ? o.modules2 / o.modules : (o.share2 ?? 50) / 100)) : 0;
+      s.factor = !known ? null : two ? (1 - w2) * factorOf(o.azimuth, o.tilt) + w2 * factorOf(o.azimuth2, o.tilt2) : factorOf(o.azimuth, o.tilt);
       s.eff = s.spec / (s.factor || 1);
     }
     const usesOrient = peaked.some((s) => s.factor);
