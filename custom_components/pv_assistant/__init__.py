@@ -66,6 +66,21 @@ def _as_list(value) -> list[str]:
                 # number of modules and rated power per module in W (peak = product)
                 vol.Optional("modules"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=10000))),
                 vol.Optional("module_wp"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=2000))),
+                # inverter of the string: max. AC power in W and number of MPPT inputs
+                vol.Optional("inverter_w"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=100000000))),
+                vol.Optional("mppts"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=64))),
+                # module strings of the inverter: modules, orientation and the MPPT they are connected to
+                vol.Optional("groups"): vol.All(
+                    [
+                        {
+                            vol.Optional("modules"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=10000))),
+                            vol.Optional("azimuth"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=-180, max=180))),
+                            vol.Optional("tilt"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=90))),
+                            vol.Optional("mppt"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=64))),
+                        }
+                    ],
+                    vol.Length(max=32),
+                ),
                 # orientation (azimuth like Forecast.Solar: south = 0, east = -90, west = 90) and tilt in degrees; None = not set
                 vol.Optional("azimuth"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=-180, max=180))),
                 vol.Optional("tilt"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=90))),
@@ -113,7 +128,18 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
             clean["name"] = name
         if (peak := values.get("peak") or 0) > 0:
             clean["peak"] = peak
-        for key in ("modules", "module_wp", "azimuth", "tilt", "azimuth2", "tilt2", "modules2", "share2"):  # 0 is a valid value (south, flat), so only None means "not set"
+        groups = []
+        for group in values.get("groups") or []:
+            entry = {key: value for key, value in group.items() if value is not None}
+            if entry.get("modules") == 0:
+                entry.pop("modules")
+            if entry.get("mppt") == 0:
+                entry.pop("mppt")
+            if entry:
+                groups.append(entry)
+        if groups:
+            clean["groups"] = groups
+        for key in ("inverter_w", "mppts", "modules", "module_wp", "azimuth", "tilt", "azimuth2", "tilt2", "modules2", "share2"):  # 0 is a valid value (south, flat), so only None means "not set"
             if values.get(key) is not None:
                 clean[key] = values[key]
         if clean:

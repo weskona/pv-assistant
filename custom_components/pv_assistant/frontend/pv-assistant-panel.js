@@ -41,10 +41,10 @@ const T = {
     genMinSoc: "Mindest-Ladestand (%)", genMinSocHint: "Untere Entladegrenze des Speichers. Daraus ergibt sich die nutzbare Kapazität.", genUsable: "Nutzbare Kapazität: {kwh} kWh (Kapazität × (1 − Mindest-Ladestand)).",
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
-    setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
-    setModules: "Anzahl Module (gesamt)", setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit Anzahl und Modulleistung wird der Peak automatisch berechnet (Anzahl × Wp) und das Feld Max. Leistung gesperrt.",
-    setAz2: "2. Ausrichtung / Azimut (°)", setTilt2: "2. Neigung (°)", setModules2: "Module in 2. Ausrichtung", setOrient2Hint: "Nur wenn ein Teil der Module anders ausgerichtet ist (z. B. zwei nach Ost, zwei nach West). Leer lassen bei nur einer Ausrichtung.", setModules2Hint: "Wie viele der Module (von der Anzahl oben) in die 2. Ausrichtung zeigen; der Rest zeigt in die 1. Ausrichtung. Leer = Hälfte.",
-    anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
+        setGroups: "Modulstränge", setGroupsHint: "Ein Modulstrang sind Module mit gleicher Ausrichtung und Neigung in Reihe. Trage je Strang Modulzahl, Ausrichtung (Süd = 0°, Ost = −90°, West = 90°), Neigung (0° = flach, 90° = senkrecht) und die Nummer des MPPTs ein, an dem er hängt. Leere Zeilen werden ignoriert.", gTitle: "Modulstrang {n}", gAdd: "Modulstrang hinzufügen", gRemove: "Entfernen", gModules: "Module", gAz: "Azimut (°)", gTilt: "Neigung (°)", gMppt: "MPPT Nr.",
+    setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit den Modulzahlen der Modulstränge und der Modulleistung wird der Peak automatisch berechnet (Module × Wp) und das Feld Max. Leistung gesperrt.",
+    setInverter: "Wechselrichter max. Leistung (W)", setInverterHint: "AC-Grenze des Wechselrichters dieses Strings (bei einem Balkonkraftwerk z. B. 800 W). Damit erkennt die Analyse Begrenzung und Überbauung.", setMppts: "Anzahl MPPTs", setMpptsHint: "Eingänge des Wechselrichters mit eigener Leistungsnachführung. Jeder MPPT regelt seine Modulstränge unabhängig; an einem MPPT sollten Stränge gleich ausgerichtet sein.",
+        anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
     anaNoOrient: "Trage bei den Strings Ausrichtung und Neigung ein (Einstellungen), dann wird der Vergleich um die Ausrichtung bereinigt (Ost/West erzeugt weniger als Süd).",
     anaAdvPrefix: "Vorschlag für {name}:",
     anaAdvMorning: "Der String fällt vor allem am Vormittag zurück: wahrscheinlich Verschattung aus Osten oder Südosten (Gebäude, Baum, Dachaufbau). Prüfe die Umgebung am Morgen und stutze ggf. Bewuchs.",
@@ -53,7 +53,7 @@ const T = {
     anaAdvFlat: "Der Rückstand zieht sich gleichmäßig durch den Tag: Reinige die Module, prüfe Steckverbindungen, Optimierer und den Wechselrichter-Eingang und kontrolliere, ob der eingetragene Peak stimmt.",
     anaAdvOrient: "Tipp: Trage Ausrichtung und Neigung des Strings ein, damit der Vergleich fairer wird.",
     anaWeakHint: "{name} erzeugt pro installiertem kWp nur {rel} % des besten Strings ({best}): {own} gegen {top} kWh/kWp. Der typische String liegt bei {med} kWh/kWp. Mögliche Ursachen: Verschattung, Verschmutzung, andere Ausrichtung oder Neigung, falsch eingetragener Peak, Defekt.",
-    anaInvLimitHint: "An {n} Tagen bleibt die Anlagenleistung mehrere Stunden auf dem Höchstwert nahe der Wechselrichter-Grenze ({inv} W): hier begrenzt wahrscheinlich der Wechselrichter, Ertrag darüber geht verloren.", anaOverbuild: "Die Modulleistung der Strings ({peak} W) liegt bei {pct} % der Wechselrichter-Leistung ({inv} W).", anaOverbuildHigh: " Das ist eine starke Überbauung, an sonnigen Tagen wird die Spitze abgeschnitten.", anaOverbuildLow: " Der Wechselrichter hat Reserve.",
+    anaInvLimitHint: "{name}: An {n} Tagen bleibt die Leistung mehrere Stunden auf dem Höchstwert nahe der Wechselrichter-Grenze ({inv} W): hier begrenzt wahrscheinlich der Wechselrichter, Ertrag darüber geht verloren.", anaOverbuild: "{name}: Die Modulleistung ({peak} W) liegt bei {pct} % der Wechselrichter-Leistung ({inv} W).", anaOverbuildHigh: " Das ist eine starke Überbauung, an sonnigen Tagen wird die Spitze abgeschnitten.", anaOverbuildLow: " Der Wechselrichter hat Reserve.", anaMpptMismatch: "{name}: An MPPT {mppt} hängen Modulstränge mit unterschiedlicher Ausrichtung. Sie teilen sich einen Arbeitspunkt, das kostet Ertrag (Mismatch). Ideal ist je Ausrichtung ein eigener MPPT.",
     anaPlateauHint: "An {n} Tagen bleibt die Leistung der Gesamtanlage mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
     anaPrHint: "Performance Ratio der Gesamtanlage {pr} % – {verdict} Sie vergleicht den Ertrag mit dem, was bei der gemessenen Einstrahlung theoretisch möglich wäre (typisch 75 bis 85 %).", anaPrLow: "das liegt unter dem typischen Bereich. Mögliche Ursachen: Verschattung, Verschmutzung, Wechselrichter-Begrenzung, zu hoch eingetragene Peaks oder ein ungenauer Einstrahlungssensor.", anaPrOk: "das liegt im typischen Bereich.", anaPrHigh: "das liegt über dem typischen Bereich (prüfe, ob die Peaks zu niedrig eingetragen sind).",
     anaNoForecastYet: "Noch keine abgeschlossenen Tage mit Prognose. Das Panel liest die Prognose der letzten Tage aus dem Verlauf der „Prognose heute“-Sensoren und merkt sie sich ab jetzt täglich; der Vergleich erscheint spätestens morgen. Prüfe, ob „Prognose heute“ in Schritt 3 gewählt ist (nicht nur „morgen“ oder „Rest heute“).",
@@ -62,7 +62,7 @@ const T = {
     aboveFc: "über Prognose", belowFc: "unter Prognose",
     fcAvgDev: "Ø Abweichung", fcHit: "Trefferquote (±20 %)", fcDays: "Tage mit Prognose", fcForecast: "Prognose", fcActual: "Ist", anaLoading: "Lade Analyse …",
     genTitle: "Anlage", genCap: "Speicherkapazität (kWh)", genPriceImport: "Strompreis Netzbezug (€/kWh)", genPriceFeed: "Einspeisevergütung (€/kWh)",
-    genInverter: "Wechselrichter max. Leistung (W)", genCost: "Anlagenkosten (€)", genCo2: "CO₂-Faktor des Strommix (g/kWh)",
+    genCost: "Anlagenkosten (€)", genCo2: "CO₂-Faktor des Strommix (g/kWh)",
     genHint: "Die Preise gelten nur, wenn im Config Flow kein Preis-Sensor gewählt wurde. Standort: leer = Standort von Home Assistant, genutzt für die Sonnenstand-Auswertung der Strings. Kapazität: für die Zyklen des Speichers. Kosten: für die Amortisation. CO₂-Faktor: Standard 380 g/kWh.",
     settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
     setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
@@ -114,10 +114,10 @@ const T = {
     genMinSoc: "Minimum level (%)", genMinSocHint: "Lower discharge limit of the storage. It gives the usable capacity.", genUsable: "Usable capacity: {kwh} kWh (capacity × (1 − minimum level)).",
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
-    setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
-    setModules: "Number of modules (total)", setModuleWp: "Power per module (Wp)", setModulesHint: "With count and module power the peak is calculated automatically (count × Wp) and the max. power field is locked.",
-    setAz2: "2nd orientation / azimuth (°)", setTilt2: "2nd tilt (°)", setModules2: "Modules in 2nd orientation", setOrient2Hint: "Only if part of the modules face another way (e.g. two east, two west). Leave empty for a single orientation.", setModules2Hint: "How many of the modules (of the count above) face the 2nd orientation; the rest face the 1st. Empty = half.",
-    anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
+        setGroups: "Module strings", setGroupsHint: "A module string is modules in series with the same orientation and tilt. For each string enter the module count, orientation (south = 0°, east = −90°, west = 90°), tilt (0° = flat, 90° = vertical) and the number of the MPPT it is connected to. Empty rows are ignored.", gTitle: "Module string {n}", gAdd: "Add module string", gRemove: "Remove", gModules: "Modules", gAz: "Azimuth (°)", gTilt: "Tilt (°)", gMppt: "MPPT no.",
+    setModuleWp: "Power per module (Wp)", setModulesHint: "With the module counts of the strings and the module power the peak is calculated automatically (modules × Wp) and the max. power field is locked.",
+    setInverter: "Inverter max. power (W)", setInverterHint: "AC limit of the inverter of this string (e.g. 800 W for a balcony plant). The analysis uses it to detect clipping and oversizing.", setMppts: "Number of MPPTs", setMpptsHint: "Inverter inputs with their own power tracking. Each MPPT tracks its module strings independently; strings on one MPPT should face the same way.",
+        anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
     anaNoOrient: "Enter orientation and tilt of the strings (Settings) and the comparison is corrected for the orientation (east/west yields less than south).",
     anaAdvPrefix: "Suggestion for {name}:",
     anaAdvMorning: "The string falls behind mostly in the morning: probably shading from the east or south-east (building, tree, roof structure). Check the surroundings in the morning and trim vegetation if needed.",
@@ -126,7 +126,7 @@ const T = {
     anaAdvFlat: "The gap runs evenly through the day: clean the modules, check connectors, optimizers and the inverter input, and verify the entered peak.",
     anaAdvOrient: "Tip: enter orientation and tilt of the string to make the comparison fairer.",
     anaWeakHint: "{name} produces only {rel} % per installed kWp of the best string ({best}): {own} vs {top} kWh/kWp. The typical string is at {med} kWh/kWp. Possible causes: shading, dirt, different orientation or tilt, wrong peak entered, defect.",
-    anaInvLimitHint: "On {n} days the plant power stays at its maximum close to the inverter limit ({inv} W) for several hours: the inverter is probably limiting there and yield above it is lost.", anaOverbuild: "The module power of the strings ({peak} W) is {pct} % of the inverter power ({inv} W).", anaOverbuildHigh: " That is a strong oversizing, on sunny days the peak is clipped.", anaOverbuildLow: " The inverter has headroom.",
+    anaInvLimitHint: "{name}: on {n} days the power stays at its maximum close to the inverter limit ({inv} W) for several hours: the inverter is probably limiting there and yield above it is lost.", anaOverbuild: "{name}: the module power ({peak} W) is {pct} % of the inverter power ({inv} W).", anaOverbuildHigh: " That is a strong oversizing, on sunny days the peak is clipped.", anaOverbuildLow: " The inverter has headroom.", anaMpptMismatch: "{name}: module strings with different orientations hang on MPPT {mppt}. They share one operating point, which costs yield (mismatch). Ideally each orientation has its own MPPT.",
     anaPlateauHint: "On {n} days the power of the whole plant stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
     anaPrHint: "Performance ratio of the whole plant {pr} % – {verdict} It compares the yield with what would be theoretically possible at the measured irradiance (typically 75 to 85 %).", anaPrLow: "that is below the typical range. Possible causes: shading, dirt, inverter limiting, peaks entered too high or an inaccurate irradiance sensor.", anaPrOk: "that is within the typical range.", anaPrHigh: "that is above the typical range (check whether the peaks are entered too low).",
     anaNoForecastYet: "No completed days with a forecast yet. The panel reads the forecast of the last days from the history of the \"forecast today\" sensors and remembers it daily from now on; the comparison appears tomorrow at the latest. Check that \"forecast today\" is selected in step 3 (not only \"tomorrow\" or \"remaining today\").",
@@ -135,7 +135,7 @@ const T = {
     aboveFc: "above forecast", belowFc: "below forecast",
     fcAvgDev: "Avg. deviation", fcHit: "Hit rate (±20 %)", fcDays: "Days with forecast", fcForecast: "Forecast", fcActual: "Actual", anaLoading: "Loading analysis …",
     genTitle: "Plant", genCap: "Storage capacity (kWh)", genPriceImport: "Grid import price (€/kWh)", genPriceFeed: "Feed-in tariff (€/kWh)",
-    genInverter: "Inverter max. power (W)", genCost: "System cost (€)", genCo2: "CO₂ factor of the power mix (g/kWh)",
+    genCost: "System cost (€)", genCo2: "CO₂ factor of the power mix (g/kWh)",
     genHint: "The prices only apply when no price sensor was chosen in the config flow. Location: empty = Home Assistant location, used for the sun-position analysis of the strings. Capacity: for the storage cycles. Cost: for the payback. CO₂ factor: default 380 g/kWh.",
     settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
     setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
@@ -173,6 +173,19 @@ const mergedRows = (res, id, filt, field) => {
   for (const r of res[id] || []) if (r[field] != null) m.set(r.start, r);
   for (const r of (filt[id] && res[filt[id]]) || []) if (r[field] != null) m.set(r.start, r);
   return [...m.values()].sort((a, b) => a.start - b.start);
+};
+
+// module strings of a plant unit; older versions stored one or two orientations directly on the entry
+const groupsOf = (o) => {
+  if (!o) return [];
+  if (Array.isArray(o.groups) && o.groups.length) return o.groups;
+  const out = [];
+  const two = o.azimuth2 != null && o.tilt2 != null;
+  const total = o.modules > 0 ? o.modules : null;
+  const m2 = two ? (o.modules2 != null ? o.modules2 : total != null ? Math.round(total / 2) : null) : null;
+  if (o.azimuth != null || o.tilt != null || total != null) out.push({ modules: total != null ? total - (m2 || 0) : null, azimuth: o.azimuth ?? null, tilt: o.tilt ?? null });
+  if (two) out.push({ modules: m2, azimuth: o.azimuth2, tilt: o.tilt2 });
+  return out;
 };
 
 class PVAssistantPanel extends HTMLElement {
@@ -311,6 +324,17 @@ class PVAssistantPanel extends HTMLElement {
           .setrow input[type="number"] { -moz-appearance:textfield; appearance:textfield; }
           .setrow input[type="number"]::-webkit-outer-spin-button, .setrow input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
           .setrow .hint { grid-column:2; color:var(--secondary-text-color); font-size:.85em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+          .setsub { margin:14px 0 2px; font-weight:600; }
+          .setgh { margin-bottom:8px; color:var(--secondary-text-color); font-size:.85em; }
+          .setgroup { border:1px solid var(--g-line); border-radius:16px; padding:10px 14px; margin:8px 0; }
+          .setgroup .ghead { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
+          .setgroup .gtitle { font-weight:600; }
+          .setgroup .ggrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px 12px; }
+          .setgroup .gfield { display:flex; flex-direction:column; gap:4px; color:var(--secondary-text-color); font-size:.9em; }
+          .setgroup input { font:inherit; color:var(--primary-text-color); background:var(--secondary-background-color); border:1px solid var(--g-tileb); border-radius:12px; padding:8px 12px; min-width:0; width:100%; box-sizing:border-box; }
+          .setgroup input[type="number"] { -moz-appearance:textfield; appearance:textfield; }
+          .setgroup input[type="number"]::-webkit-outer-spin-button, .setgroup input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+          .setgroup input:disabled { opacity:.6; }
           .setbtn { font:inherit; font-weight:600; color:var(--g-text); background:var(--g-tile); border:1px solid var(--g-tileb);
                   border-radius:13px; padding:5px 14px; cursor:pointer; }
           .setbtn:hover:not(:disabled) { background:var(--secondary-background-color); }
@@ -1728,7 +1752,7 @@ class PVAssistantPanel extends HTMLElement {
       name.disabled = !isAdmin;
       nameRow.append(mk("label", { for: nameId }, this._t("setName")), name);
       c.append(nameRow);
-      let peak = null, modules = null, moduleWp = null, take = null, az = null, tilt = null, az2 = null, tilt2 = null, share2 = null;
+      let peak = null, inverter = null, mppts = null, moduleWp = null, take = null, groups = null;
       if (withPeak) {
         const num2 = (key, label, step, hintKey) => {
           const r = mk("div", { class: "setrow" });
@@ -1740,7 +1764,6 @@ class PVAssistantPanel extends HTMLElement {
           c.append(r);
           return input;
         };
-        modules = num2("modules", "setModules", 1, null);
         moduleWp = num2("module_wp", "setModuleWp", 5, "setModulesHint");
         const row = mk("div", { class: "setrow" });
         const peakId = `set-peak-${id}`;
@@ -1753,36 +1776,59 @@ class PVAssistantPanel extends HTMLElement {
         hint.append(mk("span", { "data-measured": id }, ""), take);
         row.append(mk("label", { for: peakId }, this._t("setPeak")), peak, hint);
         c.append(row);
+        const groupRows = [];
         const fromModules = () => {
-          const n = parseFloat(modules.value.replace(",", ".")), w = parseFloat(moduleWp.value.replace(",", "."));
+          const n = groupRows.reduce((acc, r) => acc + (parseFloat(r.m.value.replace(",", ".")) || 0), 0), w = parseFloat(moduleWp.value.replace(",", "."));
           const derived = n > 0 && w > 0;
           if (derived) peak.value = String(Math.round(n * w));
-          // with count and module power the peak is calculated, so the field and "use" are locked
+          // with module counts and module power the peak is calculated, so the field and "use" are locked
           peak.disabled = derived || !isAdmin;
           take.disabled = derived || !isAdmin;
         };
-        fromModules();
-        modules.addEventListener("input", fromModules);
         moduleWp.addEventListener("input", fromModules);
         take.addEventListener("click", () => { const m = this._pmax?.[id]; if (m > 0) peak.value = String(Math.round(m)); });
-        const orient = (key, label, min, max, step, hintKey) => {
-          const r = mk("div", { class: "setrow" });
-          const oid = `set-${key}-${id}`;
-          const input = mk("input", { type: "number", id: oid, min: String(min), max: String(max), step: String(step), inputmode: "decimal" });
-          input.value = strings[id]?.[key] != null ? String(strings[id][key]) : "";
-          input.disabled = !isAdmin;
-          r.append(mk("label", { for: oid }, this._t(label)), input, mk("div", { class: "hint" }, this._t(hintKey)));
-          c.append(r);
-          return input;
+        inverter = num2("inverter_w", "setInverter", 10, "setInverterHint");
+        mppts = num2("mppts", "setMppts", 1, "setMpptsHint");
+        // module strings: modules, orientation and tilt, MPPT of the inverter they hang on
+        c.append(mk("div", { class: "setsub" }, this._t("setGroups")), mk("div", { class: "hint setgh" }, this._t("setGroupsHint")));
+        const gwrap = mk("div", { class: "setgroups" });
+        const addBtn = mk("button", { type: "button", class: "setbtn" }, this._t("gAdd"));
+        addBtn.disabled = !isAdmin;
+        c.append(gwrap, addBtn);
+        const renumber = () => groupRows.forEach((r, i) => { r.title.textContent = this._t("gTitle").replace("{n}", String(i + 1)); });
+        const addGroup = (g) => {
+          const el = mk("div", { class: "setgroup" });
+          const title = mk("div", { class: "gtitle" });
+          const rm = mk("button", { type: "button", class: "setbtn" }, this._t("gRemove"));
+          rm.disabled = !isAdmin;
+          const head = mk("div", { class: "ghead" });
+          head.append(title, rm);
+          const grid = mk("div", { class: "ggrid" });
+          const field = (key, label, min, max, step, signed) => {
+            const w = mk("label", { class: "gfield" }, this._t(label));
+            const input = mk("input", { type: "number", min: String(min), max: String(max), step: String(step), inputmode: "decimal" });
+            input.value = g && g[key] != null && (signed || g[key] > 0) ? String(g[key]) : "";
+            input.disabled = !isAdmin;
+            input.addEventListener("input", fromModules);
+            w.append(input);
+            grid.append(w);
+            return input;
+          };
+          const row = { el, title, m: field("modules", "gModules", 0, 10000, 1), a: field("azimuth", "gAz", -180, 180, 5, true), t: field("tilt", "gTilt", 0, 90, 5, true), p: field("mppt", "gMppt", 0, 64, 1) };
+          rm.addEventListener("click", () => { groupRows.splice(groupRows.indexOf(row), 1); el.remove(); renumber(); fromModules(); });
+          el.append(head, grid);
+          gwrap.append(el);
+          groupRows.push(row);
+          renumber();
+          fromModules();
         };
-        az = orient("azimuth", "setAz", -180, 180, 5, "setAzHint");
-        tilt = orient("tilt", "setTilt", 0, 90, 5, "setTiltHint");
-        az2 = orient("azimuth2", "setAz2", -180, 180, 5, "setOrient2Hint");
-        tilt2 = orient("tilt2", "setTilt2", 0, 90, 5, "setOrient2Hint");
-        share2 = num2("modules2", "setModules2", 1, "setModules2Hint");
+        const initial = groupsOf(strings[id]);
+        (initial.length ? initial : [null]).forEach(addGroup);
+        addBtn.addEventListener("click", () => addGroup(null));
+        groups = groupRows;
       }
       box.append(c);
-      inputs.push({ id, name, peak, modules, moduleWp, az, tilt, az2, tilt2, share2 });
+      inputs.push({ id, name, peak, inverter, mppts, moduleWp, groups });
     };
     P.prod.forEach((id) => card(id, "setPower", true));
     E.prod.forEach((id) => card(id, "setEnergy", false));
@@ -1798,7 +1844,7 @@ class PVAssistantPanel extends HTMLElement {
     const priceSensor = { price_import: this._keys().G.priceImp, price_feed_in: this._keys().G.priceFeed };
     for (const [key, label, step, ph] of [
       ["storage_capacity_kwh", "genCap", "0.1", ""], ["battery_min_soc", "genMinSoc", "1", ""], ["price_import", "genPriceImport", "0.001", ""], ["price_feed_in", "genPriceFeed", "0.001", ""],
-      ["inverter_max_w", "genInverter", "10", ""], ["system_cost_eur", "genCost", "100", ""], ["co2_g_per_kwh", "genCo2", "1", "380"],
+      ["system_cost_eur", "genCost", "100", ""], ["co2_g_per_kwh", "genCo2", "1", "380"],
       ["latitude", "genLat", "0.0001", this._hass.config?.latitude != null ? String(Number(this._hass.config.latitude).toFixed(4)) : ""],
       ["longitude", "genLon", "0.0001", this._hass.config?.longitude != null ? String(Number(this._hass.config.longitude).toFixed(4)) : ""],
     ]) {
@@ -1858,25 +1904,26 @@ class PVAssistantPanel extends HTMLElement {
     this._setMeasured();
     save.addEventListener("click", async () => {
       const payload = {};
-      for (const { id, name, peak, modules, moduleWp, az, tilt, az2, tilt2, share2 } of inputs) {
+      for (const { id, name, peak, inverter, mppts, moduleWp, groups } of inputs) {
         const e = {};
         if (name.value.trim()) e.name = name.value.trim();
         const pv = peak ? parseFloat(peak.value.replace(",", ".")) : NaN;
         if (pv > 0) e.peak = pv;
-        if (modules) {
-          const nv = parseFloat(modules.value.replace(",", ".")), wv = parseFloat(moduleWp.value.replace(",", "."));
-          e.modules = nv > 0 ? Math.round(nv) : null;
-          e.module_wp = wv > 0 ? wv : null;
+        if (inverter) {
+          const iv = parseFloat(inverter.value.replace(",", ".")), mv = parseFloat(mppts.value.replace(",", "."));
+          e.inverter_w = iv > 0 ? iv : null;
+          e.mppts = mv > 0 ? Math.round(mv) : null;
         }
-        if (az) { // 0 is valid (south / flat); null clears
-          const av = parseFloat(az.value.replace(",", ".")), tv = parseFloat(tilt.value.replace(",", "."));
-          e.azimuth = Number.isNaN(av) ? null : av;
-          e.tilt = Number.isNaN(tv) ? null : tv;
-          const a2 = parseFloat(az2.value.replace(",", ".")), t2 = parseFloat(tilt2.value.replace(",", ".")), s2 = parseFloat(share2.value.replace(",", "."));
-          e.azimuth2 = Number.isNaN(a2) ? null : a2;
-          e.tilt2 = Number.isNaN(t2) ? null : t2;
-          e.modules2 = Number.isNaN(s2) ? null : Math.round(s2);
-          e.share2 = null;
+        if (groups) {
+          const wv = parseFloat(moduleWp.value.replace(",", "."));
+          e.module_wp = wv > 0 ? wv : null;
+          const val = (el) => { const v = parseFloat(el.value.replace(",", ".")); return Number.isNaN(v) ? null : v; };
+          const pos = (el) => { const v = val(el); return v > 0 ? Math.round(v) : null; };
+          // 0 is valid for azimuth and tilt (south, flat); empty rows are dropped
+          e.groups = groups.map((r) => ({ modules: pos(r.m), azimuth: val(r.a), tilt: val(r.t), mppt: pos(r.p) }))
+            .filter((g) => g.modules != null || g.azimuth != null || g.tilt != null || g.mppt != null);
+          // values of older versions are replaced by the module strings
+          for (const k of ["modules", "azimuth", "tilt", "azimuth2", "tilt2", "modules2", "share2"]) e[k] = null;
         }
         payload[id] = e;
       }
@@ -2033,14 +2080,13 @@ class PVAssistantPanel extends HTMLElement {
     const refYield = located && common ? expectedYield(common, lat, lon, 0, 35) : 0;
     for (const s of peaked) {
       const o = this._cfg.settings?.strings?.[s.id];
-      const known = o && o.azimuth != null && o.tilt != null;
-      // with the location: clear-sky irradiance on the plane of the string over exactly the hours compared
-      // (follows the season of the range); without it: rough annual table
+      const gs = groupsOf(o).filter((g) => g.azimuth != null && g.tilt != null);
       const factorOf = (az, tl) => (refYield > 0 ? expectedYield(common, lat, lon, az, tl) / refYield : orientationFactor(az, tl));
-      // part of the modules on a second orientation: weighted mix of both expectations
-      const two = known && o.azimuth2 != null && o.tilt2 != null;
-      const w2 = two ? Math.min(1, Math.max(0, o.modules > 0 && o.modules2 != null ? o.modules2 / o.modules : (o.share2 ?? 50) / 100)) : 0;
-      s.factor = !known ? null : two ? (1 - w2) * factorOf(o.azimuth, o.tilt) + w2 * factorOf(o.azimuth2, o.tilt2) : factorOf(o.azimuth, o.tilt);
+      // weighted mix of the module strings (by module count; equal weights if a count is missing)
+      const weights = gs.every((g) => g.modules > 0) ? gs.map((g) => g.modules) : gs.map(() => 1);
+      const wsum = weights.reduce((x, y) => x + y, 0);
+      // with the location: clear-sky irradiance on the plane over exactly the hours compared (follows the season of the range); without it: rough annual table
+      s.factor = gs.length ? gs.reduce((acc, g, i) => acc + weights[i] * factorOf(g.azimuth, g.tilt), 0) / wsum : null;
       s.eff = s.spec / (s.factor || 1);
     }
     const usesOrient = peaked.some((s) => s.factor);
@@ -2137,19 +2183,50 @@ class PVAssistantPanel extends HTMLElement {
 
     // plateau days
     if (sumPeak) {
-      const inv = this._cfg.settings?.general?.inverter_max_w || 0;
-      // with the inverter limit: plateaus near it are inverter clipping, the others stay a generic hint
-      const limited = inv > 0 ? plateauDays(byDay, inv, 0.9).filter((day) => day !== todayKey) : [];
-      const flat = plateauDays(byDay, sumPeak).filter((day) => day !== todayKey && !limited.includes(day));
-      if (limited.length >= 3) hints.push(this._t("anaInvLimitHint").replace("{n}", String(limited.length)).replace("{inv}", this._fmt(inv)));
+      const flat = plateauDays(byDay, sumPeak).filter((day) => day !== todayKey);
       if (flat.length >= 3) hints.push(this._t("anaPlateauHint").replace("{n}", String(flat.length)));
-      if (inv > 0) {
-        const ratio = Math.round((sumPeak / inv) * 100);
-        const note = this._t("anaOverbuild").replace("{peak}", this._fmt(sumPeak)).replace("{pct}", String(ratio)).replace("{inv}", this._fmt(inv));
-        const text = note + (ratio >= 130 ? this._t("anaOverbuildHigh") : ratio <= 100 ? this._t("anaOverbuildLow") : "");
-        hints.push(text);
-        infoSet.add(text);
+    }
+    // inverter per string: clipping at its limit and oversizing; several MPPTs vs. two orientations
+    const overbuildText = (name, peak, inv) => {
+      const ratio = Math.round((peak / inv) * 100);
+      return this._t("anaOverbuild").replace("{name}", name).replace("{peak}", this._fmt(peak)).replace("{pct}", String(ratio)).replace("{inv}", this._fmt(inv))
+        + (ratio >= 130 ? this._t("anaOverbuildHigh") : ratio <= 100 ? this._t("anaOverbuildLow") : "");
+    };
+    for (const s of series) {
+      const o = this._cfg.settings?.strings?.[s.id] || {};
+      if (o.inverter_w > 0) {
+        const own = new Map();
+        for (const [ts, w] of s.m) {
+          const k = key(ts);
+          if (!own.has(k.day)) own.set(k.day, Array(24).fill(0));
+          own.get(k.day)[k.hour] += w;
+        }
+        const limited = plateauDays(own, o.inverter_w, 0.9).filter((day) => day !== todayKey);
+        if (limited.length >= 3) hints.push(this._t("anaInvLimitHint").replace("{name}", s.name).replace("{n}", String(limited.length)).replace("{inv}", this._fmt(o.inverter_w)));
+        if (o.peak > 0) { const text = overbuildText(s.name, o.peak, o.inverter_w); hints.push(text); infoSet.add(text); }
       }
+      // module strings with different orientations on the same MPPT share one operating point
+      const byMppt = new Map();
+      for (const g of groupsOf(o)) {
+        const m = g.mppt > 0 ? g.mppt : o.mppts === 1 ? 1 : null;
+        if (m == null || g.azimuth == null) continue;
+        if (!byMppt.has(m)) byMppt.set(m, []);
+        byMppt.get(m).push(g);
+      }
+      for (const [m, list] of byMppt) {
+        if (list.length > 1 && list.some((g) => Math.abs(g.azimuth - list[0].azimuth) > 15 || Math.abs((g.tilt ?? 0) - (list[0].tilt ?? 0)) > 10)) {
+          const text = this._t("anaMpptMismatch").replace("{name}", s.name).replace("{mppt}", String(m));
+          hints.push(text);
+          infoSet.add(text);
+        }
+      }
+    }
+    // legacy plant-wide inverter value (older versions) when no string has its own
+    const legacyInv = this._cfg.settings?.general?.inverter_max_w || 0;
+    if (legacyInv > 0 && sumPeak && !series.some((s) => this._cfg.settings?.strings?.[s.id]?.inverter_w > 0)) {
+      const text = overbuildText(this._t("anaPlant"), sumPeak, legacyInv);
+      hints.push(text);
+      infoSet.add(text);
     }
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio

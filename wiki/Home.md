@@ -22,7 +22,7 @@ PV Assistant is a Home Assistant integration with its own sidebar panel for the 
 1. Install as a custom repository via HACS and restart Home Assistant.
 2. Settings → Devices & services → Add integration → **PV Assistant**.
 3. Choose production, feed-in and storage sensors (energy and power); optionally forecast, grid import, house consumption and prices.
-4. In the panel under **Settings** enter name, peak, orientation and tilt for every string. This improves the analysis considerably.
+4. In the panel under **Settings** enter name, peak, inverter, MPPTs and module strings (modules, orientation, tilt) for every string. This improves the analysis considerably.
 
 ---
 
@@ -46,4 +46,4 @@ PV Assistant ist eine Home-Assistant-Integration mit eigenem Sidebar-Panel für 
 1. Per HACS als Custom Repository installieren und Home Assistant neu starten.
 2. Einstellungen → Geräte & Dienste → Integration hinzufügen → **PV Assistant**.
 3. Erzeugungs-, Einspeise- und Speichersensoren wählen (Energie und Leistung), optional Prognose, Netzbezug, Hausverbrauch und Preise.
-4. Im Panel unter **Einstellungen** für jeden String Namen, Peak, Ausrichtung und Neigung eintragen. Das verbessert die Analyse deutlich.
+4. Im Panel unter **Einstellungen** für jeden String Namen, Peak, Wechselrichter, MPPTs und Modulstränge (Module, Ausrichtung, Neigung) eintragen. Das verbessert die Analyse deutlich.

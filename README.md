@@ -41,7 +41,7 @@ Home Assistant integration with its own sidebar panel for the PV energy flow: pr
 | Storage | level, storage power, charged and discharged energy, efficiency, cycles, usable capacity |
 | Forecast | forecast vs actual per day or month, deviation, hit rate |
 | Yearly overview | monthly production against the average, year forecast, benefit, payback, trend |
-| Settings | display names, peak, orientation and tilt per string, plant values (capacity, minimum level, prices, cost, CO₂ factor, location) |
+| Settings | display names, peak, inverter, MPPTs and module strings (modules, orientation, tilt) per string, plant values (capacity, minimum level, prices, cost, CO₂ factor, location) |
 
 The data comes from the long-term statistics of Home Assistant (recorder); the sensors therefore need a `state_class`. The integration also creates filtered copies of the energy sensors (`… filtered`, ignore short drops, usable as `utility_meter` source) and a binary sensor `binary_sensor.pv_assistant_string_fault` ("String fault") that reports a string delivering almost nothing while the others produce. Settings are stored in `.storage/pv_assistant.settings` and apply to all devices; only administrators can save.
 
@@ -78,7 +78,7 @@ Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: E
 | Speicher | Ladestand, Speicherleistung, geladene und entladene Energie, Wirkungsgrad, Zyklen, nutzbare Kapazität |
 | Prognose | Prognose gegen Ist je Tag oder Monat, Abweichung, Trefferquote |
 | Jahresübersicht | Monatserzeugung gegen den Schnitt, Jahresprognose, Nutzen, Amortisation, Trend |
-| Einstellungen | Anzeigenamen, Peak, Ausrichtung und Neigung je String, Anlagenwerte (Kapazität, Mindest-Ladestand, Preise, Kosten, CO₂-Faktor, Standort) |
+| Einstellungen | Anzeigenamen, Peak, Wechselrichter, MPPTs und Modulstränge (Module, Ausrichtung, Neigung) je String, Anlagenwerte (Kapazität, Mindest-Ladestand, Preise, Kosten, CO₂-Faktor, Standort) |
 
 Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Die Integration legt außerdem bereinigte Kopien der Energiesensoren an (`… bereinigt`, ignorieren kurze Abstürze, als Quelle für `utility_meter` nutzbar) und einen Binärsensor `binary_sensor.pv_assistant_string_fault` („String-Störung“), der meldet, wenn ein String fast nichts liefert, während die anderen erzeugen. Die Einstellungen liegen in `.storage/pv_assistant.settings` und gelten für alle Geräte; nur Administratoren dürfen speichern.
 
