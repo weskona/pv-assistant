@@ -9,6 +9,7 @@ Only administrators can save. The values are stored in `.storage/pv_assistant.se
 |---|---|
 | Display name | replaces the Home Assistant name throughout the panel |
 | Max. power / peak (W) | installed power of the string; basis for effective power and kWh/kWp. "use" enters the measured maximum |
+| Number of modules, power per module (Wp) | optional; with both the peak is calculated automatically (count × Wp) |
 | Orientation / azimuth (°) | like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180° |
 | Tilt (°) | 0° = flat, 90° = vertical (balcony, facade) |
 | 2nd orientation, 2nd tilt, share (%) | optional, if part of the modules faces another way (e.g. two east, two west); share = part of the peak on the 2nd orientation, empty = 50 % |
@@ -36,6 +37,7 @@ Nur Administratoren dürfen speichern. Die Werte liegen in `.storage/pv_assistan
 |---|---|
 | Anzeigename | ersetzt den Home-Assistant-Namen im ganzen Panel |
 | Max. Leistung / Peak (W) | installierte Leistung des Strings; Basis für effektive Leistung und kWh/kWp. „übernehmen“ trägt den gemessenen Höchstwert ein |
+| Anzahl Module, Leistung pro Modul (Wp) | optional; mit beiden wird der Peak automatisch berechnet (Anzahl × Wp) |
 | Ausrichtung / Azimut (°) | wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180° |
 | Neigung (°) | 0° = flach, 90° = senkrecht (Balkon, Fassade) |
 | 2. Ausrichtung, 2. Neigung, Anteil (%) | optional, wenn ein Teil der Module anders ausgerichtet ist (z. B. zwei nach Ost, zwei nach West); Anteil = Teil des Peaks auf der 2. Ausrichtung, leer = 50 % |

@@ -63,6 +63,9 @@ def _as_list(value) -> list[str]:
             str: {
                 vol.Optional("name"): vol.All(str, vol.Length(max=MAX_NAME_LENGTH)),
                 vol.Optional("peak"): vol.All(vol.Coerce(float), vol.Range(min=0, max=MAX_PEAK_W)),
+                # number of modules and rated power per module in W (peak = product)
+                vol.Optional("modules"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=10000))),
+                vol.Optional("module_wp"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=2000))),
                 # orientation (azimuth like Forecast.Solar: south = 0, east = -90, west = 90) and tilt in degrees; None = not set
                 vol.Optional("azimuth"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=-180, max=180))),
                 vol.Optional("tilt"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=90))),
@@ -108,7 +111,7 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
             clean["name"] = name
         if (peak := values.get("peak") or 0) > 0:
             clean["peak"] = peak
-        for key in ("azimuth", "tilt", "azimuth2", "tilt2", "share2"):  # 0 is a valid value (south, flat), so only None means "not set"
+        for key in ("modules", "module_wp", "azimuth", "tilt", "azimuth2", "tilt2", "share2"):  # 0 is a valid value (south, flat), so only None means "not set"
             if values.get(key) is not None:
                 clean[key] = values[key]
         if clean:
