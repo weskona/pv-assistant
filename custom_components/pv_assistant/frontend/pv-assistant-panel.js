@@ -390,6 +390,8 @@ class PVAssistantPanel extends HTMLElement {
           .strow { display:grid; grid-template-columns:minmax(120px,220px) 1fr auto; gap:12px; align-items:center; padding:6px 0; border-top:1px solid var(--divider-color); }
           .strow:first-child { border-top:0; }
           .strow .gauge { margin:0; }
+          .strow.sub { padding-left:22px; font-size:.92em; border-top-style:dotted; }
+          .strow.sub .gauge i { opacity:.7; }
           .strow .weak { color:var(--pva-neg); font-weight:600; }
           .dtable { width:100%; border-collapse:collapse; font-size:.9em; }
           .dtable th, .dtable td { padding:4px 8px; text-align:right; border-top:1px solid var(--divider-color); }
@@ -2290,15 +2292,23 @@ class PVAssistantPanel extends HTMLElement {
     const bestSpec = Math.max(0, ...peaked.map((s) => s.eff));
     const box = root.getElementById("astrings");
     box.classList.remove("loading");
-    box.innerHTML = sorted.map((s) => {
-      const w = s.eff && bestSpec ? (s.eff / bestSpec) * 100 : 0;
+    const rowHtml = (s, best, cls) => {
+      const w = s.eff && best ? (s.eff / best) * 100 : 0;
       const sub = s.spec != null
         ? `${esc(num(s.spec))} ${esc(this._t("anaSpec"))} · ${esc(String(Math.round(w)))} % ${esc(this._t("anaRel"))}${s.factor ? ` · ${esc(this._t("anaFactor").replace("{pct}", String(Math.round(s.factor * 100))))}` : ""}${weak.has(s.id) ? ` · <span class="weak">${esc(this._t("anaWeak"))}</span>` : ""}`
         : `<span class="muted">–</span>`;
-      return `<div class="strow"><div><div>${esc(s.name)}</div><div class="muted" style="font-size:.85em">${sub}</div></div>
+      return `<div class="strow${cls}"><div><div>${esc(s.name)}</div><div class="muted" style="font-size:.85em">${sub}</div></div>
         <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(w)}"><i style="width:${w.toFixed(1)}%"></i></div>
         <div><b>${esc(num(s.kwh))} kWh</b></div></div>`;
-    }).join("") + (peaked.length ? (peaked.some((s) => !s.factor) && peaked.length >= 2 ? `<p class="note">${esc(this._t("anaNoOrient"))}</p>` : "") : `<p class="note">${esc(this._t("anaNoPeak"))}</p>`);
+    };
+    // a plant with several sensors lists its strings (MPPT inputs) below it, each compared with the best of the plant
+    const memberRows = (p) => {
+      if (p.members.length < 2) return "";
+      const list = [...p.members].sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1) || b.kwh - a.kwh);
+      const best = Math.max(0, ...list.filter((m) => m.peak).map((m) => m.eff ?? 0));
+      return list.map((m) => rowHtml(m, best, " sub")).join("");
+    };
+    box.innerHTML = sorted.map((s) => rowHtml(s, bestSpec, "") + memberRows(s)).join("") + (peaked.length ? (peaked.some((s) => !s.factor) && peaked.length >= 2 ? `<p class="note">${esc(this._t("anaNoOrient"))}</p>` : "") : `<p class="note">${esc(this._t("anaNoPeak"))}</p>`);
 
     // plant totals per local day and hour
     const total = new Map();

@@ -14,7 +14,7 @@ Current power per string as a bar relative to the highest measured power (or the
 
 ### Analysis
 Ranges 7, 30, 90 days, **This year** or **12 months**.
-- Plant comparison in kWh/kWp (sum per inverter), corrected for orientation and tilt, with a hint and a **suggestion** for weak plants; the strings inside a plant are compared with each other as well
+- Plant comparison in kWh/kWp (sum per inverter), corrected for orientation and tilt, with a hint and a **suggestion** for weak plants; a plant with several sensors lists its strings indented below it, each with its yield and compared with the best string of the plant
 - Heat map hour × day (weekly from 90 days on)
 - Best and weakest days (with year; days below 0.1 kWh are ignored)
 - Hint on power plateaus (inverter limiting, from 3 days)
@@ -59,7 +59,7 @@ Aktuelle Leistung je String als Balken im Verhältnis zur höchsten gemessenen L
 
 ### Analyse
 Zeiträume 7, 30, 90 Tage, **Dieses Jahr** oder **12 Monate**.
-- Anlagen-Vergleich in kWh/kWp (Summe je Wechselrichter), bereinigt um Ausrichtung und Neigung, mit Hinweis und **Vorschlag** bei schwachen Anlagen; die Strings innerhalb einer Anlage werden zusätzlich untereinander verglichen
+- Anlagen-Vergleich in kWh/kWp (Summe je Wechselrichter), bereinigt um Ausrichtung und Neigung, mit Hinweis und **Vorschlag** bei schwachen Anlagen; eine Anlage mit mehreren Sensoren zeigt ihre Strings eingerückt darunter, je mit Ertrag und im Vergleich zum besten String der Anlage
 - Heatmap Stunde × Tag (ab 90 Tagen wochenweise)
 - Beste und schwächste Tage (mit Jahr; Tage unter 0,1 kWh zählen nicht)
 - Hinweis auf Leistungs-Plateaus (Wechselrichter-Begrenzung, ab 3 Tagen)
