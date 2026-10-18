@@ -23,7 +23,7 @@ Home Assistant integration with its own sidebar panel for the PV energy flow: pr
 1. Add the repository in HACS as a custom repository (type **Integration**) or copy the folder `custom_components/pv_assistant` to `config/custom_components/`.
 2. Restart Home Assistant.
 3. Settings → Devices & services → Add integration → **PV Assistant**.
-4. Choose the sensors. After an update restart Home Assistant and hard-reload the browser (Ctrl+F5).
+4. Choose the sensors. After an update restart Home Assistant and reload the browser.
 
 ### Setup in four steps
 1. **Energy sensors (kWh):** production (several), feed-in (one), optional storage in / out / combined (several, combined sensors with switchable sign, default positive = from storage).
@@ -60,7 +60,7 @@ Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: E
 1. Das Repository in HACS als benutzerdefiniertes Repository (Typ **Integration**) hinzufügen oder den Ordner `custom_components/pv_assistant` nach `config/custom_components/` kopieren.
 2. Home Assistant neu starten.
 3. Einstellungen → Geräte & Dienste → Integration hinzufügen → **PV Assistant**.
-4. Sensoren auswählen. Nach einem Update Home Assistant neu starten und den Browser hart neu laden (Strg+F5).
+4. Sensoren auswählen. Nach einem Update Home Assistant neu starten und den Browser neu laden.
 
 ### Einrichtung in vier Schritten
 1. **Energiesensoren (kWh):** Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein / raus / kombiniert (mehrere, Kombisensoren mit umschaltbarem Vorzeichen, Standard positiv = aus Speicher).

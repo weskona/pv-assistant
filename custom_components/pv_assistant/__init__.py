@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.storage import Store
+from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -201,11 +202,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 )
             ]
         )
+        # the version in the URL makes browsers and proxies load the new panel after an update instead of a cached copy
+        version = (await async_get_integration(hass, DOMAIN)).version
         await panel_custom.async_register_panel(
             hass,
             webcomponent_name=PANEL_ELEMENT,
             frontend_url_path=PANEL_URL,
-            module_url=f"{STATIC_URL}/pv-assistant-panel.js",
+            module_url=f"{STATIC_URL}/pv-assistant-panel.js?v={version}",
             sidebar_title="PV Assistant",
             sidebar_icon="mdi:solar-power",
             require_admin=False,
