@@ -1,5 +1,7 @@
-import { lineChart, barChart, categoryBarChart } from "./pv-assistant-charts.js";
-import { localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } from "./pv-assistant-analysis.js";
+// the helper modules are loaded with the same ?v=<version> as this file, so an update never mixes new and cached modules
+const version = new URL(import.meta.url).search;
+const { lineChart, barChart, categoryBarChart } = await import(`./pv-assistant-charts.js${version}`);
+const { localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } = await import(`./pv-assistant-analysis.js${version}`);
 
 const T = {
   de: {

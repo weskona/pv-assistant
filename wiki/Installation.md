@@ -16,7 +16,7 @@
 Settings → Devices & services → Add integration → **PV Assistant**. The panel then appears in the sidebar. The last selected tab is remembered in the browser.
 
 ### Update
-After an update through HACS restart Home Assistant and hard-reload the browser (Ctrl+F5) so the new panel is loaded.
+After an update through HACS restart Home Assistant and reload the browser; the panel is loaded under the new version, so no hard reload is needed.
 
 ### Requirements
 - The sensors need a `state_class` (long-term statistics of the recorder). History, Analysis and Yearly overview read from it.
@@ -40,7 +40,7 @@ After an update through HACS restart Home Assistant and hard-reload the browser 
 Einstellungen → Geräte & Dienste → Integration hinzufügen → **PV Assistant**. Danach erscheint das Panel in der Seitenleiste. Der zuletzt gewählte Tab wird im Browser gemerkt.
 
 ### Aktualisieren
-Nach einem Update über HACS Home Assistant neu starten und den Browser hart neu laden (Strg+F5), damit das neue Panel geladen wird.
+Nach einem Update über HACS Home Assistant neu starten und den Browser neu laden; das Panel wird unter der neuen Version geladen, ein hartes Neuladen ist nicht nötig.
 
 ### Voraussetzungen
 - Die Sensoren brauchen eine `state_class` (Langzeitstatistiken des Recorders). Verlauf, Analyse und Jahresübersicht lesen daraus.
