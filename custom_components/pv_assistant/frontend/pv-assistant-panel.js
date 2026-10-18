@@ -41,9 +41,10 @@ const T = {
     genMinSoc: "Mindest-Ladestand (%)", genMinSocHint: "Untere Entladegrenze des Speichers. Daraus ergibt sich die nutzbare Kapazität.", genUsable: "Nutzbare Kapazität: {kwh} kWh (Kapazität × (1 − Mindest-Ladestand)).",
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
-        setGroups: "Modulstränge", setGroupsHint: "Ein Modulstrang sind Module mit gleicher Ausrichtung und Neigung in Reihe. Trage je Strang Modulzahl, Ausrichtung (Süd = 0°, Ost = −90°, West = 90°), Neigung (0° = flach, 90° = senkrecht) und die Nummer des MPPTs ein, an dem er hängt. Leere Zeilen werden ignoriert.", gTitle: "Modulstrang {n}", gAdd: "Modulstrang hinzufügen", gRemove: "Entfernen", gModules: "Module", gAz: "Azimut (°)", gTilt: "Neigung (°)", gMppt: "MPPT Nr.",
+        invTitle: "Wechselrichter", invHint: "Lege jeden Wechselrichter an und wähle die Leistungssensoren, die zu ihm gehören. Hat er mehrere MPPT-Eingänge mit eigenem Sensor (z. B. String 1 und String 2 eines Hybrid-Wechselrichters), wähle alle diese Sensoren; die Grenze gilt dann für ihre Summe.", invTitleN: "Wechselrichter {n}", invName: "Name", invMax: "Max. Leistung (W)", invSensors: "Zugehörige Leistungssensoren", invAdd: "Wechselrichter hinzufügen",
+    setGroups: "Modulstränge", setGroupsHint: "Ein Modulstrang sind Module mit gleicher Ausrichtung und Neigung in Reihe. Trage je Strang Modulzahl, Ausrichtung (Süd = 0°, Ost = −90°, West = 90°), Neigung (0° = flach, 90° = senkrecht) und die Nummer des MPPTs ein, an dem er hängt. Leere Zeilen werden ignoriert.", gTitle: "Modulstrang {n}", gAdd: "Modulstrang hinzufügen", gRemove: "Entfernen", gModules: "Module", gAz: "Azimut (°)", gTilt: "Neigung (°)", gMppt: "MPPT Nr.",
     setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit den Modulzahlen der Modulstränge und der Modulleistung wird der Peak automatisch berechnet (Module × Wp) und das Feld Max. Leistung gesperrt.",
-    setInverter: "Wechselrichter max. Leistung (W)", setInverterHint: "AC-Grenze des Wechselrichters dieses Strings (bei einem Balkonkraftwerk z. B. 800 W). Damit erkennt die Analyse Begrenzung und Überbauung.", setMppts: "Anzahl MPPTs", setMpptsHint: "Eingänge des Wechselrichters mit eigener Leistungsnachführung. Jeder MPPT regelt seine Modulstränge unabhängig; an einem MPPT sollten Stränge gleich ausgerichtet sein.",
+    setMppts: "Anzahl MPPTs", setMpptsHint: "Nur nötig, wenn dieser Sensor mehrere MPPT-Eingänge zusammenfasst (z. B. 4 bei einem Balkonkraftwerk mit Summensensor). Hängt jeder MPPT an einem eigenen Sensor, leer lassen. Jeder MPPT regelt seine Modulstränge unabhängig; an einem MPPT sollten Stränge gleich ausgerichtet sein.",
         anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
     anaNoOrient: "Trage bei den Strings Ausrichtung und Neigung ein (Einstellungen), dann wird der Vergleich um die Ausrichtung bereinigt (Ost/West erzeugt weniger als Süd).",
     anaAdvPrefix: "Vorschlag für {name}:",
@@ -114,9 +115,10 @@ const T = {
     genMinSoc: "Minimum level (%)", genMinSocHint: "Lower discharge limit of the storage. It gives the usable capacity.", genUsable: "Usable capacity: {kwh} kWh (capacity × (1 − minimum level)).",
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
-        setGroups: "Module strings", setGroupsHint: "A module string is modules in series with the same orientation and tilt. For each string enter the module count, orientation (south = 0°, east = −90°, west = 90°), tilt (0° = flat, 90° = vertical) and the number of the MPPT it is connected to. Empty rows are ignored.", gTitle: "Module string {n}", gAdd: "Add module string", gRemove: "Remove", gModules: "Modules", gAz: "Azimuth (°)", gTilt: "Tilt (°)", gMppt: "MPPT no.",
+        invTitle: "Inverters", invHint: "Add every inverter and choose the power sensors that belong to it. If it has several MPPT inputs with their own sensor (e.g. string 1 and string 2 of a hybrid inverter), choose all of them; the limit then applies to their sum.", invTitleN: "Inverter {n}", invName: "Name", invMax: "Max. power (W)", invSensors: "Power sensors of this inverter", invAdd: "Add inverter",
+    setGroups: "Module strings", setGroupsHint: "A module string is modules in series with the same orientation and tilt. For each string enter the module count, orientation (south = 0°, east = −90°, west = 90°), tilt (0° = flat, 90° = vertical) and the number of the MPPT it is connected to. Empty rows are ignored.", gTitle: "Module string {n}", gAdd: "Add module string", gRemove: "Remove", gModules: "Modules", gAz: "Azimuth (°)", gTilt: "Tilt (°)", gMppt: "MPPT no.",
     setModuleWp: "Power per module (Wp)", setModulesHint: "With the module counts of the strings and the module power the peak is calculated automatically (modules × Wp) and the max. power field is locked.",
-    setInverter: "Inverter max. power (W)", setInverterHint: "AC limit of the inverter of this string (e.g. 800 W for a balcony plant). The analysis uses it to detect clipping and oversizing.", setMppts: "Number of MPPTs", setMpptsHint: "Inverter inputs with their own power tracking. Each MPPT tracks its module strings independently; strings on one MPPT should face the same way.",
+    setMppts: "Number of MPPTs", setMpptsHint: "Only needed if this sensor combines several MPPT inputs (e.g. 4 for a balcony plant with a sum sensor). If every MPPT has its own sensor, leave empty. Each MPPT tracks its module strings independently; strings on one MPPT should face the same way.",
         anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
     anaNoOrient: "Enter orientation and tilt of the strings (Settings) and the comparison is corrected for the orientation (east/west yields less than south).",
     anaAdvPrefix: "Suggestion for {name}:",
@@ -185,6 +187,22 @@ const groupsOf = (o) => {
   const m2 = two ? (o.modules2 != null ? o.modules2 : total != null ? Math.round(total / 2) : null) : null;
   if (o.azimuth != null || o.tilt != null || total != null) out.push({ modules: total != null ? total - (m2 || 0) : null, azimuth: o.azimuth ?? null, tilt: o.tilt ?? null });
   if (two) out.push({ modules: m2, azimuth: o.azimuth2, tilt: o.tilt2 });
+  return out;
+};
+
+// inverters of the plant: the saved ones plus, from older versions, a single-sensor inverter for every sensor with its own inverter power
+const invertersOf = (settings, ids) => {
+  const out = [];
+  const taken = new Set();
+  for (const inv of settings?.inverters || []) {
+    const sensors = (inv.sensors || []).filter((id) => ids.includes(id) && !taken.has(id));
+    sensors.forEach((id) => taken.add(id));
+    out.push({ name: inv.name || "", max_w: inv.max_w || 0, sensors });
+  }
+  for (const id of ids) {
+    const w = settings?.strings?.[id]?.inverter_w;
+    if (!taken.has(id) && w > 0) out.push({ name: settings.strings[id].name || "", max_w: w, sensors: [id] });
+  }
   return out;
 };
 
@@ -331,6 +349,9 @@ class PVAssistantPanel extends HTMLElement {
           .setgroup .gtitle { font-weight:600; }
           .setgroup .ggrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px 12px; }
           .setgroup .gfield { display:flex; flex-direction:column; gap:4px; color:var(--secondary-text-color); font-size:.9em; }
+          .invsensors { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+          .invsensor { display:flex; align-items:center; gap:8px; }
+          .setgroup input[type="checkbox"] { width:auto; }
           .setgroup input { font:inherit; color:var(--primary-text-color); background:var(--secondary-background-color); border:1px solid var(--g-tileb); border-radius:12px; padding:8px 12px; min-width:0; width:100%; box-sizing:border-box; }
           .setgroup input[type="number"] { -moz-appearance:textfield; appearance:textfield; }
           .setgroup input[type="number"]::-webkit-outer-spin-button, .setgroup input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
@@ -1752,7 +1773,7 @@ class PVAssistantPanel extends HTMLElement {
       name.disabled = !isAdmin;
       nameRow.append(mk("label", { for: nameId }, this._t("setName")), name);
       c.append(nameRow);
-      let peak = null, inverter = null, mppts = null, moduleWp = null, take = null, groups = null;
+      let peak = null, mppts = null, moduleWp = null, take = null, groups = null;
       if (withPeak) {
         const num2 = (key, label, step, hintKey) => {
           const r = mk("div", { class: "setrow" });
@@ -1787,7 +1808,6 @@ class PVAssistantPanel extends HTMLElement {
         };
         moduleWp.addEventListener("input", fromModules);
         take.addEventListener("click", () => { const m = this._pmax?.[id]; if (m > 0) peak.value = String(Math.round(m)); });
-        inverter = num2("inverter_w", "setInverter", 10, "setInverterHint");
         mppts = num2("mppts", "setMppts", 1, "setMpptsHint");
         // module strings: modules, orientation and tilt, MPPT of the inverter they hang on
         c.append(mk("div", { class: "setsub" }, this._t("setGroups")), mk("div", { class: "hint setgh" }, this._t("setGroupsHint")));
@@ -1828,10 +1848,61 @@ class PVAssistantPanel extends HTMLElement {
         groups = groupRows;
       }
       box.append(c);
-      inputs.push({ id, name, peak, inverter, mppts, moduleWp, groups });
+      inputs.push({ id, name, peak, mppts, moduleWp, groups });
     };
     P.prod.forEach((id) => card(id, "setPower", true));
     E.prod.forEach((id) => card(id, "setEnergy", false));
+
+    // inverters: max. power and the power sensors (MPPT inputs) that belong to it
+    const invBox = mk("div", { class: "setcard" });
+    invBox.append(mk("h3", {}, this._t("invTitle")), mk("div", { class: "hint setgh" }, this._t("invHint")));
+    const invList = mk("div", { class: "setgroups" });
+    const invAdd = mk("button", { type: "button", class: "setbtn" }, this._t("invAdd"));
+    invAdd.disabled = !isAdmin;
+    invBox.append(invList, invAdd);
+    const invRows = [];
+    const sensorName = (sid) => strings[sid]?.name || this._hass.states[sid]?.attributes.friendly_name || sid;
+    const addInverter = (inv) => {
+      const el = mk("div", { class: "setgroup" });
+      const title = mk("div", { class: "gtitle" });
+      const rm = mk("button", { type: "button", class: "setbtn" }, this._t("gRemove"));
+      rm.disabled = !isAdmin;
+      const head = mk("div", { class: "ghead" });
+      head.append(title, rm);
+      const grid = mk("div", { class: "ggrid" });
+      const nameWrap = mk("label", { class: "gfield" }, this._t("invName"));
+      const nameIn = mk("input", { type: "text", maxlength: "60" });
+      nameIn.value = inv?.name || "";
+      nameIn.disabled = !isAdmin;
+      nameWrap.append(nameIn);
+      const maxWrap = mk("label", { class: "gfield" }, this._t("invMax"));
+      const maxIn = mk("input", { type: "number", min: "0", step: "10", inputmode: "decimal" });
+      maxIn.value = inv?.max_w > 0 ? String(inv.max_w) : "";
+      maxIn.disabled = !isAdmin;
+      maxWrap.append(maxIn);
+      grid.append(nameWrap, maxWrap);
+      const list = mk("div", { class: "invsensors" });
+      list.append(mk("div", { class: "hint" }, this._t("invSensors")));
+      const boxes = P.prod.map((sid) => {
+        const l = mk("label", { class: "invsensor" });
+        const cb = mk("input", { type: "checkbox" });
+        cb.checked = !!inv?.sensors?.includes(sid);
+        cb.disabled = !isAdmin;
+        l.append(cb, mk("span", {}, sensorName(sid)));
+        list.append(l);
+        return { sid, cb };
+      });
+      const row = { el, title, nameIn, maxIn, boxes };
+      rm.addEventListener("click", () => { invRows.splice(invRows.indexOf(row), 1); el.remove(); renumberInv(); });
+      el.append(head, grid, list);
+      invList.append(el);
+      invRows.push(row);
+      renumberInv();
+    };
+    const renumberInv = () => invRows.forEach((r, i) => { r.title.textContent = this._t("invTitleN").replace("{n}", String(i + 1)); });
+    invertersOf(this._cfg.settings, P.prod).forEach(addInverter);
+    invAdd.addEventListener("click", () => addInverter(null));
+    if (P.prod.length) box.append(invBox);
 
     // plant-wide numbers
     const general = this._cfg.settings?.general || {};
@@ -1904,15 +1975,15 @@ class PVAssistantPanel extends HTMLElement {
     this._setMeasured();
     save.addEventListener("click", async () => {
       const payload = {};
-      for (const { id, name, peak, inverter, mppts, moduleWp, groups } of inputs) {
+      for (const { id, name, peak, mppts, moduleWp, groups } of inputs) {
         const e = {};
         if (name.value.trim()) e.name = name.value.trim();
         const pv = peak ? parseFloat(peak.value.replace(",", ".")) : NaN;
         if (pv > 0) e.peak = pv;
-        if (inverter) {
-          const iv = parseFloat(inverter.value.replace(",", ".")), mv = parseFloat(mppts.value.replace(",", "."));
-          e.inverter_w = iv > 0 ? iv : null;
+        if (mppts) {
+          const mv = parseFloat(mppts.value.replace(",", "."));
           e.mppts = mv > 0 ? Math.round(mv) : null;
+          e.inverter_w = null; // the inverter power now belongs to the inverters section
         }
         if (groups) {
           const wv = parseFloat(moduleWp.value.replace(",", "."));
@@ -1930,13 +2001,20 @@ class PVAssistantPanel extends HTMLElement {
       save.disabled = true;
       status.textContent = "";
       try {
+        const used = new Set();
+        const inverters = invRows.map((r) => {
+          const sensors = r.boxes.filter((b) => b.cb.checked && !used.has(b.sid)).map((b) => b.sid);
+          sensors.forEach((sid) => used.add(sid));
+          const mw = parseFloat(r.maxIn.value.replace(",", "."));
+          return { name: r.nameIn.value.trim(), max_w: mw > 0 ? mw : 0, sensors };
+        }).filter((i) => i.sensors.length || i.max_w > 0 || i.name);
         const generalPayload = {};
         for (const [key, input] of Object.entries(genInputs)) {
           if (input.dataset.fromSensor) continue; // shown from the price sensor, the stored fallback stays untouched
           const v = parseFloat(input.value.replace(",", "."));
           generalPayload[key] = key === "latitude" || key === "longitude" ? (Number.isNaN(v) ? 0 : v) : v > 0 ? v : 0; // 0 clears the value
         }
-        const res = await this._hass.callWS({ type: "pv_assistant/set_settings", strings: payload, general: generalPayload });
+        const res = await this._hass.callWS({ type: "pv_assistant/set_settings", strings: payload, general: generalPayload, inverters });
         this._cfg.settings = res;
         status.textContent = this._t("setSaved");
         this._lastPwr = null; this._last = null;
@@ -2192,23 +2270,33 @@ class PVAssistantPanel extends HTMLElement {
       return this._t("anaOverbuild").replace("{name}", name).replace("{peak}", this._fmt(peak)).replace("{pct}", String(ratio)).replace("{inv}", this._fmt(inv))
         + (ratio >= 130 ? this._t("anaOverbuildHigh") : ratio <= 100 ? this._t("anaOverbuildLow") : "");
     };
-    for (const s of series) {
-      const o = this._cfg.settings?.strings?.[s.id] || {};
-      if (o.inverter_w > 0) {
-        const own = new Map();
-        for (const [ts, w] of s.m) {
-          const k = key(ts);
-          if (!own.has(k.day)) own.set(k.day, Array(24).fill(0));
-          own.get(k.day)[k.hour] += w;
-        }
-        const limited = plateauDays(own, o.inverter_w, 0.9).filter((day) => day !== todayKey);
-        if (limited.length >= 3) hints.push(this._t("anaInvLimitHint").replace("{name}", s.name).replace("{n}", String(limited.length)).replace("{inv}", this._fmt(o.inverter_w)));
-        if (o.peak > 0) { const text = overbuildText(s.name, o.peak, o.inverter_w); hints.push(text); infoSet.add(text); }
+    const strs = this._cfg.settings?.strings || {};
+    const seriesIds = series.map((x) => x.id);
+    const invs = invertersOf(this._cfg.settings, seriesIds);
+    for (const inv of invs) {
+      const members = series.filter((x) => inv.sensors.includes(x.id));
+      if (!members.length || !(inv.max_w > 0)) continue;
+      const invName = inv.name || members.map((x) => x.name).join(" + ");
+      // clipping: the plant power of the inverter stays at its limit for hours
+      const own = new Map();
+      for (const m of members) for (const [ts, w] of m.m) {
+        const k = key(ts);
+        if (!own.has(k.day)) own.set(k.day, Array(24).fill(0));
+        own.get(k.day)[k.hour] += w;
       }
-      // module strings with different orientations on the same MPPT share one operating point
+      const limited = plateauDays(own, inv.max_w, 0.9).filter((day) => day !== todayKey);
+      if (limited.length >= 3) hints.push(this._t("anaInvLimitHint").replace("{name}", invName).replace("{n}", String(limited.length)).replace("{inv}", this._fmt(inv.max_w)));
+      const peak = members.reduce((acc, m) => acc + (strs[m.id]?.peak > 0 ? strs[m.id].peak : 0), 0);
+      if (peak > 0) { const text = overbuildText(invName, peak, inv.max_w); hints.push(text); infoSet.add(text); }
+    }
+    for (const s of series) {
+      const o = strs[s.id] || {};
+      const inInv = invs.find((i) => i.sensors.includes(s.id));
+      // an inverter with several sensors: every sensor is one MPPT input; module strings with different orientations on the same MPPT share one operating point
+      const nMppt = o.mppts > 0 ? o.mppts : inInv && inInv.sensors.length > 1 ? 1 : 0;
       const byMppt = new Map();
       for (const g of groupsOf(o)) {
-        const m = g.mppt > 0 ? g.mppt : o.mppts === 1 ? 1 : null;
+        const m = g.mppt > 0 ? g.mppt : nMppt === 1 ? 1 : null;
         if (m == null || g.azimuth == null) continue;
         if (!byMppt.has(m)) byMppt.set(m, []);
         byMppt.get(m).push(g);
@@ -2223,7 +2311,7 @@ class PVAssistantPanel extends HTMLElement {
     }
     // legacy plant-wide inverter value (older versions) when no string has its own
     const legacyInv = this._cfg.settings?.general?.inverter_max_w || 0;
-    if (legacyInv > 0 && sumPeak && !series.some((s) => this._cfg.settings?.strings?.[s.id]?.inverter_w > 0)) {
+    if (legacyInv > 0 && sumPeak && !invs.length) {
       const text = overbuildText(this._t("anaPlant"), sumPeak, legacyInv);
       hints.push(text);
       infoSet.add(text);

@@ -91,6 +91,17 @@ def _as_list(value) -> list[str]:
                 vol.Optional("share2"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=100))),
             }
         },
+        # inverters: max. AC power and the production sensors (MPPT inputs) that belong to each
+        vol.Optional("inverters"): vol.All(
+            [
+                {
+                    vol.Optional("name"): vol.All(str, vol.Length(max=MAX_NAME_LENGTH)),
+                    vol.Optional("max_w"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000000)),
+                    vol.Optional("sensors"): vol.All([str], vol.Length(max=32)),
+                }
+            ],
+            vol.Length(max=16),
+        ),
         # plant-wide numbers (empty / 0 = not set)
         vol.Optional("general"): {
             vol.Optional("storage_capacity_kwh"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000)),
@@ -120,6 +131,20 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
     if unknown:
         connection.send_error(msg["id"], "invalid_sensor", f"Not a configured production sensor: {', '.join(sorted(unknown))}")
         return
+    inverters = None
+    if "inverters" in msg:
+        inverters = []
+        used: set[str] = set()
+        for inverter in msg["inverters"]:
+            sensors = [s for s in inverter.get("sensors", []) if s in allowed and s not in used]
+            used.update(sensors)
+            entry = {"sensors": sensors}
+            if name := inverter.get("name", "").strip():
+                entry["name"] = name
+            if (max_w := inverter.get("max_w") or 0) > 0:
+                entry["max_w"] = max_w
+            if sensors or len(entry) > 1:
+                inverters.append(entry)
     store = hass.data[DOMAIN]
     strings = dict(store.get("settings", {}).get("strings", {}))
     for entity_id, values in msg["strings"].items():
@@ -154,6 +179,8 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
             else:
                 general.pop(key, None)
     store["settings"] = {**store.get("settings", {}), "strings": strings, "general": general}
+    if inverters is not None:
+        store["settings"]["inverters"] = inverters
     await store["store"].async_save(store["settings"])
     connection.send_result(msg["id"], store["settings"])
 

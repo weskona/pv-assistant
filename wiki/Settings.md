@@ -10,11 +10,14 @@ Only administrators can save. The values are stored in `.storage/pv_assistant.se
 | Display name | replaces the Home Assistant name throughout the panel |
 | Max. power / peak (W) | installed power of the string; basis for effective power and kWh/kWp. "use" enters the measured maximum |
 | Power per module (Wp) | optional; with the module counts of the module strings the peak is calculated automatically (modules × Wp) and the max. power field is locked |
-| Inverter max. power (W) | AC limit of the inverter of this string (e.g. 800 W for a balcony plant); the analysis then recognises clipping at the limit and shows the oversizing (module peak vs. inverter) |
-| Number of MPPTs | inverter inputs with their own power tracking; each MPPT tracks its module strings independently |
+| Number of MPPTs | only needed if this sensor combines several MPPT inputs (e.g. 4 for a balcony plant with a sum sensor); if every MPPT has its own sensor, leave empty |
 | Module strings | per string of the inverter: modules, orientation / azimuth (like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°), tilt (0° = flat, 90° = vertical) and the number of the MPPT it hangs on; add as many as the inverter has (e.g. 4 strings on 2 MPPTs). Empty rows are ignored. The analysis weights the expected yield of the strings by their module counts and warns when strings with different orientations share one MPPT |
 
 Energy sensors only have the display name. With orientation and tilt the string comparison becomes fairer (east/west yields less than south).
+
+### Inverters
+
+Per inverter: name, max. power (W) and the power sensors that belong to it. If an inverter has several MPPT inputs with their own sensor (e.g. string 1 and string 2 of a hybrid inverter), choose all of them; the limit applies to their sum and every sensor is one MPPT. The analysis then recognises clipping at the limit and shows the oversizing (module peak vs. inverter).
 
 ### Plant
 | Field | Meaning |
@@ -38,11 +41,14 @@ Nur Administratoren dürfen speichern. Die Werte liegen in `.storage/pv_assistan
 | Anzeigename | ersetzt den Home-Assistant-Namen im ganzen Panel |
 | Max. Leistung / Peak (W) | installierte Leistung des Strings; Basis für effektive Leistung und kWh/kWp. „übernehmen“ trägt den gemessenen Höchstwert ein |
 | Leistung pro Modul (Wp) | optional; mit den Modulzahlen der Modulstränge wird der Peak automatisch berechnet (Module × Wp) und das Feld Max. Leistung gesperrt |
-| Wechselrichter max. Leistung (W) | AC-Grenze des Wechselrichters dieses Strings (z. B. 800 W bei einem Balkonkraftwerk); die Analyse erkennt damit Begrenzung an der Grenze und zeigt die Überbauung (Modul-Peak gegenüber Wechselrichter) |
-| Anzahl MPPTs | Eingänge des Wechselrichters mit eigener Leistungsnachführung; jeder MPPT regelt seine Modulstränge unabhängig |
+| Anzahl MPPTs | nur nötig, wenn dieser Sensor mehrere MPPT-Eingänge zusammenfasst (z. B. 4 bei einem Balkonkraftwerk mit Summensensor); hängt jeder MPPT an einem eigenen Sensor, leer lassen |
 | Modulstränge | pro Strang des Wechselrichters: Module, Ausrichtung / Azimut (wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°), Neigung (0° = flach, 90° = senkrecht) und Nummer des MPPTs, an dem er hängt; so viele anlegen, wie der Wechselrichter hat (z. B. 4 Stränge an 2 MPPTs). Leere Zeilen werden ignoriert. Die Analyse gewichtet den erwarteten Ertrag der Stränge nach Modulzahl und warnt, wenn Stränge mit unterschiedlicher Ausrichtung an einem MPPT hängen |
 
 Für Energiesensoren gibt es nur den Anzeigenamen. Mit Ausrichtung und Neigung wird der String-Vergleich fairer (Ost/West erzeugt weniger als Süd).
+
+### Wechselrichter
+
+Pro Wechselrichter: Name, max. Leistung (W) und die Leistungssensoren, die zu ihm gehören. Hat ein Wechselrichter mehrere MPPT-Eingänge mit eigenem Sensor (z. B. String 1 und String 2 eines Hybrid-Wechselrichters), werden alle diese Sensoren ausgewählt; die Grenze gilt für ihre Summe, jeder Sensor ist ein MPPT. Die Analyse erkennt damit Begrenzung an der Grenze und zeigt die Überbauung (Modul-Peak gegenüber Wechselrichter).
 
 ### Anlage
 | Feld | Bedeutung |
