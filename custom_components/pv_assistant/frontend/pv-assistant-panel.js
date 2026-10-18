@@ -53,6 +53,7 @@ const T = {
     anaAdvFlat: "Der Rückstand zieht sich gleichmäßig durch den Tag: Reinige die Module, prüfe Steckverbindungen, Optimierer und den Wechselrichter-Eingang und kontrolliere, ob der eingetragene Peak stimmt.",
     anaAdvOrient: "Tipp: Trage Ausrichtung und Neigung des Strings ein, damit der Vergleich fairer wird.",
     anaWeakHint: "{name} erzeugt pro installiertem kWp nur {rel} % des besten Strings ({best}): {own} gegen {top} kWh/kWp. Der typische String liegt bei {med} kWh/kWp. Mögliche Ursachen: Verschattung, Verschmutzung, andere Ausrichtung oder Neigung, falsch eingetragener Peak, Defekt.",
+    anaInvLimitHint: "An {n} Tagen bleibt die Anlagenleistung mehrere Stunden auf dem Höchstwert nahe der Wechselrichter-Grenze ({inv} W): hier begrenzt wahrscheinlich der Wechselrichter, Ertrag darüber geht verloren.", anaOverbuild: "Die Modulleistung der Strings ({peak} W) liegt bei {pct} % der Wechselrichter-Leistung ({inv} W).", anaOverbuildHigh: " Das ist eine starke Überbauung, an sonnigen Tagen wird die Spitze abgeschnitten.", anaOverbuildLow: " Der Wechselrichter hat Reserve.",
     anaPlateauHint: "An {n} Tagen bleibt die Leistung der Gesamtanlage mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
     anaPrHint: "Performance Ratio der Gesamtanlage {pr} % – {verdict} Sie vergleicht den Ertrag mit dem, was bei der gemessenen Einstrahlung theoretisch möglich wäre (typisch 75 bis 85 %).", anaPrLow: "das liegt unter dem typischen Bereich. Mögliche Ursachen: Verschattung, Verschmutzung, Wechselrichter-Begrenzung, zu hoch eingetragene Peaks oder ein ungenauer Einstrahlungssensor.", anaPrOk: "das liegt im typischen Bereich.", anaPrHigh: "das liegt über dem typischen Bereich (prüfe, ob die Peaks zu niedrig eingetragen sind).",
     anaNoForecastYet: "Noch keine abgeschlossenen Tage mit Prognose. Das Panel liest die Prognose der letzten Tage aus dem Verlauf der „Prognose heute“-Sensoren und merkt sie sich ab jetzt täglich; der Vergleich erscheint spätestens morgen. Prüfe, ob „Prognose heute“ in Schritt 3 gewählt ist (nicht nur „morgen“ oder „Rest heute“).",
@@ -61,7 +62,7 @@ const T = {
     aboveFc: "über Prognose", belowFc: "unter Prognose",
     fcAvgDev: "Ø Abweichung", fcHit: "Trefferquote (±20 %)", fcDays: "Tage mit Prognose", fcForecast: "Prognose", fcActual: "Ist", anaLoading: "Lade Analyse …",
     genTitle: "Anlage", genCap: "Speicherkapazität (kWh)", genPriceImport: "Strompreis Netzbezug (€/kWh)", genPriceFeed: "Einspeisevergütung (€/kWh)",
-    genCost: "Anlagenkosten (€)", genCo2: "CO₂-Faktor des Strommix (g/kWh)",
+    genInverter: "Wechselrichter max. Leistung (W)", genCost: "Anlagenkosten (€)", genCo2: "CO₂-Faktor des Strommix (g/kWh)",
     genHint: "Die Preise gelten nur, wenn im Config Flow kein Preis-Sensor gewählt wurde. Standort: leer = Standort von Home Assistant, genutzt für die Sonnenstand-Auswertung der Strings. Kapazität: für die Zyklen des Speichers. Kosten: für die Amortisation. CO₂-Faktor: Standard 380 g/kWh.",
     settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
     setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
@@ -125,6 +126,7 @@ const T = {
     anaAdvFlat: "The gap runs evenly through the day: clean the modules, check connectors, optimizers and the inverter input, and verify the entered peak.",
     anaAdvOrient: "Tip: enter orientation and tilt of the string to make the comparison fairer.",
     anaWeakHint: "{name} produces only {rel} % per installed kWp of the best string ({best}): {own} vs {top} kWh/kWp. The typical string is at {med} kWh/kWp. Possible causes: shading, dirt, different orientation or tilt, wrong peak entered, defect.",
+    anaInvLimitHint: "On {n} days the plant power stays at its maximum close to the inverter limit ({inv} W) for several hours: the inverter is probably limiting there and yield above it is lost.", anaOverbuild: "The module power of the strings ({peak} W) is {pct} % of the inverter power ({inv} W).", anaOverbuildHigh: " That is a strong oversizing, on sunny days the peak is clipped.", anaOverbuildLow: " The inverter has headroom.",
     anaPlateauHint: "On {n} days the power of the whole plant stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
     anaPrHint: "Performance ratio of the whole plant {pr} % – {verdict} It compares the yield with what would be theoretically possible at the measured irradiance (typically 75 to 85 %).", anaPrLow: "that is below the typical range. Possible causes: shading, dirt, inverter limiting, peaks entered too high or an inaccurate irradiance sensor.", anaPrOk: "that is within the typical range.", anaPrHigh: "that is above the typical range (check whether the peaks are entered too low).",
     anaNoForecastYet: "No completed days with a forecast yet. The panel reads the forecast of the last days from the history of the \"forecast today\" sensors and remembers it daily from now on; the comparison appears tomorrow at the latest. Check that \"forecast today\" is selected in step 3 (not only \"tomorrow\" or \"remaining today\").",
@@ -133,7 +135,7 @@ const T = {
     aboveFc: "above forecast", belowFc: "below forecast",
     fcAvgDev: "Avg. deviation", fcHit: "Hit rate (±20 %)", fcDays: "Days with forecast", fcForecast: "Forecast", fcActual: "Actual", anaLoading: "Loading analysis …",
     genTitle: "Plant", genCap: "Storage capacity (kWh)", genPriceImport: "Grid import price (€/kWh)", genPriceFeed: "Feed-in tariff (€/kWh)",
-    genCost: "System cost (€)", genCo2: "CO₂ factor of the power mix (g/kWh)",
+    genInverter: "Inverter max. power (W)", genCost: "System cost (€)", genCo2: "CO₂ factor of the power mix (g/kWh)",
     genHint: "The prices only apply when no price sensor was chosen in the config flow. Location: empty = Home Assistant location, used for the sun-position analysis of the strings. Capacity: for the storage cycles. Cost: for the payback. CO₂ factor: default 380 g/kWh.",
     settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
     setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
@@ -1796,7 +1798,7 @@ class PVAssistantPanel extends HTMLElement {
     const priceSensor = { price_import: this._keys().G.priceImp, price_feed_in: this._keys().G.priceFeed };
     for (const [key, label, step, ph] of [
       ["storage_capacity_kwh", "genCap", "0.1", ""], ["battery_min_soc", "genMinSoc", "1", ""], ["price_import", "genPriceImport", "0.001", ""], ["price_feed_in", "genPriceFeed", "0.001", ""],
-      ["system_cost_eur", "genCost", "100", ""], ["co2_g_per_kwh", "genCo2", "1", "380"],
+      ["inverter_max_w", "genInverter", "10", ""], ["system_cost_eur", "genCost", "100", ""], ["co2_g_per_kwh", "genCo2", "1", "380"],
       ["latitude", "genLat", "0.0001", this._hass.config?.latitude != null ? String(Number(this._hass.config.latitude).toFixed(4)) : ""],
       ["longitude", "genLon", "0.0001", this._hass.config?.longitude != null ? String(Number(this._hass.config.longitude).toFixed(4)) : ""],
     ]) {
@@ -2135,8 +2137,19 @@ class PVAssistantPanel extends HTMLElement {
 
     // plateau days
     if (sumPeak) {
-      const flat = plateauDays(byDay, sumPeak).filter((day) => day !== todayKey);
+      const inv = this._cfg.settings?.general?.inverter_max_w || 0;
+      // with the inverter limit: plateaus near it are inverter clipping, the others stay a generic hint
+      const limited = inv > 0 ? plateauDays(byDay, inv, 0.9).filter((day) => day !== todayKey) : [];
+      const flat = plateauDays(byDay, sumPeak).filter((day) => day !== todayKey && !limited.includes(day));
+      if (limited.length >= 3) hints.push(this._t("anaInvLimitHint").replace("{n}", String(limited.length)).replace("{inv}", this._fmt(inv)));
       if (flat.length >= 3) hints.push(this._t("anaPlateauHint").replace("{n}", String(flat.length)));
+      if (inv > 0) {
+        const ratio = Math.round((sumPeak / inv) * 100);
+        const note = this._t("anaOverbuild").replace("{peak}", this._fmt(sumPeak)).replace("{pct}", String(ratio)).replace("{inv}", this._fmt(inv));
+        const text = note + (ratio >= 130 ? this._t("anaOverbuildHigh") : ratio <= 100 ? this._t("anaOverbuildLow") : "");
+        hints.push(text);
+        infoSet.add(text);
+      }
     }
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio
