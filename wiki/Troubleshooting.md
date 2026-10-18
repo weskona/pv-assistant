@@ -15,7 +15,7 @@ If a price sensor is chosen in the config flow the field shows its price and is 
 ### Direct consumption, autarky or house consumption look too small
 A house consumption sensor with a short history only delivers values for part of the period. The panel calculates missing periods from the balance (shown as "partly calculated"). The house consumption should include the total consumption including the wallbox.
 
-### A string is marked as weak
+### A plant or string is marked as weak
 First check peak, orientation and tilt in the settings. East and west roofs yield less than south; with the orientation entered this is taken into account. Then follow the suggestion in the analysis.
 
 ### Negative values for storage or feed-in
@@ -48,7 +48,7 @@ Ist im Config Flow ein Preis-Sensor gewählt, zeigt das Feld dessen Preis und is
 ### Direktverbrauch, Autarkie oder Hausverbrauch wirken zu klein
 Ein Hausverbrauchs-Sensor mit kurzer Historie liefert nur für einen Teil des Zeitraums Werte. Das Panel rechnet fehlende Abschnitte aus der Bilanz (Anzeige „teils berechnet“). Der Hausverbrauch sollte den Gesamtverbrauch inklusive Wallbox enthalten.
 
-### Ein String wird als schwach markiert
+### Eine Anlage oder ein String wird als schwach markiert
 Prüfe zuerst Peak, Ausrichtung und Neigung in den Einstellungen. Ost- und Westdächer liefern weniger als Süd; mit eingetragener Ausrichtung wird das berücksichtigt. Folge dann dem Vorschlag in der Analyse.
 
 ### Negative Werte bei Speicher oder Einspeisung

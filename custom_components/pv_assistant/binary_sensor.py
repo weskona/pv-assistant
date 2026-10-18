@@ -1,8 +1,10 @@
-"""Problem sensor: a string produces (almost) nothing while the other strings do.
+"""Problem sensor: a plant produces (almost) nothing while the other plants do.
 
-Only strings with an entered peak (settings tab) are compared. A string counts as faulty when
-its power stays below 5 % of its peak (or the sensor is unavailable) for 15 minutes while the
-median of the other strings is at least 25 % of their peaks. Use the entity in automations to
+A plant is an inverter with all of its power sensors (strings / MPPT inputs); a sensor that
+belongs to no inverter is a plant of its own. Only plants whose sensors all have an entered peak
+(settings tab) are compared, on the sum of their sensors. A plant counts as faulty when its power
+stays below 5 % of its peak (or all of its sensors are unavailable) for 15 minutes while the
+median of the other plants is at least 25 % of their peaks. Use the entity in automations to
 get notified.
 """
 
@@ -26,7 +28,7 @@ from homeassistant.util import dt as dt_util
 from .const import CONF_PRODUCTION_POWER, DOMAIN
 
 FAULT_AFTER = timedelta(minutes=15)
-LOW_RATIO = 0.05  # string below 5 % of its peak ...
+LOW_RATIO = 0.05  # plant below 5 % of its peak ...
 OTHERS_MIN_RATIO = 0.25  # ... while the median of the others is at least 25 %
 
 
@@ -44,16 +46,31 @@ def _watts(state: State | None) -> float | None:
     return value * {"kW": 1000, "MW": 1e6}.get(state.attributes.get("unit_of_measurement"), 1)
 
 
+def _plants(settings: dict[str, Any], ids: list[str]) -> list[tuple[str, list[str]]]:
+    """Plants as (key, sensor ids): the saved inverters, then every other sensor on its own."""
+    plants: list[tuple[str, list[str]]] = []
+    taken: set[str] = set()
+    for inverter in settings.get("inverters", []):
+        sensors = [i for i in inverter.get("sensors", []) if i in ids and i not in taken]
+        if sensors:
+            taken.update(sensors)
+            plants.append((sensors[0], sensors))
+    for eid in ids:
+        if eid not in taken:
+            plants.append((eid, [eid]))
+    return plants
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     ids = _ids(entry.data.get(CONF_PRODUCTION_POWER))
-    if len(ids) >= 2:  # a comparison needs at least two strings
+    if len(ids) >= 2:  # a comparison needs at least two plants (sensors)
         async_add_entities([StringFaultSensor(entry, ids)])
 
 
 class StringFaultSensor(BinarySensorEntity):
-    """On while at least one string is faulty."""
+    """On while at least one plant is faulty."""
 
     _attr_has_entity_name = True
     _attr_should_poll = False
@@ -72,12 +89,21 @@ class StringFaultSensor(BinarySensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        settings = self.hass.data.get(DOMAIN, {}).get("settings", {}).get("strings", {})
+        settings = self.hass.data.get(DOMAIN, {}).get("settings", {})
+        strings = settings.get("strings", {})
+        inverters = settings.get("inverters", [])
         names = []
-        for eid in self._faulty:
-            state = self.hass.states.get(eid)
-            names.append(settings.get(eid, {}).get("name") or (state.attributes.get("friendly_name") if state else None) or eid)
-        return {"strings": names, "entity_ids": list(self._faulty)}
+        entity_ids: list[str] = []
+        for key in self._faulty:
+            sensors = dict(_plants(settings, self._ids)).get(key, [key])
+            entity_ids.extend(sensors)
+            inverter_name = next((i.get("name") for i in inverters if key in i.get("sensors", []) and i.get("name")), None)
+            labels = []
+            for eid in sensors:
+                state = self.hass.states.get(eid)
+                labels.append(strings.get(eid, {}).get("name") or (state.attributes.get("friendly_name") if state else None) or eid)
+            names.append(inverter_name or " + ".join(labels))
+        return {"plants": names, "strings": names, "entity_ids": entity_ids}
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(async_track_state_change_event(self.hass, self._ids, self._changed))
@@ -95,14 +121,16 @@ class StringFaultSensor(BinarySensorEntity):
         self.async_write_ha_state()
 
     def _evaluate(self) -> None:
-        strings = self.hass.data.get(DOMAIN, {}).get("settings", {}).get("strings", {})
+        settings = self.hass.data.get(DOMAIN, {}).get("settings", {})
+        strings = settings.get("strings", {})
         ratios: dict[str, float | None] = {}
-        for eid in self._ids:
-            peak = strings.get(eid, {}).get("peak")
-            if not peak or peak <= 0:
+        for key, sensors in _plants(settings, self._ids):
+            peaks = [strings.get(eid, {}).get("peak") for eid in sensors]
+            if not all(peak and peak > 0 for peak in peaks):  # every sensor of the plant needs a peak
                 continue
-            watts = _watts(self.hass.states.get(eid))
-            ratios[eid] = None if watts is None else max(watts, 0.0) / peak
+            watts = [_watts(self.hass.states.get(eid)) for eid in sensors]
+            known = [max(w, 0.0) for w in watts if w is not None]
+            ratios[key] = sum(known) / sum(peaks) if known else None
         now = dt_util.utcnow()
         faulty: list[str] = []
         for eid, ratio in ratios.items():
