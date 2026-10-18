@@ -42,7 +42,7 @@ const T = {
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
     setAz: "Ausrichtung / Azimut (°)", setAzHint: "Wie bei Forecast.Solar: Süd = 0°, Ost = −90°, West = 90°, Nord = ±180°.", setTilt: "Neigung (°)", setTiltHint: "0° = flach, 90° = senkrecht (Balkon/Fassade).",
-    setModules: "Anzahl Module (gesamt)", setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit Anzahl und Modulleistung wird der Peak automatisch berechnet (Anzahl × Wp).",
+    setModules: "Anzahl Module (gesamt)", setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit Anzahl und Modulleistung wird der Peak automatisch berechnet (Anzahl × Wp) und das Feld Max. Leistung gesperrt.",
     setAz2: "2. Ausrichtung / Azimut (°)", setTilt2: "2. Neigung (°)", setModules2: "Module in 2. Ausrichtung", setOrient2Hint: "Nur wenn ein Teil der Module anders ausgerichtet ist (z. B. zwei nach Ost, zwei nach West). Leer lassen bei nur einer Ausrichtung.", setModules2Hint: "Wie viele der Module (von der Anzahl oben) in die 2. Ausrichtung zeigen; der Rest zeigt in die 1. Ausrichtung. Leer = Hälfte.",
     anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
     anaNoOrient: "Trage bei den Strings Ausrichtung und Neigung ein (Einstellungen), dann wird der Vergleich um die Ausrichtung bereinigt (Ost/West erzeugt weniger als Süd).",
@@ -114,7 +114,7 @@ const T = {
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
     setAz: "Orientation / azimuth (°)", setAzHint: "Like Forecast.Solar: south = 0°, east = −90°, west = 90°, north = ±180°.", setTilt: "Tilt (°)", setTiltHint: "0° = flat, 90° = vertical (balcony / facade).",
-    setModules: "Number of modules (total)", setModuleWp: "Power per module (Wp)", setModulesHint: "With count and module power the peak is calculated automatically (count × Wp).",
+    setModules: "Number of modules (total)", setModuleWp: "Power per module (Wp)", setModulesHint: "With count and module power the peak is calculated automatically (count × Wp) and the max. power field is locked.",
     setAz2: "2nd orientation / azimuth (°)", setTilt2: "2nd tilt (°)", setModules2: "Modules in 2nd orientation", setOrient2Hint: "Only if part of the modules face another way (e.g. two east, two west). Leave empty for a single orientation.", setModules2Hint: "How many of the modules (of the count above) face the 2nd orientation; the rest face the 1st. Empty = half.",
     anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
     anaNoOrient: "Enter orientation and tilt of the strings (Settings) and the comparison is corrected for the orientation (east/west yields less than south).",
@@ -1753,8 +1753,13 @@ class PVAssistantPanel extends HTMLElement {
         c.append(row);
         const fromModules = () => {
           const n = parseFloat(modules.value.replace(",", ".")), w = parseFloat(moduleWp.value.replace(",", "."));
-          if (n > 0 && w > 0) peak.value = String(Math.round(n * w));
+          const derived = n > 0 && w > 0;
+          if (derived) peak.value = String(Math.round(n * w));
+          // with count and module power the peak is calculated, so the field and "use" are locked
+          peak.disabled = derived || !isAdmin;
+          take.disabled = derived || !isAdmin;
         };
+        fromModules();
         modules.addEventListener("input", fromModules);
         moduleWp.addEventListener("input", fromModules);
         take.addEventListener("click", () => { const m = this._pmax?.[id]; if (m > 0) peak.value = String(Math.round(m)); });
