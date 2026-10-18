@@ -41,7 +41,7 @@ const T = {
     genMinSoc: "Mindest-Ladestand (%)", genMinSocHint: "Untere Entladegrenze des Speichers. Daraus ergibt sich die nutzbare Kapazität.", genUsable: "Nutzbare Kapazität: {kwh} kWh (Kapazität × (1 − Mindest-Ladestand)).",
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
-        invTitle: "Anlagen (Wechselrichter)", invHint: "Eine Anlage ist ein Wechselrichter mit allen Strings und MPPT-Eingängen, die an ihm hängen. Lege jede Anlage an und wähle die Leistungssensoren, die zu ihr gehören; ihre Strings und MPPTs stehen darunter. Analyse und Störungssensor vergleichen die Anlagen untereinander (Summe je Anlage). Hat die Anlage eine Wechselrichter-Grenze, trage sie bei der Max. Leistung ein; sie gilt für die Summe der Sensoren.", invTitleN: "Anlage {n}", invName: "Name", invMax: "Max. Leistung des Wechselrichters (W)", invSensors: "Zugehörige Leistungssensoren", invAdd: "Anlage hinzufügen", invSolo: "Einzelne Anlagen", invSoloHint: "Sensoren ohne Anlage oben zählen jeweils als eigene Anlage.",
+        invTitle: "Anlagen (Wechselrichter)", invHint: "Eine Anlage ist ein Wechselrichter mit allen Strings und MPPT-Eingängen, die an ihm hängen. Lege jede Anlage an und wähle die Leistungssensoren, die zu ihr gehören; ihre Strings und MPPTs stehen darunter. Analyse und Störungssensor vergleichen die Anlagen untereinander (Summe je Anlage). Hat die Anlage eine Wechselrichter-Grenze, trage sie bei der Max. Leistung ein; sie gilt für die Summe der Sensoren.", invTitleN: "Anlage {n}", invName: "Name", invMax: "Max. Leistung des Wechselrichters (W)", invSensors: "Zugehörige Leistungssensoren", invAdd: "Anlage hinzufügen", invCount: "{n} Sensor(en)", invSolo: "Einzelne Anlagen", invSoloHint: "Sensoren ohne Anlage oben zählen jeweils als eigene Anlage.",
     setGroups: "Modulstränge", setGroupsHint: "Ein Modulstrang sind Module mit gleicher Ausrichtung und Neigung in Reihe. Trage je Strang Modulzahl, Ausrichtung (Süd = 0°, Ost = −90°, West = 90°), Neigung (0° = flach, 90° = senkrecht) und die Nummer des MPPTs ein, an dem er hängt. Leere Zeilen werden ignoriert.", gTitle: "Modulstrang {n}", gAdd: "Modulstrang hinzufügen", gRemove: "Entfernen", gModules: "Module", gAz: "Azimut (°)", gTilt: "Neigung (°)", gMppt: "MPPT Nr.",
     setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit den Modulzahlen der Modulstränge und der Modulleistung wird der Peak automatisch berechnet (Module × Wp) und das Feld Max. Leistung gesperrt.",
     setMppts: "Anzahl MPPTs", setMpptsHint: "Nur nötig, wenn dieser Sensor mehrere MPPT-Eingänge zusammenfasst (z. B. 4 bei einem Balkonkraftwerk mit Summensensor). Hängt jeder MPPT an einem eigenen Sensor, leer lassen. Jeder MPPT regelt seine Modulstränge unabhängig; an einem MPPT sollten Stränge gleich ausgerichtet sein.",
@@ -116,7 +116,7 @@ const T = {
     genMinSoc: "Minimum level (%)", genMinSocHint: "Lower discharge limit of the storage. It gives the usable capacity.", genUsable: "Usable capacity: {kwh} kWh (capacity × (1 − minimum level)).",
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
-        invTitle: "Plants (inverters)", invHint: "A plant is one inverter with all strings and MPPT inputs connected to it. Add every plant and choose the power sensors that belong to it; their strings and MPPTs are listed below. The analysis and the fault sensor compare the plants with each other (sum per plant). If the plant has an inverter limit, enter it as the max. power; it applies to the sum of the sensors.", invTitleN: "Plant {n}", invName: "Name", invMax: "Inverter max. power (W)", invSensors: "Power sensors of this plant", invAdd: "Add plant", invSolo: "Single plants", invSoloHint: "Sensors that are not part of a plant above each count as a plant of their own.",
+        invTitle: "Plants (inverters)", invHint: "A plant is one inverter with all strings and MPPT inputs connected to it. Add every plant and choose the power sensors that belong to it; their strings and MPPTs are listed below. The analysis and the fault sensor compare the plants with each other (sum per plant). If the plant has an inverter limit, enter it as the max. power; it applies to the sum of the sensors.", invTitleN: "Plant {n}", invName: "Name", invMax: "Inverter max. power (W)", invSensors: "Power sensors of this plant", invAdd: "Add plant", invCount: "{n} sensor(s)", invSolo: "Single plants", invSoloHint: "Sensors that are not part of a plant above each count as a plant of their own.",
     setGroups: "Module strings", setGroupsHint: "A module string is modules in series with the same orientation and tilt. For each string enter the module count, orientation (south = 0°, east = −90°, west = 90°), tilt (0° = flat, 90° = vertical) and the number of the MPPT it is connected to. Empty rows are ignored.", gTitle: "Module string {n}", gAdd: "Add module string", gRemove: "Remove", gModules: "Modules", gAz: "Azimuth (°)", gTilt: "Tilt (°)", gMppt: "MPPT no.",
     setModuleWp: "Power per module (Wp)", setModulesHint: "With the module counts of the strings and the module power the peak is calculated automatically (modules × Wp) and the max. power field is locked.",
     setMppts: "Number of MPPTs", setMpptsHint: "Only needed if this sensor combines several MPPT inputs (e.g. 4 for a balcony plant with a sum sensor). If every MPPT has its own sensor, leave empty. Each MPPT tracks its module strings independently; strings on one MPPT should face the same way.",
@@ -360,7 +360,15 @@ class PVAssistantPanel extends HTMLElement {
           .setgroup .gtitle { font-weight:600; }
           .setgroup .ggrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px 12px; }
           .setgroup .gfield { display:flex; flex-direction:column; gap:4px; color:var(--secondary-text-color); font-size:.9em; }
-          .invcards .setcard, .setgroups > .setcard { border-radius:16px; padding:14px 16px; margin:10px 0 0; }
+          .setcard.sensor { border-radius:16px; padding:10px 16px; margin:8px 0 0; }
+          .setcard.sensor h3 { margin:0; font-size:14px; letter-spacing:.08em; }
+          .setcard.sensor .eid { margin:0; }
+          details.setcard > summary, details.plant > summary { cursor:pointer; list-style:none; display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px; }
+          details.setcard > summary::-webkit-details-marker, details.plant > summary::-webkit-details-marker { display:none; }
+          details.setcard > summary::before, details.plant > summary::before { content:"▸"; color:var(--g-muted); }
+          details.setcard[open] > summary::before, details.plant[open] > summary::before { content:"▾"; }
+          details.setcard[open] > summary, details.plant[open] > summary { margin-bottom:10px; }
+          details.plant { padding:8px 14px; margin:6px 0; }
           .invsensors { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
           .invsensor { display:flex; align-items:center; gap:8px; }
           .setgroup input[type="checkbox"] { width:auto; }
@@ -1777,13 +1785,16 @@ class PVAssistantPanel extends HTMLElement {
 
     const card = (id, kind, withPeak) => {
       const st = this._hass.states[id];
-      const c = mk("div", { class: "setcard" });
-      c.append(mk("h3", {}, st?.attributes.friendly_name || id), mk("div", { class: "eid" }, `${id} · ${this._t(kind)}`));
+      const c = mk("details", { class: "setcard sensor" });
+      const heading = mk("h3", {}, strings[id]?.name || st?.attributes.friendly_name || id);
+      c.append(mk("summary", {}, ""));
+      c.firstChild.append(heading, mk("span", { class: "eid" }, `${id} · ${this._t(kind)}`));
       const nameRow = mk("div", { class: "setrow" });
       const nameId = `set-name-${id}`;
       const name = mk("input", { type: "text", id: nameId, maxlength: "60", placeholder: st?.attributes.friendly_name || id });
       name.value = strings[id]?.name || "";
       name.disabled = !isAdmin;
+      name.addEventListener("input", () => { heading.textContent = name.value.trim() || st?.attributes.friendly_name || id; });
       nameRow.append(mk("label", { for: nameId }, this._t("setName")), name);
       c.append(nameRow);
       let peak = null, mppts = null, moduleWp = null, take = null, groups = null;
@@ -1884,22 +1895,41 @@ class PVAssistantPanel extends HTMLElement {
       for (const r of invRows) for (const b of r.boxes) if (b.cb.checked && !owner.has(b.sid)) owner.set(b.sid, r);
       for (const r of invRows) r.sensorsBox.replaceChildren();
       solo.replaceChildren();
-      for (const sid of P.prod) (owner.get(sid)?.sensorsBox || solo).append(cards.get(sid));
+      for (const sid of [...P.prod].sort((a, b) => collator.compare(liveName(a), liveName(b)))) (owner.get(sid)?.sensorsBox || solo).append(cards.get(sid));
       soloHead.hidden = soloHint.hidden = !solo.childElementCount;
+      invRows.forEach(retitle);
+    };
+    // plants and sensors are listed alphabetically; the name currently typed counts, not only the saved one
+    const collator = new Intl.Collator(this._hass.locale?.language || this._hass.language, { sensitivity: "base", numeric: true });
+    const liveName = (sid) => inputs.find((i) => i.id === sid)?.name.value.trim() || this._hass.states[sid]?.attributes.friendly_name || sid;
+    const plantLabel = (r) => r.nameIn.value.trim() || r.boxes.filter((b) => b.cb.checked).map((b) => liveName(b.sid)).join(" + ");
+    const retitle = (r) => {
+      r.title.textContent = plantLabel(r) || this._t("invTitleN").replace("{n}", String(invRows.indexOf(r) + 1));
+      r.count.textContent = ` · ${this._t("invCount").replace("{n}", String(r.boxes.filter((b) => b.cb.checked).length))}`;
+    };
+    const sortPlants = () => {
+      invRows.sort((a, b) => collator.compare(plantLabel(a) || "\uffff", plantLabel(b) || "\uffff")); // empty plants last
+      invList.append(...invRows.map((r) => r.el));
     };
     const sensorName = (sid) => strings[sid]?.name || this._hass.states[sid]?.attributes.friendly_name || sid;
     const addInverter = (inv) => {
-      const el = mk("div", { class: "setgroup" });
-      const title = mk("div", { class: "gtitle" });
+      const el = mk("details", { class: "setgroup plant" });
+      el.open = !inv; // a new plant is open, saved ones are collapsed
+      const title = mk("span", { class: "gtitle" });
+      const count = mk("span", { class: "muted" });
+      const sum = mk("summary", {}, "");
+      sum.append(title, count);
       const rm = mk("button", { type: "button", class: "setbtn" }, this._t("gRemove"));
       rm.disabled = !isAdmin;
       const head = mk("div", { class: "ghead" });
-      head.append(title, rm);
+      head.append(rm);
       const grid = mk("div", { class: "ggrid" });
       const nameWrap = mk("label", { class: "gfield" }, this._t("invName"));
       const nameIn = mk("input", { type: "text", maxlength: "60" });
       nameIn.value = inv?.name || "";
       nameIn.disabled = !isAdmin;
+      nameIn.addEventListener("input", () => retitle(row));
+      nameIn.addEventListener("change", sortPlants); // re-sort when the name is finished, not while typing
       nameWrap.append(nameIn);
       const maxWrap = mk("label", { class: "gfield" }, this._t("invMax"));
       const maxIn = mk("input", { type: "number", min: "0", step: "10", inputmode: "decimal" });
@@ -1920,16 +1950,15 @@ class PVAssistantPanel extends HTMLElement {
         return { sid, cb };
       });
       const sensorsBox = mk("div", { class: "invcards" });
-      const row = { el, title, nameIn, maxIn, boxes, sensorsBox };
-      rm.addEventListener("click", () => { invRows.splice(invRows.indexOf(row), 1); el.remove(); renumberInv(); layout(); });
-      el.append(head, grid, list, sensorsBox);
+      const row = { el, title, count, nameIn, maxIn, boxes, sensorsBox };
+      rm.addEventListener("click", () => { invRows.splice(invRows.indexOf(row), 1); el.remove(); layout(); });
+      el.append(sum, head, grid, list, sensorsBox);
       invList.append(el);
       invRows.push(row);
-      renumberInv();
       layout();
     };
-    const renumberInv = () => invRows.forEach((r, i) => { r.title.textContent = this._t("invTitleN").replace("{n}", String(i + 1)); });
     invertersOf(this._cfg.settings, P.prod).forEach(addInverter);
+    sortPlants();
     invAdd.addEventListener("click", () => addInverter(null));
     layout();
     if (P.prod.length) box.append(invBox);
