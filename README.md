@@ -36,19 +36,19 @@ Home Assistant integration with its own sidebar panel for the PV energy flow: pr
 |---|---|
 | Now | live energy flow diagram (solar, home, grid, storage), current values and sums of all sensors and the forecast |
 | Power | power per string against its peak, whole plant, power chart per string |
-| Analysis | string comparison (kWh/kWp, corrected for orientation and tilt, with suggestions), heat map, best and weakest days, power plateaus, performance ratio |
+| Analysis | plant comparison (kWh/kWp per inverter, corrected for orientation and tilt, with suggestions), heat map, best and weakest days, power plateaus, performance ratio |
 | History | power, effective power and energy charts for today up to 12 months, key figures such as autarky, self-consumption, savings, CO₂ |
 | Storage | level, storage power, charged and discharged energy, efficiency, cycles, usable capacity |
 | Forecast | forecast vs actual per day or month, deviation, hit rate |
 | Yearly overview | monthly production against the average, year forecast, benefit, payback, trend |
-| Settings | display names, peak, inverter, MPPTs and module strings (modules, orientation, tilt) per string, plant values (capacity, minimum level, prices, cost, CO₂ factor, location) |
+| Settings | plants (inverters) with their sensors; display names, peak, MPPTs and module strings (modules, orientation, tilt) per sensor, plant values (capacity, minimum level, prices, cost, CO₂ factor, location) |
 
 The data comes from the long-term statistics of Home Assistant (recorder); the sensors therefore need a `state_class`. The integration also creates filtered copies of the energy sensors (`… filtered`, ignore short drops, usable as `utility_meter` source) and a binary sensor `binary_sensor.pv_assistant_string_fault` ("String fault") that reports a string delivering almost nothing while the others produce. Settings are stored in `.storage/pv_assistant.settings` and apply to all devices; only administrators can save.
 
 ### Known limitations
 - Directly used PV: if the storage also charges from the grid the value is a little too low (without a grid import sensor). For hourly values (7/30 days) Home Assistant averages signed power sensors, so there the value is an approximation.
 - The colors "yellow on a light background" and "pink/turquoise for red-green color weakness" are hard to tell apart (legend, tooltip and table as compensation).
-- The thresholds of hints and of the string fault sensor are heuristics, not a diagnosis.
+- The thresholds of hints and of the plant fault sensor are heuristics, not a diagnosis.
 
 ## Deutsch
 
@@ -73,16 +73,16 @@ Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: E
 |---|---|
 | Aktuell | Live-Energiefluss (PV, Haus, Netz, Speicher), aktuelle Werte und Summen aller Sensoren und der Prognose |
 | Leistung | Leistung je String im Verhältnis zum Peak, Gesamtanlage, Leistungsdiagramm je String |
-| Analyse | String-Vergleich (kWh/kWp, bereinigt um Ausrichtung und Neigung, mit Vorschlägen), Heatmap, beste und schwächste Tage, Leistungs-Plateaus, Performance Ratio |
+| Analyse | Anlagen-Vergleich (kWh/kWp je Wechselrichter, bereinigt um Ausrichtung und Neigung, mit Vorschlägen), Heatmap, beste und schwächste Tage, Leistungs-Plateaus, Performance Ratio |
 | Verlauf | Leistungs-, Effektivleistungs- und Energiediagramme von heute bis 12 Monate, Kennzahlen wie Autarkie, Eigenverbrauch, Ersparnis, CO₂ |
 | Speicher | Ladestand, Speicherleistung, geladene und entladene Energie, Wirkungsgrad, Zyklen, nutzbare Kapazität |
 | Prognose | Prognose gegen Ist je Tag oder Monat, Abweichung, Trefferquote |
 | Jahresübersicht | Monatserzeugung gegen den Schnitt, Jahresprognose, Nutzen, Amortisation, Trend |
-| Einstellungen | Anzeigenamen, Peak, Wechselrichter, MPPTs und Modulstränge (Module, Ausrichtung, Neigung) je String, Anlagenwerte (Kapazität, Mindest-Ladestand, Preise, Kosten, CO₂-Faktor, Standort) |
+| Einstellungen | Anlagen (Wechselrichter) mit ihren Sensoren; Anzeigenamen, Peak, MPPTs und Modulstränge (Module, Ausrichtung, Neigung) je Sensor, Anlagenwerte (Kapazität, Mindest-Ladestand, Preise, Kosten, CO₂-Faktor, Standort) |
 
 Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Die Integration legt außerdem bereinigte Kopien der Energiesensoren an (`… bereinigt`, ignorieren kurze Abstürze, als Quelle für `utility_meter` nutzbar) und einen Binärsensor `binary_sensor.pv_assistant_string_fault` („String-Störung“), der meldet, wenn ein String fast nichts liefert, während die anderen erzeugen. Die Einstellungen liegen in `.storage/pv_assistant.settings` und gelten für alle Geräte; nur Administratoren dürfen speichern.
 
 ### Bekannte Einschränkungen
 - Direkt verbrauchte PV-Energie: lädt der Speicher auch aus dem Netz, fällt der Wert etwas zu niedrig aus (kein Netzbezug-Sensor). Bei Stundenwerten (7/30 Tage) mittelt Home Assistant vorzeichenbehaftete Leistungssensoren, dort ist der Wert eine Näherung.
 - Farben „Gelb auf hellem Hintergrund“ und „Rosa/Türkis bei Rot-Grün-Schwäche“ sind schwach unterscheidbar (Legende, Tooltip und Tabelle als Ausgleich).
-- Die Schwellen der Hinweise und des String-Störungs-Sensors sind Heuristiken, keine Diagnose.
+- Die Schwellen der Hinweise und des Anlagen-Störungs-Sensors sind Heuristiken, keine Diagnose.

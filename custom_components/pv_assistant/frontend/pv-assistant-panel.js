@@ -33,15 +33,15 @@ const T = {
     socChart: "Batterieladestand (%)", socName: "Ladestand", autarky: "Autarkie", selfShare: "Eigenverbrauchsquote", shift: "Verschiebepotenzial",
     storEff: "Speicher-Wirkungsgrad", cycles: "Speicher-Zyklen", saving: "Ersparnis (Eigenverbrauch)", revenue: "Einspeiseerlös", co2: "CO₂ vermieden",
     socRange: "Ladestand min–max", pr: "Performance Ratio",
-    analysisTab: "Analyse", d90: "90 Tage", d365: "12 Monate", dYear: "Dieses Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "String-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastMonth: "Prognose gegen Ist (kWh je Monat)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
-    anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten String", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
+    analysisTab: "Analyse", d90: "90 Tage", d365: "12 Monate", dYear: "Dieses Jahr", anaHeatWeek: "Ø je Tag und Woche", anaStrings: "Anlagen-Vergleich", anaHeat: "Ertrag je Stunde (kWh)", anaDays: "Beste und schwächste Tage", anaForecast: "Prognose gegen Ist (kWh je Tag)", anaForecastMonth: "Prognose gegen Ist (kWh je Monat)", anaForecastDev: "Abweichung Ist zur Prognose (%)",
+    anaYield: "Ertrag", anaSpec: "kWh/kWp", anaRel: "vom besten", anaWeak: "schwächer", anaBest: "Beste Tage", anaWorst: "Schwächste Tage", anaDay: "Tag",
     anaPowerDiff: "Die Leistungssensoren ergeben summiert {p} kWh, die Energiezähler {e} kWh ({d} %). Gezeigt wird der Zähler; der String-Vergleich nutzt die Leistung. Abweichungen entstehen durch Aktualisierungsintervalle der Leistungssensoren und Ausfälle.",
-    anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden String den Peak ein, dann werden die Strings nach kWh/kWp verglichen.",
+    anaTotal: "Erzeugung", anaPlant: "Ertrag der Anlage", anaBestDay: "Bester Tag", anaWorstDay: "Schwächster Tag", anaPr: "Performance Ratio", anaNoPeak: "Trage in den Einstellungen für jeden Leistungssensor den Peak ein, dann werden die Anlagen nach kWh/kWp verglichen.",
     genFromSensor: "Preis vom Sensor „{name}“ (Config Flow): {value}. Nicht änderbar; ein fester Wert gilt nur, wenn dort kein Preis-Sensor gewählt ist.",
     genMinSoc: "Mindest-Ladestand (%)", genMinSocHint: "Untere Entladegrenze des Speichers. Daraus ergibt sich die nutzbare Kapazität.", genUsable: "Nutzbare Kapazität: {kwh} kWh (Kapazität × (1 − Mindest-Ladestand)).",
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
-        invTitle: "Wechselrichter", invHint: "Lege jeden Wechselrichter an und wähle die Leistungssensoren, die zu ihm gehören. Hat er mehrere MPPT-Eingänge mit eigenem Sensor (z. B. String 1 und String 2 eines Hybrid-Wechselrichters), wähle alle diese Sensoren; die Grenze gilt dann für ihre Summe.", invTitleN: "Wechselrichter {n}", invName: "Name", invMax: "Max. Leistung (W)", invSensors: "Zugehörige Leistungssensoren", invAdd: "Wechselrichter hinzufügen",
+        invTitle: "Anlagen (Wechselrichter)", invHint: "Eine Anlage ist ein Wechselrichter mit allen Strings und MPPT-Eingängen, die an ihm hängen. Lege jede Anlage an und wähle die Leistungssensoren, die zu ihr gehören; ihre Strings und MPPTs stehen darunter. Analyse und Störungssensor vergleichen die Anlagen untereinander (Summe je Anlage). Hat die Anlage eine Wechselrichter-Grenze, trage sie bei der Max. Leistung ein; sie gilt für die Summe der Sensoren.", invTitleN: "Anlage {n}", invName: "Name", invMax: "Max. Leistung des Wechselrichters (W)", invSensors: "Zugehörige Leistungssensoren", invAdd: "Anlage hinzufügen", invSolo: "Einzelne Anlagen", invSoloHint: "Sensoren ohne Anlage oben zählen jeweils als eigene Anlage.",
     setGroups: "Modulstränge", setGroupsHint: "Ein Modulstrang sind Module mit gleicher Ausrichtung und Neigung in Reihe. Trage je Strang Modulzahl, Ausrichtung (Süd = 0°, Ost = −90°, West = 90°), Neigung (0° = flach, 90° = senkrecht) und die Nummer des MPPTs ein, an dem er hängt. Leere Zeilen werden ignoriert.", gTitle: "Modulstrang {n}", gAdd: "Modulstrang hinzufügen", gRemove: "Entfernen", gModules: "Module", gAz: "Azimut (°)", gTilt: "Neigung (°)", gMppt: "MPPT Nr.",
     setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit den Modulzahlen der Modulstränge und der Modulleistung wird der Peak automatisch berechnet (Module × Wp) und das Feld Max. Leistung gesperrt.",
     setMppts: "Anzahl MPPTs", setMpptsHint: "Nur nötig, wenn dieser Sensor mehrere MPPT-Eingänge zusammenfasst (z. B. 4 bei einem Balkonkraftwerk mit Summensensor). Hängt jeder MPPT an einem eigenen Sensor, leer lassen. Jeder MPPT regelt seine Modulstränge unabhängig; an einem MPPT sollten Stränge gleich ausgerichtet sein.",
@@ -53,6 +53,7 @@ const T = {
     anaAdvEvening: "Der String fällt vor allem am Nachmittag und Abend zurück: wahrscheinlich Verschattung aus Westen oder Südwesten. Prüfe die Umgebung am Abend und stutze ggf. Bewuchs.",
     anaAdvFlat: "Der Rückstand zieht sich gleichmäßig durch den Tag: Reinige die Module, prüfe Steckverbindungen, Optimierer und den Wechselrichter-Eingang und kontrolliere, ob der eingetragene Peak stimmt.",
     anaAdvOrient: "Tipp: Trage Ausrichtung und Neigung des Strings ein, damit der Vergleich fairer wird.",
+    anaWeakPlantHint: "{name} erzeugt pro installiertem kWp nur {rel} % der besten Anlage ({best}): {own} gegen {top} kWh/kWp. Die typische Anlage liegt bei {med} kWh/kWp. Mögliche Ursachen: Verschattung, Verschmutzung, andere Ausrichtung oder Neigung, falsch eingetragener Peak, Defekt.",
     anaWeakHint: "{name} erzeugt pro installiertem kWp nur {rel} % des besten Strings ({best}): {own} gegen {top} kWh/kWp. Der typische String liegt bei {med} kWh/kWp. Mögliche Ursachen: Verschattung, Verschmutzung, andere Ausrichtung oder Neigung, falsch eingetragener Peak, Defekt.",
     anaInvLimitHint: "{name}: An {n} Tagen bleibt die Leistung mehrere Stunden auf dem Höchstwert nahe der Wechselrichter-Grenze ({inv} W): hier begrenzt wahrscheinlich der Wechselrichter, Ertrag darüber geht verloren.", anaOverbuild: "{name}: Die Modulleistung ({peak} W) liegt bei {pct} % der Wechselrichter-Leistung ({inv} W).", anaOverbuildHigh: " Das ist eine starke Überbauung, an sonnigen Tagen wird die Spitze abgeschnitten.", anaOverbuildLow: " Der Wechselrichter hat Reserve.", anaMpptMismatch: "{name}: An MPPT {mppt} hängen Modulstränge mit unterschiedlicher Ausrichtung. Sie teilen sich einen Arbeitspunkt, das kostet Ertrag (Mismatch). Ideal ist je Ausrichtung ein eigener MPPT.",
     anaPlateauHint: "An {n} Tagen bleibt die Leistung der Gesamtanlage mehrere Stunden flach auf dem Höchstwert. Mögliche Begrenzung durch Wechselrichter oder Einspeisebegrenzung (nur ein Hinweis, keine Diagnose).",
@@ -65,7 +66,7 @@ const T = {
     genTitle: "Anlage", genCap: "Speicherkapazität (kWh)", genPriceImport: "Strompreis Netzbezug (€/kWh)", genPriceFeed: "Einspeisevergütung (€/kWh)",
     genCost: "Anlagenkosten (€)", genCo2: "CO₂-Faktor des Strommix (g/kWh)",
     genHint: "Die Preise gelten nur, wenn im Config Flow kein Preis-Sensor gewählt wurde. Standort: leer = Standort von Home Assistant, genutzt für die Sonnenstand-Auswertung der Strings. Kapazität: für die Zyklen des Speichers. Kosten: für die Amortisation. CO₂-Faktor: Standard 380 g/kWh.",
-    settingsTab: "Einstellungen", setStrings: "Strings", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
+    settingsTab: "Einstellungen", setStrings: "Anlagen und Sensoren", setIntro: "Eigene Namen ersetzen die Anzeigenamen aus Home Assistant überall im Panel. Die Max.-Leistung (Peak) ersetzt in „Leistung“ das gemessene Maximum.",
     setName: "Anzeigename", setPeak: "Max. Leistung / Peak (W)", setMeasured: "Gemessen", setTake: "übernehmen", setSave: "Speichern", setSaved: "Gespeichert.",
     setError: "Speichern fehlgeschlagen", setAdmin: "Nur Administratoren können Einstellungen ändern.", setPower: "Leistungssensor", setEnergy: "Energiesensor",
     setNone: "Keine Erzeugungssensoren konfiguriert.", setReset: "Zurücksetzen",
@@ -107,15 +108,15 @@ const T = {
     socChart: "Battery level (%)", socName: "Level", autarky: "Autarky", selfShare: "Self-consumption rate", shift: "Shifting potential",
     storEff: "Storage efficiency", cycles: "Storage cycles", saving: "Savings (self-consumption)", revenue: "Feed-in revenue", co2: "CO₂ avoided",
     socRange: "Level min–max", pr: "Performance ratio",
-    analysisTab: "Analysis", d90: "90 days", d365: "12 months", dYear: "This year", anaHeatWeek: "avg per day and week", anaStrings: "String comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastMonth: "Forecast vs actual (kWh per month)", anaForecastMonth: "Forecast vs actual (kWh per month)", anaForecastDev: "Deviation of actual from forecast (%)",
-    anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best string", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
+    analysisTab: "Analysis", d90: "90 days", d365: "12 months", dYear: "This year", anaHeatWeek: "avg per day and week", anaStrings: "Plant comparison", anaHeat: "Yield per hour (kWh)", anaDays: "Best and weakest days", anaForecast: "Forecast vs actual (kWh per day)", anaForecastMonth: "Forecast vs actual (kWh per month)", anaForecastMonth: "Forecast vs actual (kWh per month)", anaForecastDev: "Deviation of actual from forecast (%)",
+    anaYield: "Yield", anaSpec: "kWh/kWp", anaRel: "of the best", anaWeak: "weaker", anaBest: "Best days", anaWorst: "Weakest days", anaDay: "Day",
     anaPowerDiff: "The power sensors add up to {p} kWh, the energy counters to {e} kWh ({d} %). The counter is shown; the string comparison uses power. Differences come from the update intervals of the power sensors and outages.",
-    anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each string in the settings and the strings are compared by kWh/kWp.",
+    anaTotal: "Production", anaPlant: "Plant yield", anaBestDay: "Best day", anaWorstDay: "Weakest day", anaPr: "Performance ratio", anaNoPeak: "Enter the peak of each power sensor in the settings and the plants are compared by kWh/kWp.",
     genFromSensor: "Price from the sensor \"{name}\" (config flow): {value}. Not editable; a fixed value only applies when no price sensor is chosen there.",
     genMinSoc: "Minimum level (%)", genMinSocHint: "Lower discharge limit of the storage. It gives the usable capacity.", genUsable: "Usable capacity: {kwh} kWh (capacity × (1 − minimum level)).",
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
-        invTitle: "Inverters", invHint: "Add every inverter and choose the power sensors that belong to it. If it has several MPPT inputs with their own sensor (e.g. string 1 and string 2 of a hybrid inverter), choose all of them; the limit then applies to their sum.", invTitleN: "Inverter {n}", invName: "Name", invMax: "Max. power (W)", invSensors: "Power sensors of this inverter", invAdd: "Add inverter",
+        invTitle: "Plants (inverters)", invHint: "A plant is one inverter with all strings and MPPT inputs connected to it. Add every plant and choose the power sensors that belong to it; their strings and MPPTs are listed below. The analysis and the fault sensor compare the plants with each other (sum per plant). If the plant has an inverter limit, enter it as the max. power; it applies to the sum of the sensors.", invTitleN: "Plant {n}", invName: "Name", invMax: "Inverter max. power (W)", invSensors: "Power sensors of this plant", invAdd: "Add plant", invSolo: "Single plants", invSoloHint: "Sensors that are not part of a plant above each count as a plant of their own.",
     setGroups: "Module strings", setGroupsHint: "A module string is modules in series with the same orientation and tilt. For each string enter the module count, orientation (south = 0°, east = −90°, west = 90°), tilt (0° = flat, 90° = vertical) and the number of the MPPT it is connected to. Empty rows are ignored.", gTitle: "Module string {n}", gAdd: "Add module string", gRemove: "Remove", gModules: "Modules", gAz: "Azimuth (°)", gTilt: "Tilt (°)", gMppt: "MPPT no.",
     setModuleWp: "Power per module (Wp)", setModulesHint: "With the module counts of the strings and the module power the peak is calculated automatically (modules × Wp) and the max. power field is locked.",
     setMppts: "Number of MPPTs", setMpptsHint: "Only needed if this sensor combines several MPPT inputs (e.g. 4 for a balcony plant with a sum sensor). If every MPPT has its own sensor, leave empty. Each MPPT tracks its module strings independently; strings on one MPPT should face the same way.",
@@ -127,6 +128,7 @@ const T = {
     anaAdvEvening: "The string falls behind mostly in the afternoon and evening: probably shading from the west or south-west. Check the surroundings in the evening and trim vegetation if needed.",
     anaAdvFlat: "The gap runs evenly through the day: clean the modules, check connectors, optimizers and the inverter input, and verify the entered peak.",
     anaAdvOrient: "Tip: enter orientation and tilt of the string to make the comparison fairer.",
+    anaWeakPlantHint: "{name} produces only {rel} % per installed kWp of the best plant ({best}): {own} vs {top} kWh/kWp. The typical plant is at {med} kWh/kWp. Possible causes: shading, dirt, different orientation or tilt, wrong peak entered, defect.",
     anaWeakHint: "{name} produces only {rel} % per installed kWp of the best string ({best}): {own} vs {top} kWh/kWp. The typical string is at {med} kWh/kWp. Possible causes: shading, dirt, different orientation or tilt, wrong peak entered, defect.",
     anaInvLimitHint: "{name}: on {n} days the power stays at its maximum close to the inverter limit ({inv} W) for several hours: the inverter is probably limiting there and yield above it is lost.", anaOverbuild: "{name}: the module power ({peak} W) is {pct} % of the inverter power ({inv} W).", anaOverbuildHigh: " That is a strong oversizing, on sunny days the peak is clipped.", anaOverbuildLow: " The inverter has headroom.", anaMpptMismatch: "{name}: module strings with different orientations hang on MPPT {mppt}. They share one operating point, which costs yield (mismatch). Ideally each orientation has its own MPPT.",
     anaPlateauHint: "On {n} days the power of the whole plant stays flat at its maximum for several hours. Possible limit by the inverter or a feed-in limit (only a hint, not a diagnosis).",
@@ -139,7 +141,7 @@ const T = {
     genTitle: "Plant", genCap: "Storage capacity (kWh)", genPriceImport: "Grid import price (€/kWh)", genPriceFeed: "Feed-in tariff (€/kWh)",
     genCost: "System cost (€)", genCo2: "CO₂ factor of the power mix (g/kWh)",
     genHint: "The prices only apply when no price sensor was chosen in the config flow. Location: empty = Home Assistant location, used for the sun-position analysis of the strings. Capacity: for the storage cycles. Cost: for the payback. CO₂ factor: default 380 g/kWh.",
-    settingsTab: "Settings", setStrings: "Strings", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
+    settingsTab: "Settings", setStrings: "Plants and sensors", setIntro: "Custom names replace the Home Assistant display names everywhere in the panel. The max. power (peak) replaces the measured maximum in \"Power\".",
     setName: "Display name", setPeak: "Max. power / peak (W)", setMeasured: "Measured", setTake: "use", setSave: "Save", setSaved: "Saved.",
     setError: "Saving failed", setAdmin: "Only administrators can change settings.", setPower: "Power sensor", setEnergy: "Energy sensor",
     setNone: "No production sensors configured.", setReset: "Reset",
@@ -203,6 +205,15 @@ const invertersOf = (settings, ids) => {
     const w = settings?.strings?.[id]?.inverter_w;
     if (!taken.has(id) && w > 0) out.push({ name: settings.strings[id].name || "", max_w: w, sensors: [id] });
   }
+  return out;
+};
+
+// plants of the system: every inverter with its sensors, plus every sensor without an inverter as a plant of its own.
+// The number of strings / MPPTs inside a plant does not matter: the plant is the unit of comparison.
+const plantsOf = (settings, ids) => {
+  const out = invertersOf(settings, ids).filter((p) => p.sensors.length);
+  const taken = new Set(out.flatMap((p) => p.sensors));
+  for (const id of ids) if (!taken.has(id)) out.push({ name: settings?.strings?.[id]?.name || "", max_w: 0, sensors: [id], implicit: true });
   return out;
 };
 
@@ -349,6 +360,7 @@ class PVAssistantPanel extends HTMLElement {
           .setgroup .gtitle { font-weight:600; }
           .setgroup .ggrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px 12px; }
           .setgroup .gfield { display:flex; flex-direction:column; gap:4px; color:var(--secondary-text-color); font-size:.9em; }
+          .invcards .setcard, .setgroups > .setcard { border-radius:16px; padding:14px 16px; margin:10px 0 0; }
           .invsensors { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
           .invsensor { display:flex; align-items:center; gap:8px; }
           .setgroup input[type="checkbox"] { width:auto; }
@@ -1753,6 +1765,7 @@ class PVAssistantPanel extends HTMLElement {
     const isAdmin = !!this._hass.user?.is_admin;
     const strings = this._cfg.settings?.strings || {};
     const inputs = []; // {id, name, peak, take}
+    const cards = new Map(); // sensor id -> its settings card (placed under its plant)
     const mk = (tag, attrs = {}, text) => {
       const n = document.createElement(tag);
       for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
@@ -1847,20 +1860,33 @@ class PVAssistantPanel extends HTMLElement {
         addBtn.addEventListener("click", () => addGroup(null));
         groups = groupRows;
       }
-      box.append(c);
+      cards.set(id, c);
       inputs.push({ id, name, peak, mppts, moduleWp, groups });
     };
     P.prod.forEach((id) => card(id, "setPower", true));
     E.prod.forEach((id) => card(id, "setEnergy", false));
 
-    // inverters: max. power and the power sensors (MPPT inputs) that belong to it
+    // plants (inverters): name, max. power and the power sensors (MPPT inputs, strings) that belong to it; the sensor cards sit inside their plant.
+    // A sensor without a plant counts as a plant of its own.
     const invBox = mk("div", { class: "setcard" });
     invBox.append(mk("h3", {}, this._t("invTitle")), mk("div", { class: "hint setgh" }, this._t("invHint")));
     const invList = mk("div", { class: "setgroups" });
     const invAdd = mk("button", { type: "button", class: "setbtn" }, this._t("invAdd"));
     invAdd.disabled = !isAdmin;
-    invBox.append(invList, invAdd);
+    const solo = mk("div", { class: "setgroups" });
+    const soloHead = mk("div", { class: "setsub" }, this._t("invSolo"));
+    const soloHint = mk("div", { class: "hint setgh" }, this._t("invSoloHint"));
+    invBox.append(invList, invAdd, soloHead, soloHint, solo);
     const invRows = [];
+    // puts every sensor card into the plant that has the sensor ticked (the first one wins), otherwise into the list of single plants
+    const layout = () => {
+      const owner = new Map();
+      for (const r of invRows) for (const b of r.boxes) if (b.cb.checked && !owner.has(b.sid)) owner.set(b.sid, r);
+      for (const r of invRows) r.sensorsBox.replaceChildren();
+      solo.replaceChildren();
+      for (const sid of P.prod) (owner.get(sid)?.sensorsBox || solo).append(cards.get(sid));
+      soloHead.hidden = soloHint.hidden = !solo.childElementCount;
+    };
     const sensorName = (sid) => strings[sid]?.name || this._hass.states[sid]?.attributes.friendly_name || sid;
     const addInverter = (inv) => {
       const el = mk("div", { class: "setgroup" });
@@ -1888,21 +1914,26 @@ class PVAssistantPanel extends HTMLElement {
         const cb = mk("input", { type: "checkbox" });
         cb.checked = !!inv?.sensors?.includes(sid);
         cb.disabled = !isAdmin;
+        cb.addEventListener("change", layout);
         l.append(cb, mk("span", {}, sensorName(sid)));
         list.append(l);
         return { sid, cb };
       });
-      const row = { el, title, nameIn, maxIn, boxes };
-      rm.addEventListener("click", () => { invRows.splice(invRows.indexOf(row), 1); el.remove(); renumberInv(); });
-      el.append(head, grid, list);
+      const sensorsBox = mk("div", { class: "invcards" });
+      const row = { el, title, nameIn, maxIn, boxes, sensorsBox };
+      rm.addEventListener("click", () => { invRows.splice(invRows.indexOf(row), 1); el.remove(); renumberInv(); layout(); });
+      el.append(head, grid, list, sensorsBox);
       invList.append(el);
       invRows.push(row);
       renumberInv();
+      layout();
     };
     const renumberInv = () => invRows.forEach((r, i) => { r.title.textContent = this._t("invTitleN").replace("{n}", String(i + 1)); });
     invertersOf(this._cfg.settings, P.prod).forEach(addInverter);
     invAdd.addEventListener("click", () => addInverter(null));
+    layout();
     if (P.prod.length) box.append(invBox);
+    E.prod.forEach((id) => box.append(cards.get(id)));
 
     // plant-wide numbers
     const general = this._cfg.settings?.general || {};
@@ -2135,73 +2166,95 @@ class PVAssistantPanel extends HTMLElement {
       for (const r of rows) if (r.change != null) { const day = key(r.start).day; actual.set(day, (actual.get(day) || 0) + r.change); }
     }
 
-    // hourly mean power per string: Map ts -> W
-    const series = P.prod.map((id) => {
+    // hourly mean power per power sensor: Map ts -> W
+    const strs = this._cfg.settings?.strings || {};
+    const sensors = P.prod.map((id) => {
       const m = new Map();
       for (const r of pres[id] || []) if (r.mean != null) m.set(r.start, Math.max(r.mean, 0));
-      return { id, name: this._read(id).name, peak: peakOf(id), m };
+      return { id, name: this._read(id).name, peak: peakOf(id), m, groups: groupsOf(strs[id]) };
     });
-    for (const s of series) s.kwh = [...s.m.values()].reduce((a, v) => a + v, 0) / 1000;
-    const peaked = series.filter((s) => s.peak);
+    for (const s of sensors) s.kwh = [...s.m.values()].reduce((a, v) => a + v, 0) / 1000;
+    // the unit of comparison is the plant (inverter): its sensors (MPPT inputs, strings) are summed; a sensor without an inverter is a plant of its own
+    const series = plantsOf(this._cfg.settings, P.prod).map((p) => {
+      const members = p.sensors.map((id) => sensors.find((s) => s.id === id)).filter(Boolean);
+      const m = new Map();
+      // only hours in which every sensor of the plant has data (a gap in one sensor would understate the plant)
+      for (const ts of members[0].m.keys()) if (members.every((s) => s.m.has(ts))) m.set(ts, members.reduce((a, s) => a + s.m.get(ts), 0));
+      return {
+        id: `plant:${p.sensors.join("+")}`, members, m,
+        name: p.name || (members.length === 1 ? members[0].name : members.map((s) => s.name).join(" + ")),
+        peak: members.every((s) => s.peak) ? members.reduce((a, s) => a + s.peak, 0) : null,
+        kwh: members.reduce((a, s) => a + s.kwh, 0),
+        groups: members.flatMap((s) => s.groups),
+      };
+    }).filter((s) => s.members.length);
 
-    // like-for-like: only hours in which every string with a peak has data
-    let common = null;
-    if (peaked.length) {
-      common = [...peaked[0].m.keys()].filter((ts) => peaked.every((s) => s.m.has(ts)));
-      for (const s of peaked) s.spec = common.reduce((a, ts) => a + s.m.get(ts), 0) / 1000 / (s.peak / 1000);
-    }
-    // expected yield of the orientation (azimuth / tilt from the settings); strings without it count as 1
     // plant location: own value from the settings, otherwise the Home Assistant home location
     const genSet = this._cfg.settings?.general || {};
     const lat = genSet.latitude || this._hass.config?.latitude, lon = genSet.longitude || this._hass.config?.longitude;
     const located = typeof lat === "number" && typeof lon === "number";
-    const refYield = located && common ? expectedYield(common, lat, lon, 0, 35) : 0;
-    for (const s of peaked) {
-      const o = this._cfg.settings?.strings?.[s.id];
-      const gs = groupsOf(o).filter((g) => g.azimuth != null && g.tilt != null);
-      const factorOf = (az, tl) => (refYield > 0 ? expectedYield(common, lat, lon, az, tl) / refYield : orientationFactor(az, tl));
-      // weighted mix of the module strings (by module count; equal weights if a count is missing)
-      const weights = gs.every((g) => g.modules > 0) ? gs.map((g) => g.modules) : gs.map(() => 1);
-      const wsum = weights.reduce((x, y) => x + y, 0);
-      // with the location: clear-sky irradiance on the plane over exactly the hours compared (follows the season of the range); without it: rough annual table
-      s.factor = gs.length ? gs.reduce((acc, g, i) => acc + weights[i] * factorOf(g.azimuth, g.tilt), 0) / wsum : null;
-      s.eff = s.spec / (s.factor || 1);
-    }
-    const usesOrient = peaked.some((s) => s.factor);
     const hints = [];
     const infoSet = new Set(); // hints shown as plain information (not as a warning)
-    let weak = new Set();
-    if (peaked.length >= 2 && common.length >= 24) {
-      const med = median(peaked.map((s) => s.eff));
-      for (const s of peaked) if (med > 0 && s.eff < med * 0.85) {
-        weak.add(s.id);
-        const top = peaked.reduce((a, x) => (x.eff > a.eff ? x : a), peaked[0]);
-        hints.push(this._t("anaWeakHint").replace(/\{name\}/g, s.name).replace("{rel}", String(Math.round((s.eff / top.eff) * 100))).replace("{best}", top.name)
-          .replace("{own}", num(s.spec)).replace("{top}", num(top.spec)).replace("{med}", num(median(peaked.map((x) => x.spec))))
-          + (usesOrient ? ` ${this._t("anaOrientUsed")}` : ""));
-        // improvement suggestion from the time of day in which the string falls behind
-        // sector of the sun (east / south / west) with the location, otherwise the time of day
-        const part = (ts) => {
-          if (located) { const { el, az } = sunPosition(ts + 1800e3, lat, lon); return el < 3 ? -1 : az < -20 ? 0 : az <= 20 ? 1 : 2; }
-          const h = key(ts).hour; return h <= 10 ? 0 : h <= 14 ? 1 : 2;
-        };
-        const sums = [[0, 0], [0, 0], [0, 0]];
-        for (const ts of common) {
-          const k = part(ts);
-          if (k < 0) continue;
-          sums[k][0] += s.m.get(ts) / s.peak / (s.factor || 1);
-          sums[k][1] += top.m.get(ts) / top.peak / (top.factor || 1);
-        }
-        const all = sums.reduce((x, [u]) => x + u, 0) / (sums.reduce((x, [, v]) => x + v, 0) || 1);
-        const ratios = sums.map(([u, v]) => (v > 0 ? u / v : null));
-        const low = ratios.findIndex((r) => r != null && r < all * 0.85);
-        let advice = this._t(low >= 0 ? ["anaAdvMorning", "anaAdvMidday", "anaAdvEvening"][low] : "anaAdvFlat");
-        if (!s.factor) advice += ` ${this._t("anaAdvOrient")}`;
-        const text = `${this._t("anaAdvPrefix").replace("{name}", s.name)} ${advice}`;
-        hints.push(text);
-        infoSet.add(text);
+    // Compares units (plants, or the sensors inside one plant) by kWh/kWp, corrected for the orientation of their module strings.
+    // Adds the hints for units that fall behind; plantLevel only selects the wording.
+    const compareUnits = (units, plantLevel) => {
+      const peaked = units.filter((s) => s.peak);
+      const weak = new Set();
+      // like-for-like: only hours in which every unit with a peak has data
+      let common = null;
+      if (peaked.length) {
+        common = [...peaked[0].m.keys()].filter((ts) => peaked.every((s) => s.m.has(ts)));
+        for (const s of peaked) s.spec = common.reduce((a, ts) => a + s.m.get(ts), 0) / 1000 / (s.peak / 1000);
       }
-    }
+      // expected yield of the orientation (azimuth / tilt of the module strings); units without it count as 1
+      const refYield = located && common ? expectedYield(common, lat, lon, 0, 35) : 0;
+      for (const s of peaked) {
+        const gs = s.groups.filter((g) => g.azimuth != null && g.tilt != null);
+        const factorOf = (az, tl) => (refYield > 0 ? expectedYield(common, lat, lon, az, tl) / refYield : orientationFactor(az, tl));
+        // weighted mix of the module strings (by module count; equal weights if a count is missing)
+        const weights = gs.every((g) => g.modules > 0) ? gs.map((g) => g.modules) : gs.map(() => 1);
+        const wsum = weights.reduce((x, y) => x + y, 0);
+        // with the location: clear-sky irradiance on the plane over exactly the hours compared (follows the season of the range); without it: rough annual table
+        s.factor = gs.length ? gs.reduce((acc, g, i) => acc + weights[i] * factorOf(g.azimuth, g.tilt), 0) / wsum : null;
+        s.eff = s.spec / (s.factor || 1);
+      }
+      const usesOrient = peaked.some((s) => s.factor);
+      if (peaked.length >= 2 && common.length >= 24) {
+        const med = median(peaked.map((s) => s.eff));
+        for (const s of peaked) if (med > 0 && s.eff < med * 0.85) {
+          weak.add(s.id);
+          const top = peaked.reduce((a, x) => (x.eff > a.eff ? x : a), peaked[0]);
+          hints.push(this._t(plantLevel ? "anaWeakPlantHint" : "anaWeakHint").replace(/\{name\}/g, s.name).replace("{rel}", String(Math.round((s.eff / top.eff) * 100))).replace("{best}", top.name)
+            .replace("{own}", num(s.spec)).replace("{top}", num(top.spec)).replace("{med}", num(median(peaked.map((x) => x.spec))))
+            + (usesOrient ? ` ${this._t("anaOrientUsed")}` : ""));
+          // improvement suggestion from the time of day in which the unit falls behind
+          // sector of the sun (east / south / west) with the location, otherwise the time of day
+          const part = (ts) => {
+            if (located) { const { el, az } = sunPosition(ts + 1800e3, lat, lon); return el < 3 ? -1 : az < -20 ? 0 : az <= 20 ? 1 : 2; }
+            const h = key(ts).hour; return h <= 10 ? 0 : h <= 14 ? 1 : 2;
+          };
+          const sums = [[0, 0], [0, 0], [0, 0]];
+          for (const ts of common) {
+            const k = part(ts);
+            if (k < 0) continue;
+            sums[k][0] += s.m.get(ts) / s.peak / (s.factor || 1);
+            sums[k][1] += top.m.get(ts) / top.peak / (top.factor || 1);
+          }
+          const all = sums.reduce((x, [u]) => x + u, 0) / (sums.reduce((x, [, v]) => x + v, 0) || 1);
+          const ratios = sums.map(([u, v]) => (v > 0 ? u / v : null));
+          const low = ratios.findIndex((r) => r != null && r < all * 0.85);
+          let advice = this._t(low >= 0 ? ["anaAdvMorning", "anaAdvMidday", "anaAdvEvening"][low] : "anaAdvFlat");
+          if (!s.factor) advice += ` ${this._t("anaAdvOrient")}`;
+          const text = `${this._t("anaAdvPrefix").replace("{name}", s.name)} ${advice}`;
+          hints.push(text);
+          infoSet.add(text);
+        }
+      }
+      return { peaked, common, weak, usesOrient };
+    };
+    const { peaked, common, weak } = compareUnits(series, true);
+    // inside a plant with several sensors the sensors are compared with each other (e.g. the two strings of one inverter)
+    for (const p of series) if (p.members.length > 1) compareUnits(p.members, false);
 
     // string cards
     const sorted = [...series].sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1) || b.kwh - a.kwh);
@@ -2220,7 +2273,7 @@ class PVAssistantPanel extends HTMLElement {
 
     // plant totals per local day and hour
     const total = new Map();
-    for (const s of series) for (const [ts, v] of s.m) total.set(ts, (total.get(ts) || 0) + v);
+    for (const s of sensors) for (const [ts, v] of s.m) total.set(ts, (total.get(ts) || 0) + v);
     const byDay = new Map();
     for (const [ts, w] of total) {
       const k = key(ts);
@@ -2270,11 +2323,9 @@ class PVAssistantPanel extends HTMLElement {
       return this._t("anaOverbuild").replace("{name}", name).replace("{peak}", this._fmt(peak)).replace("{pct}", String(ratio)).replace("{inv}", this._fmt(inv))
         + (ratio >= 130 ? this._t("anaOverbuildHigh") : ratio <= 100 ? this._t("anaOverbuildLow") : "");
     };
-    const strs = this._cfg.settings?.strings || {};
-    const seriesIds = series.map((x) => x.id);
-    const invs = invertersOf(this._cfg.settings, seriesIds);
+    const invs = invertersOf(this._cfg.settings, sensors.map((x) => x.id));
     for (const inv of invs) {
-      const members = series.filter((x) => inv.sensors.includes(x.id));
+      const members = sensors.filter((x) => inv.sensors.includes(x.id));
       if (!members.length || !(inv.max_w > 0)) continue;
       const invName = inv.name || members.map((x) => x.name).join(" + ");
       // clipping: the plant power of the inverter stays at its limit for hours
@@ -2289,7 +2340,7 @@ class PVAssistantPanel extends HTMLElement {
       const peak = members.reduce((acc, m) => acc + (strs[m.id]?.peak > 0 ? strs[m.id].peak : 0), 0);
       if (peak > 0) { const text = overbuildText(invName, peak, inv.max_w); hints.push(text); infoSet.add(text); }
     }
-    for (const s of series) {
+    for (const s of sensors) {
       const o = strs[s.id] || {};
       const inInv = invs.find((i) => i.sensors.includes(s.id));
       // an inverter with several sensors: every sensor is one MPPT input; module strings with different orientations on the same MPPT share one operating point
@@ -2319,7 +2370,7 @@ class PVAssistantPanel extends HTMLElement {
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio
     const tiles = [];
-    const powerTotal = series.reduce((a, s) => a + s.kwh, 0);
+    const powerTotal = sensors.reduce((a, s) => a + s.kwh, 0);
     // the total comes from the energy counters (same as the Energy dashboard); the power sum is the fallback
     const startDay = key(start.getTime()).day;
     const energyDays = [...actual].filter(([day]) => day >= startDay);
