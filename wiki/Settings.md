@@ -19,6 +19,7 @@ Energy sensors only have the display name. With orientation and tilt the string 
 ### Plant
 | Field | Meaning |
 |---|---|
+| Inverter max. power (W) | AC limit of the inverter; the analysis then recognises clipping at the limit and shows the oversizing (module peak vs. inverter) |
 | Storage capacity (kWh) | total capacity of the storage |
 | Minimum level (%) | lower discharge limit; usable capacity = capacity × (1 − minimum level), shown in the Storage tab. Cycles and "Usable now" use it |
 | Electricity price, feed-in tariff (€/kWh) | fixed fallback value. If a price sensor is chosen in the config flow the field shows its price and is locked |
@@ -47,6 +48,7 @@ Für Energiesensoren gibt es nur den Anzeigenamen. Mit Ausrichtung und Neigung w
 ### Anlage
 | Feld | Bedeutung |
 |---|---|
+| Wechselrichter max. Leistung (W) | AC-Grenze des Wechselrichters; die Analyse erkennt damit Begrenzung an der Grenze und zeigt die Überbauung (Modul-Peak gegenüber Wechselrichter) |
 | Speicherkapazität (kWh) | Gesamtkapazität des Speichers |
 | Mindest-Ladestand (%) | untere Entladegrenze; nutzbare Kapazität = Kapazität × (1 − Mindest-Ladestand), angezeigt im Tab „Speicher“. Zyklen und „Nutzbar jetzt“ rechnen damit |
 | Strompreis Netzbezug, Einspeisevergütung (€/kWh) | fester Ersatzwert. Ist im Config Flow ein Preis-Sensor gewählt, zeigt das Feld dessen Preis und ist gesperrt |

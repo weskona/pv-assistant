@@ -82,6 +82,7 @@ def _as_list(value) -> list[str]:
             vol.Optional("battery_min_soc"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
             vol.Optional("price_import"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
             vol.Optional("price_feed_in"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+            vol.Optional("inverter_max_w"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000000)),
             vol.Optional("system_cost_eur"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000000)),
             vol.Optional("co2_g_per_kwh"): vol.All(vol.Coerce(float), vol.Range(min=0, max=2000)),
             # plant location, overrides the Home Assistant home location (0 / empty = use Home Assistant)
