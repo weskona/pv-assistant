@@ -1,7 +1,14 @@
 // the helper modules are loaded with the same ?v=<version> as this file, so an update never mixes new and cached modules
 const version = new URL(import.meta.url).search;
-const { lineChart, barChart, categoryBarChart } = await import(`./pv-assistant-charts.js${version}`);
-const { localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } = await import(`./pv-assistant-analysis.js${version}`);
+// both modules load in parallel (one round trip instead of two in a row before the panel can start)
+const [{ lineChart, barChart, categoryBarChart }, { localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition }] = await Promise.all([
+  import(`./pv-assistant-charts.js${version}`),
+  import(`./pv-assistant-analysis.js${version}`),
+]);
+// timing log for the browser console: localStorage.setItem("pv_assistant_debug", "1") and reload
+const DBG = (() => { try { return localStorage.getItem("pv_assistant_debug") === "1"; } catch (e) { return false; } })();
+const dbg = (...a) => { if (DBG) console.info(`[pv-assistant ${Math.round(performance.now())} ms]`, ...a); };
+dbg("modules loaded");
 
 const T = {
   de: {
@@ -431,11 +438,14 @@ class PVAssistantPanel extends HTMLElement {
 
   async _load() {
     if (!this._hass) { this._wantLoad = true; return; }
+    dbg("load: waiting for the configuration");
     try {
       this._cfg = await this._hass.callWS({ type: "pv_assistant/config" });
     } catch (e) {
       this._cfg = {};
+      dbg("configuration failed", e);
     }
+    dbg("configuration received, building tabs");
     this._last = null;
     this._buildHistory();
     this._buildYears();
@@ -446,6 +456,7 @@ class PVAssistantPanel extends HTMLElement {
     this._flowBuilt = false;
     this._buildTabs();
     this._render();
+    dbg("first render done");
     this._loadHistory();
     // the long-term queries (years, peak power) start when their tab is opened (see _showTab), not at
     // startup: on a large database they take seconds and delayed the chart that is visible first
@@ -729,7 +740,9 @@ class PVAssistantPanel extends HTMLElement {
     ]);
     if (token !== this._token) return; // a newer range was requested meanwhile
     this._data = { rd, P, E, G, pres, eres, filt, hres, dres };
+    dbg("history data received", rd.days, "day(s)");
     this._draw();
+    dbg("history drawn");
   }
 
   _draw() {
