@@ -187,3 +187,98 @@ export function expectedYield(timestamps, lat, lon, azimuth, tilt) {
   }
   return sum;
 }
+
+/**
+ * Clear-sky irradiance (W/m2) on a plant at an hour start (ms): mean over its module strings, weighted by
+ * module count (equal weights if a count is missing). groups: [{azimuth, tilt, modules}] with azimuth and tilt set.
+ */
+export function plantIrradiance(ts, lat, lon, groups) {
+  const { el, az } = sunPosition(ts + 1800e3, lat, lon);
+  const weights = groups.every((g) => g.modules > 0) ? groups.map((g) => g.modules) : groups.map(() => 1);
+  const wsum = weights.reduce((a, b) => a + b, 0);
+  return groups.reduce((acc, g, i) => acc + (weights[i] / wsum) * planeIrradiance(el, az, g.azimuth, g.tilt), 0);
+}
+
+/**
+ * Estimate of the energy lost because an inverter limits at maxW. On a day with at least 3 hours at the limit the
+ * unclipped hours calibrate how much power the plant makes per W/m2 of clear-sky irradiance; the clipped hours are then
+ * compared with what that calibration says they could have made. m: Map(hour start ms -> W of the plant),
+ * key: ts -> {day, hour}. Returns { kwh, days } (a rough estimate, clouds on a limited day are rare but possible).
+ */
+export function estimateClipped(m, maxW, groups, lat, lon, key) {
+  const byDay = new Map();
+  for (const [ts, w] of m) {
+    const day = key(ts).day;
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push([ts, w]);
+  }
+  let lost = 0, days = 0;
+  for (const hours of byDay.values()) {
+    const clipped = hours.filter(([, w]) => w >= maxW * 0.9);
+    if (clipped.length < 3) continue;
+    const ratios = [];
+    for (const [ts, w] of hours) {
+      const g = plantIrradiance(ts, lat, lon, groups);
+      if (g > 250 && w > 0 && w < maxW * 0.85) ratios.push(w / g);
+    }
+    if (ratios.length < 3) continue;
+    const k = median(ratios);
+    let dayLost = 0;
+    for (const [ts, w] of clipped) dayLost += Math.max(0, k * plantIrradiance(ts, lat, lon, groups) - w);
+    if (dayLost > 0) { lost += dayLost; days++; }
+  }
+  return { kwh: lost / 1000, days };
+}
+
+/**
+ * Shading profile of a plant: for every hour of the day the typical yield relative to the plant's own clear-sky curve
+ * (100 % = the best 10 % of the plant, 90th percentile of power / clear-sky irradiance). Hours at the inverter limit and hours
+ * with little sun are ignored. Returns { profile: [{hour, pct, az, n}], typical } (hours with at least 6 samples, local hours,
+ * az = mean sun azimuth like Forecast.Solar) or null when there is too little data. m: Map(hour start ms -> W).
+ */
+export function shadingProfile(m, maxW, groups, lat, lon, key) {
+  const samples = [];
+  const clippedAt = new Map(); // hour of the day -> hours at the inverter limit
+  for (const [ts, w] of m) {
+    const g = plantIrradiance(ts, lat, lon, groups);
+    if (g < 200) continue;
+    const hour = key(ts).hour;
+    if (maxW > 0 && w >= maxW * 0.85) { clippedAt.set(hour, (clippedAt.get(hour) || 0) + 1); continue; }
+    samples.push({ hour, ratio: w / g, az: sunPosition(ts + 1800e3, lat, lon).az });
+  }
+  if (samples.length < 40) return null;
+  const sorted = samples.map((x) => x.ratio).sort((a, b) => a - b);
+  const best = sorted[Math.floor(sorted.length * 0.9)];
+  if (!(best > 0)) return null;
+  const perHour = new Map();
+  for (const x of samples) {
+    if (!perHour.has(x.hour)) perHour.set(x.hour, []);
+    perHour.get(x.hour).push(x);
+  }
+  // an hour in which the inverter often limits is left out: only the cloudy days would remain there and look like a dip
+  const unbiased = (h) => (clippedAt.get(h) || 0) <= perHour.get(h).length / 3;
+  const profile = [...perHour.keys()].sort((a, b) => a - b).filter((h) => perHour.get(h).length >= 6 && unbiased(h)).map((h) => {
+    const list = perHour.get(h);
+    return { hour: h, pct: median(list.map((x) => x.ratio / best)) * 100, az: list.reduce((a, x) => a + x.az, 0) / list.length, n: list.length };
+  });
+  if (profile.length < 5) return null;
+  return { profile, typical: median(profile.map((x) => x.pct)) };
+}
+
+/**
+ * Possible shading: hours of the day in which a plant keeps clearly below its own clear-sky shape on many days (see
+ * shadingProfile). Only interior hours count, the first and last hours of a day are too uncertain.
+ * Returns [{from, to, az}] (local hours, sun azimuth like Forecast.Solar).
+ */
+export function shadingDips(m, maxW, groups, lat, lon, key) {
+  const sp = shadingProfile(m, maxW, groups, lat, lon, key);
+  if (!sp) return [];
+  const dips = sp.profile.slice(1, -1).filter((x) => x.pct < sp.typical * 0.7);
+  const out = [];
+  for (const x of dips) {
+    const last = out.at(-1);
+    if (last && x.hour === last.to + 1) { last.to = x.hour; last.az = (last.az + x.az) / 2; }
+    else out.push({ from: x.hour, to: x.hour, az: x.az });
+  }
+  return out;
+}

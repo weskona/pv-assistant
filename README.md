@@ -36,11 +36,14 @@ Home Assistant integration with its own sidebar panel for the PV energy flow: pr
 |---|---|
 | Now | live energy flow diagram (solar, home, grid, storage), current values and sums of all sensors and the forecast |
 | Power | power per string against its peak, whole plant, power chart per string |
-| Analysis | plant comparison (kWh/kWp per inverter, corrected for orientation and tilt, with suggestions), heat map, best and weakest days, power plateaus, performance ratio |
+| Plants | table of the plants, typical day, power duration curve with the inverter limit, yield by time of day (shading), yield per month, heat map month × hour |
+| Analysis | plant comparison (kWh/kWp per inverter, corrected for orientation and tilt, with suggestions), yield per plant and month, estimated curtailment, possible shading, heat map, best and weakest days, power plateaus, performance ratio |
 | History | power, effective power and energy charts for today up to 12 months, key figures such as autarky, self-consumption, savings, CO₂ |
-| Storage | level, storage power, charged and discharged energy, efficiency, cycles, usable capacity |
-| Forecast | forecast vs actual per day or month, deviation, hit rate |
-| Yearly overview | monthly production against the average, year forecast, benefit, payback, trend |
+| Balance | use of the PV production and coverage of the consumption as stacked bars, self-sufficiency and self-consumption per day or month |
+| Storage | level, storage power, charged and discharged energy, efficiency, storage benefit and losses, cycles, usable capacity |
+| Forecast | forecast vs actual per day or month, deviation, hit rate, best time for large consumers, quality by forecast size |
+| Economics | benefit per month, cumulative benefit against the plant cost with payback date, storage benefit |
+| Yearly overview | monthly production against the average, year forecast, change against last year, benefit, payback, trend, hint on degradation |
 | Settings | plants (inverters) with their sensors; display names, peak, MPPTs and module strings (modules, orientation, tilt) per sensor, plant values (capacity, minimum level, prices, cost, CO₂ factor, location) |
 
 The data comes from the long-term statistics of Home Assistant (recorder); the sensors therefore need a `state_class`. The integration also creates filtered copies of the energy sensors (`… filtered`, ignore short drops, usable as `utility_meter` source) and a binary sensor `binary_sensor.pv_assistant_string_fault` ("String fault") that reports a string delivering almost nothing while the others produce. Settings are stored in `.storage/pv_assistant.settings` and apply to all devices; only administrators can save.
@@ -73,11 +76,14 @@ Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: E
 |---|---|
 | Aktuell | Live-Energiefluss (PV, Haus, Netz, Speicher), aktuelle Werte und Summen aller Sensoren und der Prognose |
 | Leistung | Leistung je String im Verhältnis zum Peak, Gesamtanlage, Leistungsdiagramm je String |
-| Analyse | Anlagen-Vergleich (kWh/kWp je Wechselrichter, bereinigt um Ausrichtung und Neigung, mit Vorschlägen), Heatmap, beste und schwächste Tage, Leistungs-Plateaus, Performance Ratio |
+| Anlagen | Tabelle der Anlagen, typischer Tag, Leistungsdauerlinie mit Wechselrichter-Grenze, Ertrag nach Uhrzeit (Verschattung), Ertrag je Monat, Heatmap Monat × Stunde |
+| Analyse | Anlagen-Vergleich (kWh/kWp je Wechselrichter, bereinigt um Ausrichtung und Neigung, mit Vorschlägen), Ertrag je Anlage und Monat, geschätzte Abregelung, mögliche Verschattung, Heatmap, beste und schwächste Tage, Leistungs-Plateaus, Performance Ratio |
 | Verlauf | Leistungs-, Effektivleistungs- und Energiediagramme von heute bis 12 Monate, Kennzahlen wie Autarkie, Eigenverbrauch, Ersparnis, CO₂ |
-| Speicher | Ladestand, Speicherleistung, geladene und entladene Energie, Wirkungsgrad, Zyklen, nutzbare Kapazität |
-| Prognose | Prognose gegen Ist je Tag oder Monat, Abweichung, Trefferquote |
-| Jahresübersicht | Monatserzeugung gegen den Schnitt, Jahresprognose, Nutzen, Amortisation, Trend |
+| Energiebilanz | Verwendung der PV-Erzeugung und Deckung des Verbrauchs als gestapelte Balken, Autarkie und Eigenverbrauch je Tag oder Monat |
+| Speicher | Ladestand, Speicherleistung, geladene und entladene Energie, Wirkungsgrad, Speicher-Nutzen und -Verluste, Zyklen, nutzbare Kapazität |
+| Prognose | Prognose gegen Ist je Tag oder Monat, Abweichung, Trefferquote, beste Zeit für Großverbraucher, Güte nach Prognosegröße |
+| Wirtschaft | Nutzen je Monat, kumulierter Nutzen gegen die Anlagenkosten mit Amortisationsdatum, Speicher-Nutzen |
+| Jahresübersicht | Monatserzeugung gegen den Schnitt, Jahresprognose, Veränderung zum Vorjahr, Nutzen, Amortisation, Trend, Hinweis auf Degradation |
 | Einstellungen | Anlagen (Wechselrichter) mit ihren Sensoren; Anzeigenamen, Peak, MPPTs und Modulstränge (Module, Ausrichtung, Neigung) je Sensor, Anlagenwerte (Kapazität, Mindest-Ladestand, Preise, Kosten, CO₂-Faktor, Standort) |
 
 Die Daten kommen aus den Langzeitstatistiken von Home Assistant (Recorder); die Sensoren brauchen daher eine `state_class`. Die Integration legt außerdem bereinigte Kopien der Energiesensoren an (`… bereinigt`, ignorieren kurze Abstürze, als Quelle für `utility_meter` nutzbar) und einen Binärsensor `binary_sensor.pv_assistant_string_fault` („String-Störung“), der meldet, wenn ein String fast nichts liefert, während die anderen erzeugen. Die Einstellungen liegen in `.storage/pv_assistant.settings` und gelten für alle Geräte; nur Administratoren dürfen speichern.

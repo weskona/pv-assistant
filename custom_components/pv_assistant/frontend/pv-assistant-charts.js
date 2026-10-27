@@ -303,7 +303,8 @@ export function barChart(container, opts) {
 /**
  * Bars per category (e.g. months); values may be negative or null.
  * opts: { categories:[str], series:[{name,color,values:[v|null],colorOf?(v)->cssvar}],
- *         legendItems?:[{name,color}], fmtValue, label, empty, tableLabels, height }
+ *         legendItems?:[{name,color}], fmtValue, label, empty, tableLabels, height,
+ *         stacked? (one bar per category, the series on top of each other; positive values up, negative down) }
  */
 export function categoryBarChart(container, opts) {
   const { categories, series, height = 240, fmtValue } = opts;
@@ -313,12 +314,16 @@ export function categoryBarChart(container, opts) {
   if (!all.length) { container.append(html("p", "empty", opts.empty)); return; }
   const W = Math.max(280, container.clientWidth || 600), H = height;
   const pw = W - M.l - M.r, ph = H - M.t - M.b;
-  const ticks = niceTicks(Math.min(0, ...all), Math.max(0, ...all));
+  const stacked = !!opts.stacked;
+  // stacked: the axis has to fit the sums of the positive and of the negative values per category
+  const stackSum = (i, sign) => series.reduce((a, s) => { const v = s.values[i]; return v != null && v * sign > 0 ? a + v : a; }, 0);
+  const lows = stacked ? categories.map((_, i) => stackSum(i, -1)) : all, highs = stacked ? categories.map((_, i) => stackSum(i, 1)) : all;
+  const ticks = niceTicks(Math.min(0, ...lows), Math.max(0, ...highs));
   const lo = ticks[0], hi = ticks.at(-1);
   const y = (v) => M.t + (1 - (v - lo) / (hi - lo)) * ph;
   const slot = pw / categories.length;
-  const gap = 2, n = series.length;
-  const barW = Math.max(2, Math.min(28, (slot - 6 - gap * (n - 1)) / n));
+  const gap = 2, n = stacked ? 1 : series.length;
+  const barW = Math.max(2, Math.min(stacked ? 40 : 28, (slot - 6 - gap * (n - 1)) / n));
   const groupW = barW * n + gap * (n - 1);
 
   const wrap = html("div", "chartwrap");
@@ -327,14 +332,24 @@ export function categoryBarChart(container, opts) {
     svg.append(el("line", { x1: M.l, x2: M.l + pw, y1: y(v), y2: y(v), class: v === 0 ? "axis" : "grid" }));
     svg.append(el("text", { x: M.l - 6, y: y(v) + 4, class: "tick", "text-anchor": "end" }, fmtValue(v, true)));
   }
-  categories.forEach((c, i) => svg.append(el("text", { x: M.l + slot * (i + 0.5), y: H - 6, class: "tick", "text-anchor": "middle" }, c)));
+  // with many narrow categories (e.g. a month of days) only every n-th label is written, otherwise they run into each other
+  const every = Math.max(1, Math.ceil(36 / slot));
+  categories.forEach((c, i) => { if (i % every === 0) svg.append(el("text", { x: M.l + slot * (i + 0.5), y: H - 6, class: "tick", "text-anchor": "middle" }, c)); });
   const wash = el("rect", { y: M.t, height: ph, width: slot, class: "wash", visibility: "hidden" });
   svg.append(wash);
   const r = Math.min(4, barW / 2);
   categories.forEach((_, i) => {
+    let stackUp = 0, stackDown = 0; // running top of the positive and bottom of the negative stack
     series.forEach((s, k) => {
       const v = s.values[i];
       if (v == null || v === 0) return;
+      if (stacked) {
+        const from = v > 0 ? stackUp : stackDown, to = from + v;
+        if (v > 0) stackUp = to; else stackDown = to;
+        const bx = M.l + slot * i + (slot - barW) / 2;
+        svg.append(el("rect", { x: bx, y: Math.min(y(from), y(to)), width: barW, height: Math.max(1, Math.abs(y(from) - y(to))), fill: `var(${s.colorOf ? s.colorOf(v) : s.color})` }));
+        return;
+      }
       const bx = M.l + slot * i + (slot - groupW) / 2 + k * (barW + gap);
       const base = y(0), end = y(v), up = v > 0;
       const h = Math.max(1, Math.abs(base - end)), rr = Math.min(r, h);
