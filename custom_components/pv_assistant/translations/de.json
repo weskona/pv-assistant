@@ -147,6 +147,41 @@
       "string_fault": {
         "name": "Anlagen-Störung"
       }
+    },
+    "sensor": {
+      "pv_power": {
+        "name": "PV-Leistung"
+      },
+      "pv_effective_power": {
+        "name": "PV effektive Leistung"
+      },
+      "storage_usable": {
+        "name": "Speicher nutzbare Energie"
+      },
+      "production_today": {
+        "name": "Erzeugung heute"
+      },
+      "feed_in_today": {
+        "name": "Einspeisung heute"
+      },
+      "self_consumption_rate_today": {
+        "name": "Eigenverbrauchsquote heute"
+      },
+      "autarky_today": {
+        "name": "Autarkie heute"
+      },
+      "savings_today": {
+        "name": "Ersparnis heute"
+      },
+      "feed_in_revenue_today": {
+        "name": "Einspeiseerlös heute"
+      },
+      "benefit_today": {
+        "name": "Nutzen heute"
+      },
+      "forecast_reached_today": {
+        "name": "Prognose erreicht heute"
+      }
     }
   }
 }

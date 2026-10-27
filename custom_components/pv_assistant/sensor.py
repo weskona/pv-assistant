@@ -23,6 +23,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
+from .calc import async_setup_calc
 from .const import (
     CONF_FEED_IN_ENERGY,
     CONF_PRODUCTION_ENERGY,
@@ -65,6 +66,7 @@ async def async_setup_entry(
     async_add_entities(
         FilteredEnergySensor(entry, src, minutes) for src in source_entity_ids(dict(entry.data))
     )
+    await async_setup_calc(hass, entry, async_add_entities)
 
 
 def _number(state: State | None) -> float | None:

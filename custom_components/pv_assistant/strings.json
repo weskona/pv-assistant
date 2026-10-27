@@ -147,6 +147,41 @@
       "string_fault": {
         "name": "Plant fault"
       }
+    },
+    "sensor": {
+      "pv_power": {
+        "name": "PV power"
+      },
+      "pv_effective_power": {
+        "name": "PV effective power"
+      },
+      "storage_usable": {
+        "name": "Storage usable energy"
+      },
+      "production_today": {
+        "name": "Production today"
+      },
+      "feed_in_today": {
+        "name": "Feed-in today"
+      },
+      "self_consumption_rate_today": {
+        "name": "Self-consumption rate today"
+      },
+      "autarky_today": {
+        "name": "Self-sufficiency today"
+      },
+      "savings_today": {
+        "name": "Savings today"
+      },
+      "feed_in_revenue_today": {
+        "name": "Feed-in revenue today"
+      },
+      "benefit_today": {
+        "name": "Benefit today"
+      },
+      "forecast_reached_today": {
+        "name": "Forecast reached today"
+      }
     }
   }
 }
