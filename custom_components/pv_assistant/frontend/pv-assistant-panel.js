@@ -59,7 +59,7 @@ const T = {
     stoUsable: "Nutzbare Kapazität", stoUsableNow: "Nutzbar jetzt",
     genLat: "Breitengrad (optional)", genLon: "Längengrad (optional)",
         invTitle: "Anlagen (Wechselrichter)", invHint: "Eine Anlage ist ein Wechselrichter mit allen Strings und MPPT-Eingängen, die an ihm hängen. Lege jede Anlage an und wähle die Leistungssensoren, die zu ihr gehören; ihre Strings und MPPTs stehen darunter. Analyse und Störungssensor vergleichen die Anlagen untereinander (Summe je Anlage). Hat die Anlage eine Wechselrichter-Grenze, trage sie bei der Max. Leistung ein; sie gilt für die Summe der Sensoren.", invTitleN: "Anlage {n}", invName: "Name", invMax: "Max. Leistung des Wechselrichters (W)", invSensors: "Zugehörige Leistungssensoren", invAdd: "Anlage hinzufügen", invCount: "{n} Sensor(en)", invSolo: "Einzelne Anlagen", invSoloHint: "Sensoren ohne Anlage oben zählen jeweils als eigene Anlage.",
-    setGroups: "Modulstränge", setGroupsHint: "Ein Modulstrang sind Module mit gleicher Ausrichtung und Neigung in Reihe. Trage je Strang Modulzahl, Ausrichtung (Süd = 0°, Ost = −90°, West = 90°), Neigung (0° = flach, 90° = senkrecht) und die Nummer des MPPTs ein, an dem er hängt. Leere Zeilen werden ignoriert.", gTitle: "Modulstrang {n}", gAdd: "Modulstrang hinzufügen", gRemove: "Entfernen", gModules: "Module", gAz: "Azimut (°)", gTilt: "Neigung (°)", gMppt: "MPPT Nr.",
+    setGroups: "Modulstränge", setGroupsHint: "Ein Modulstrang sind Module mit gleicher Ausrichtung und Neigung in Reihe. Trage je Strang Modulzahl, Ausrichtung als Kompasswert wie in der Kompass-App des Handys (Nord = 0°, Ost = 90°, Süd = 180°, West = 270°; du kannst auch auf den Kompass klicken), Neigung (0° = flach, 90° = senkrecht) und die Nummer des MPPTs ein, an dem er hängt. Leere Zeilen werden ignoriert.", gTitle: "Modulstrang {n}", gAdd: "Modulstrang hinzufügen", gRemove: "Entfernen", gModules: "Module", gAz: "Ausrichtung (Kompass °)", gAzEmpty: "Richtung wählen oder Grad eingeben", gTilt: "Neigung (°)", gMppt: "MPPT Nr.",
     setModuleWp: "Leistung pro Modul (Wp)", setModulesHint: "Mit den Modulzahlen der Modulstränge und der Modulleistung wird der Peak automatisch berechnet (Module × Wp) und das Feld Max. Leistung gesperrt.",
     setMppts: "Anzahl MPPTs", setMpptsHint: "Nur nötig, wenn dieser Sensor mehrere MPPT-Eingänge zusammenfasst (z. B. 4 bei einem Balkonkraftwerk mit Summensensor). Hängt jeder MPPT an einem eigenen Sensor, leer lassen. Jeder MPPT regelt seine Modulstränge unabhängig; an einem MPPT sollten Stränge gleich ausgerichtet sein.",
         anaFactor: "Ausrichtung erwartet {pct} %", anaOrientUsed: "Die Ausrichtung der Strings ist berücksichtigt (Richtwerte für Mitteleuropa).",
@@ -101,6 +101,7 @@ const T = {
     anaCurtailTile: "Abgeregelt (geschätzt)",
     anaShade: "{name}: Gegen {from} bis {to} Uhr (Sonne im {dir}) liegt der Ertrag an vielen Tagen deutlich unter dem Rest des Tages. Mögliche Verschattung, zum Beispiel durch ein Gebäude, einen Baum oder einen Schornstein.",
     compass: ["Süden", "Südwesten", "Westen", "Nordwesten", "Norden", "Nordosten", "Osten", "Südosten"],
+    compass8: ["Nord", "Nordost", "Ost", "Südost", "Süd", "Südwest", "West", "Nordwest"], compassLetters: ["N", "O", "S", "W"],
     anaMonthly: "Ertrag je Anlage und Monat (kWh/kWp)",
     anaMonthWeak: "{name} liegt im {months} deutlich unter den anderen Anlagen (bis {pct} % des Mittels, bereinigt um die Ausrichtung). Das kann saisonale Verschattung oder ein Defekt sein.",
     yearYoY: "Gegenüber Vorjahr (gleiche Monate)", yearTrend: "Ø Veränderung pro Jahr",
@@ -168,7 +169,7 @@ const T = {
     stoUsable: "Usable capacity", stoUsableNow: "Usable now",
     genLat: "Latitude (optional)", genLon: "Longitude (optional)",
         invTitle: "Plants (inverters)", invHint: "A plant is one inverter with all strings and MPPT inputs connected to it. Add every plant and choose the power sensors that belong to it; their strings and MPPTs are listed below. The analysis and the fault sensor compare the plants with each other (sum per plant). If the plant has an inverter limit, enter it as the max. power; it applies to the sum of the sensors.", invTitleN: "Plant {n}", invName: "Name", invMax: "Inverter max. power (W)", invSensors: "Power sensors of this plant", invAdd: "Add plant", invCount: "{n} sensor(s)", invSolo: "Single plants", invSoloHint: "Sensors that are not part of a plant above each count as a plant of their own.",
-    setGroups: "Module strings", setGroupsHint: "A module string is modules in series with the same orientation and tilt. For each string enter the module count, orientation (south = 0°, east = −90°, west = 90°), tilt (0° = flat, 90° = vertical) and the number of the MPPT it is connected to. Empty rows are ignored.", gTitle: "Module string {n}", gAdd: "Add module string", gRemove: "Remove", gModules: "Modules", gAz: "Azimuth (°)", gTilt: "Tilt (°)", gMppt: "MPPT no.",
+    setGroups: "Module strings", setGroupsHint: "A module string is modules in series with the same orientation and tilt. For each string enter the module count, orientation as a compass bearing like in the compass app of a phone (north = 0°, east = 90°, south = 180°, west = 270°; you can also click on the compass), tilt (0° = flat, 90° = vertical) and the number of the MPPT it is connected to. Empty rows are ignored.", gTitle: "Module string {n}", gAdd: "Add module string", gRemove: "Remove", gModules: "Modules", gAz: "Orientation (compass °)", gAzEmpty: "pick a direction or enter degrees", gTilt: "Tilt (°)", gMppt: "MPPT no.",
     setModuleWp: "Power per module (Wp)", setModulesHint: "With the module counts of the strings and the module power the peak is calculated automatically (modules × Wp) and the max. power field is locked.",
     setMppts: "Number of MPPTs", setMpptsHint: "Only needed if this sensor combines several MPPT inputs (e.g. 4 for a balcony plant with a sum sensor). If every MPPT has its own sensor, leave empty. Each MPPT tracks its module strings independently; strings on one MPPT should face the same way.",
         anaFactor: "orientation expects {pct} %", anaOrientUsed: "The orientation of the strings is taken into account (rough values for central Europe).",
@@ -210,6 +211,7 @@ const T = {
     anaCurtailTile: "Curtailed (estimated)",
     anaShade: "{name}: around {from} to {to} o'clock (sun in the {dir}) the yield is clearly below the rest of the day on many days. Possible shading, for example by a building, a tree or a chimney.",
     compass: ["south", "south-west", "west", "north-west", "north", "north-east", "east", "south-east"],
+    compass8: ["North", "North-east", "East", "South-east", "South", "South-west", "West", "North-west"], compassLetters: ["N", "E", "S", "W"],
     anaMonthly: "Yield per plant and month (kWh/kWp)",
     anaMonthWeak: "{name} is clearly below the other plants in {months} (down to {pct} % of the mean, corrected for orientation). That can be seasonal shading or a defect.",
     yearYoY: "Versus last year (same months)", yearTrend: "Avg. change per year",
@@ -462,6 +464,14 @@ class PVAssistantPanel extends HTMLElement {
           details.setcard[open] > summary::before, details.plant[open] > summary::before { content:"▾"; }
           details.setcard[open] > summary, details.plant[open] > summary { margin-bottom:10px; }
           details.plant { padding:8px 14px; margin:6px 0; }
+          .gcompass { grid-column:span 2; }
+          .compassrow { display:flex; align-items:center; gap:12px; }
+          .compassval { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
+          .compass { flex:none; cursor:pointer; touch-action:none; }
+          .compass .ring { fill:var(--secondary-background-color); stroke:var(--g-tileb); stroke-width:1.5; }
+          .compass .tickl { font-size:9px; fill:var(--secondary-text-color); text-anchor:middle; pointer-events:none; }
+          .compass .needle line { stroke:var(--pva-prod); stroke-width:3; stroke-linecap:round; }
+          .compass .needle polygon { fill:var(--pva-prod); }
           .invsensors { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
           .invsensor { display:flex; align-items:center; gap:8px; }
           .setgroup input[type="checkbox"] { width:auto; }
@@ -2205,7 +2215,54 @@ class PVAssistantPanel extends HTMLElement {
             grid.append(w);
             return input;
           };
-          const row = { el, title, m: field("modules", "gModules", 0, 10000, 1), a: field("azimuth", "gAz", -180, 180, 5, true), t: field("tilt", "gTilt", 0, 90, 5, true), p: field("mppt", "gMppt", 0, 64, 1) };
+          // orientation as a compass bearing (phone compass: north = 0, east = 90, south = 180, west = 270); the settings keep the
+          // azimuth like Forecast.Solar (south = 0, east = -90, west = 90), the widget converts in both directions
+          const compassField = () => {
+            const toHeading = (az) => ((Math.round(az) + 180) % 360 + 360) % 360;
+            const toAzimuth = (h) => ((h - 180 + 540) % 360) - 180;
+            const w = mk("div", { class: "gfield gcompass" });
+            w.append(mk("span", {}, this._t("gAz")));
+            const box = mk("div", { class: "compassrow" });
+            const NS = "http://www.w3.org/2000/svg";
+            const svgNode = (tag, attrs = {}, text) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text !== undefined) n.textContent = text; return n; };
+            const svg = svgNode("svg", { viewBox: "-40 -40 80 80", width: "76", height: "76", class: "compass", role: "img", "aria-label": this._t("gAz") });
+            svg.append(svgNode("circle", { r: "34", class: "ring" }));
+            const letters = this._t("compassLetters");
+            letters.forEach((l, i) => svg.append(svgNode("text", { x: String([0, 26, 0, -26][i]), y: String([-24, 3, 31, 3][i]), class: "tickl" }, l)));
+            const needle = svgNode("g", { class: "needle" });
+            needle.append(svgNode("line", { x1: "0", y1: "8", x2: "0", y2: "-18" }), svgNode("polygon", { points: "0,-27 -6,-15 6,-15" }));
+            svg.append(needle);
+            const input = mk("input", { type: "number", min: "0", max: "360", step: "1", inputmode: "decimal", placeholder: "°" });
+            const label = mk("div", { class: "hint" });
+            input.disabled = !isAdmin;
+            input.value = g && g.azimuth != null ? String(toHeading(g.azimuth)) : "";
+            const refresh = () => {
+              const h = parseFloat(input.value.replace(",", "."));
+              needle.style.display = Number.isNaN(h) ? "none" : "";
+              needle.setAttribute("transform", `rotate(${Number.isNaN(h) ? 0 : h})`);
+              label.textContent = Number.isNaN(h) ? this._t("gAzEmpty") : `${this._t("compass8")[Math.round((((h % 360) + 360) % 360) / 45) % 8]} (${Math.round(h)}°)`;
+            };
+            const pick = (ev) => {
+              const r = svg.getBoundingClientRect();
+              const dx = ev.clientX - (r.left + r.width / 2), dy = ev.clientY - (r.top + r.height / 2);
+              if (!dx && !dy) return;
+              input.value = String(Math.round(((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360) % 360); // 0 = north (up), clockwise
+              refresh();
+            };
+            if (isAdmin) {
+              svg.addEventListener("pointerdown", (ev) => { try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* no active pointer (synthetic event): picking still works */ } pick(ev); });
+              svg.addEventListener("pointermove", (ev) => { if (ev.buttons) pick(ev); });
+            }
+            input.addEventListener("input", refresh);
+            refresh();
+            box.append(svg, mk("div", { class: "compassval" }));
+            box.lastChild.append(input, label);
+            w.append(box);
+            grid.append(w);
+            // read like the other fields: the azimuth as text, empty when no bearing is entered
+            return { get value() { const h = parseFloat(input.value.replace(",", ".")); return Number.isNaN(h) ? "" : String(toAzimuth(((h % 360) + 360) % 360)); } };
+          };
+          const row = { el, title, m: field("modules", "gModules", 0, 10000, 1), a: compassField(), t: field("tilt", "gTilt", 0, 90, 5, true), p: field("mppt", "gMppt", 0, 64, 1) };
           rm.addEventListener("click", () => { groupRows.splice(groupRows.indexOf(row), 1); el.remove(); renumber(); fromModules(); });
           el.append(head, grid);
           gwrap.append(el);
