@@ -1,10 +1,18 @@
 // the helper modules are loaded with the same ?v=<version> as this file, so an update never mixes new and cached modules
 const version = new URL(import.meta.url).search;
-// both modules load in parallel (one round trip instead of two in a row before the panel can start)
-const [{ lineChart, barChart, categoryBarChart }, { localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition }] = await Promise.all([
+// No top-level await here: Home Assistant creates the panel element as soon as the load event of this script fires, and for
+// a module with a top-level await that is BEFORE the module has run to the end. The element would be created as a plain
+// HTMLElement, hass and panel would end up as own properties and shadow the setters of the class once it is defined: the
+// panel never gets hass and stays empty. So the element is defined synchronously, the helper modules load in parallel in
+// the background (one round trip instead of two in a row) and _load() waits for them.
+let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition;
+const modulesReady = Promise.all([
   import(`./pv-assistant-charts.js${version}`),
   import(`./pv-assistant-analysis.js${version}`),
-]);
+]).then(([charts, analysis]) => {
+  ({ lineChart, barChart, categoryBarChart } = charts);
+  ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } = analysis);
+});
 // timing log for the browser console: localStorage.setItem("pv_assistant_debug", "1") and reload
 const DBG = (() => { try { return localStorage.getItem("pv_assistant_debug") === "1"; } catch (e) { return false; } })();
 const dbg = (...a) => { if (DBG) console.info(`[pv-assistant ${Math.round(performance.now())} ms]`, ...a); };
@@ -228,6 +236,14 @@ const plantsOf = (settings, ids) => {
 
 class PVAssistantPanel extends HTMLElement {
   connectedCallback() {
+    // properties set on the element before it was upgraded (see the top of the file) would shadow the setters
+    for (const k of ["hass", "panel", "narrow", "route"]) {
+      if (Object.prototype.hasOwnProperty.call(this, k)) {
+        const v = this[k];
+        delete this[k];
+        this[k] = v;
+      }
+    }
     if (!this._root) {
       this._root = this.attachShadow({ mode: "open" });
       this._root.innerHTML = `
@@ -439,12 +455,15 @@ class PVAssistantPanel extends HTMLElement {
   async _load() {
     if (!this._hass) { this._wantLoad = true; return; }
     dbg("load: waiting for the configuration");
+    let cfg;
     try {
-      this._cfg = await this._hass.callWS({ type: "pv_assistant/config" });
+      cfg = await this._hass.callWS({ type: "pv_assistant/config" });
     } catch (e) {
-      this._cfg = {};
+      cfg = {};
       dbg("configuration failed", e);
     }
+    await modulesReady; // _render() and the charts need the helper modules; this._cfg stays unset until they are there
+    this._cfg = cfg;
     dbg("configuration received, building tabs");
     this._last = null;
     this._buildHistory();
