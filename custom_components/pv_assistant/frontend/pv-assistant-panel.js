@@ -5,13 +5,13 @@ const version = new URL(import.meta.url).search;
 // HTMLElement, hass and panel would end up as own properties and shadow the setters of the class once it is defined: the
 // panel never gets hass and stays empty. So the element is defined synchronously, the helper modules load in parallel in
 // the background (one round trip instead of two in a row) and _load() waits for them.
-let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition;
+let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips;
 const modulesReady = Promise.all([
   import(`./pv-assistant-charts.js${version}`),
   import(`./pv-assistant-analysis.js${version}`),
 ]).then(([charts, analysis]) => {
   ({ lineChart, barChart, categoryBarChart } = charts);
-  ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } = analysis);
+  ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips } = analysis);
 });
 // timing log for the browser console: localStorage.setItem("pv_assistant_debug", "1") and reload
 const DBG = (() => { try { return localStorage.getItem("pv_assistant_debug") === "1"; } catch (e) { return false; } })();
@@ -93,6 +93,22 @@ const T = {
     fcReached: "Von Prognose erreicht", directShare: "Anteil an Erzeugung",
     storage: "Speicher", storageNet: "Speicher (+ Entladen / − Laden)", loading: "Lade …", noData: "Keine Daten im Zeitraum.",
     table: "Als Tabelle anzeigen", time: "Zeit", totals: "Summen im Zeitraum",
+    // evaluations added in 0.9.33
+    stoBenefit: "Speicher-Nutzen", stoLoss: "Speicherverluste",
+    stoBenefitNote: "Speicher-Nutzen = entladene kWh × Strompreis − geladene kWh × Einspeisevergütung (Annahme: der Speicher wird aus PV geladen). Die Verluste sind geladen minus entladen, bewertet mit der Einspeisevergütung.",
+    stoEffDrop: "Der Wirkungsgrad des Speichers ist im Zeitraum von {a} % auf {b} % gesunken. Mögliche Ursachen: Alterung, hohe Standby-Verluste, anderes Lade- und Entladeprofil.",
+    anaCurtail: "{name}: Durch die Wechselrichter-Grenze gingen in diesem Zeitraum geschätzt {kwh} kWh ({pct} % der Erzeugung) verloren. Die Schätzung vergleicht die Stunden am Limit mit dem Verlauf der übrigen Stunden eines wolkenlosen Tages und ist nur ein Anhaltspunkt.",
+    anaCurtailTile: "Abgeregelt (geschätzt)",
+    anaShade: "{name}: Gegen {from} bis {to} Uhr (Sonne im {dir}) liegt der Ertrag an vielen Tagen deutlich unter dem Rest des Tages. Mögliche Verschattung, zum Beispiel durch ein Gebäude, einen Baum oder einen Schornstein.",
+    compass: ["Süden", "Südwesten", "Westen", "Nordwesten", "Norden", "Nordosten", "Osten", "Südosten"],
+    anaMonthly: "Ertrag je Anlage und Monat (kWh/kWp)",
+    anaMonthWeak: "{name} liegt im {months} deutlich unter den anderen Anlagen (bis {pct} % des Mittels, bereinigt um die Ausrichtung). Das kann saisonale Verschattung oder ein Defekt sein.",
+    yearYoY: "Gegenüber Vorjahr (gleiche Monate)", yearTrend: "Ø Veränderung pro Jahr",
+    yearDegr: "Der Ertrag sinkt im Mittel um {pct} % pro Jahr (gleiche Monate, ohne Wetterbereinigung). Typisch für Module sind 0,3 bis 0,7 % pro Jahr; das Wetter schwankt aber stärker, die Zahl ist nur ein Hinweis.",
+    fcBestTom: "Bestes 3-Stunden-Fenster morgen", fcBestRest: "Bestes 3-Stunden-Fenster heute (Rest)", fcBestVal: "{from}–{to} Uhr · ≈ {kwh} kWh",
+    fcBestNote: "Das Fenster ergibt sich aus dem typischen Tagesverlauf der letzten 14 Tage und der Prognose, ein Richtwert für Großverbraucher wie Waschmaschine oder Wallbox.",
+    fcBuckets: "Prognose-Güte nach Größe der Prognose", fcBLow: "Schwache Prognose", fcBMid: "Mittlere Prognose", fcBHigh: "Starke Prognose", fcBDays: "Tage", fcBAvg: "Ø Prognose (kWh)", fcBDev: "Ø Abweichung",
+    hisEffImp: "Ø Bezugspreis (gewichtet)", hisEffFeed: "Ø Einspeisevergütung (gewichtet)", hisEffVs: "{pct} % gegenüber dem Durchschnittspreis",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -168,6 +184,22 @@ const T = {
     fcReached: "Of forecast reached", directShare: "Share of production",
     storage: "Storage", storageNet: "Storage (+ discharge / − charge)", loading: "Loading …", noData: "No data in this range.",
     table: "Show as table", time: "Time", totals: "Totals in range",
+    // evaluations added in 0.9.33
+    stoBenefit: "Storage benefit", stoLoss: "Storage losses",
+    stoBenefitNote: "Storage benefit = discharged kWh × electricity price − charged kWh × feed-in tariff (assumes the storage is charged from PV). The losses are charged minus discharged, valued at the feed-in tariff.",
+    stoEffDrop: "The efficiency of the storage fell from {a} % to {b} % over the range. Possible causes: ageing, high standby losses, a different charging and discharging profile.",
+    anaCurtail: "{name}: because of the inverter limit an estimated {kwh} kWh ({pct} % of the production) was lost in this range. The estimate compares the hours at the limit with the curve of the other hours of a cloudless day and is only a rough guide.",
+    anaCurtailTile: "Curtailed (estimated)",
+    anaShade: "{name}: around {from} to {to} o'clock (sun in the {dir}) the yield is clearly below the rest of the day on many days. Possible shading, for example by a building, a tree or a chimney.",
+    compass: ["south", "south-west", "west", "north-west", "north", "north-east", "east", "south-east"],
+    anaMonthly: "Yield per plant and month (kWh/kWp)",
+    anaMonthWeak: "{name} is clearly below the other plants in {months} (down to {pct} % of the mean, corrected for orientation). That can be seasonal shading or a defect.",
+    yearYoY: "Versus last year (same months)", yearTrend: "Avg. change per year",
+    yearDegr: "The yield falls by {pct} % per year on average (same months, not weather-corrected). Typical for modules is 0.3 to 0.7 % per year; the weather varies more than that, so the figure is only a hint.",
+    fcBestTom: "Best 3-hour window tomorrow", fcBestRest: "Best 3-hour window today (rest)", fcBestVal: "{from}–{to} o'clock · ≈ {kwh} kWh",
+    fcBestNote: "The window comes from the typical daily curve of the last 14 days and the forecast, a guide for large consumers such as washing machine or wallbox.",
+    fcBuckets: "Forecast quality by forecast size", fcBLow: "Weak forecast", fcBMid: "Medium forecast", fcBHigh: "Strong forecast", fcBDays: "Days", fcBAvg: "Avg. forecast (kWh)", fcBDev: "Avg. deviation",
+    hisEffImp: "Avg. import price (weighted)", hisEffFeed: "Avg. feed-in tariff (weighted)", hisEffVs: "{pct} % vs. the average price",
   },
 };
 
@@ -760,8 +792,47 @@ class PVAssistantPanel extends HTMLElement {
     if (token !== this._token) return; // a newer range was requested meanwhile
     this._data = { rd, P, E, G, pres, eres, filt, hres, dres };
     dbg("history data received", rd.days, "day(s)");
+    this._priceTilesHtml = "";
     this._draw();
     dbg("history drawn");
+    this._loadPriceTiles(rd, token); // not awaited: the history is already shown, the price figures are added when they arrive
+  }
+
+  // Average prices weighted by the energy: what the bought energy really cost per kWh and what the fed-in energy really earned.
+  // Needs price sensors with long-term statistics (state class); without them nothing is added. The comparison with the plain
+  // time average of the price shows whether the energy was bought at cheap or at expensive hours (dynamic tariffs).
+  async _loadPriceTiles(rd, token) {
+    const { E, G } = this._keys();
+    const wanted = [];
+    if (G.priceImp && G.impE.length) wanted.push([G.priceImp, G.impE, "hisEffImp"]);
+    if (G.priceFeed && E.feed.length) wanted.push([G.priceFeed, E.feed, "hisEffFeed"]);
+    if (!wanted.length) return;
+    const filt = this._cfg.filtered || {};
+    const energyIds = wanted.flatMap((w) => w[1]);
+    const [pres, eres] = await Promise.all([
+      this._stats(wanted.map((w) => w[0]), "hour", "mean", {}, rd),
+      this._stats(energyIds.concat(energyIds.map((i) => filt[i]).filter(Boolean)), "hour", "change", { energy: "kWh" }, rd),
+    ]);
+    if (token !== this._token) return;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const num = (v, dec) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    let html = "";
+    for (const [priceId, ids, label] of wanted) {
+      const price = new Map((pres[priceId] || []).filter((r) => r.mean != null).map((r) => [r.start, r.mean]));
+      if (price.size < 24) continue; // no usable price statistics
+      const energy = new Map();
+      for (const id of ids) for (const r of mergedRows(eres, id, filt, "change")) energy.set(r.start, (energy.get(r.start) || 0) + r.change);
+      let wSum = 0, eSum = 0;
+      for (const [ts, e] of energy) if (e > 0 && price.has(ts)) { wSum += e * price.get(ts); eSum += e; }
+      if (!(eSum > 0)) continue;
+      const weighted = wSum / eSum, plain = [...price.values()].reduce((a, v) => a + v, 0) / price.size;
+      const delta = plain !== 0 ? ((weighted - plain) / Math.abs(plain)) * 100 : 0;
+      const unit = this._hass.states[priceId]?.attributes?.unit_of_measurement || "€/kWh";
+      html += `<div class="tile"><b>${esc(`${num(weighted, 3)} ${unit}`)}</b><span>${esc(`${this._t(label)} · ${this._t("hisEffVs").replace("{pct}", `${delta > 0 ? "+" : ""}${num(delta, 0)}`)}`)}</span></div>`;
+    }
+    if (!html) return;
+    this._priceTilesHtml = html;
+    this._root.getElementById("tiles")?.insertAdjacentHTML("beforeend", html);
   }
 
   _draw() {
@@ -1036,7 +1107,7 @@ class PVAssistantPanel extends HTMLElement {
     if (priceFeed && T.feed > 0) more.push([`${num(T.feed * priceFeed, false, 2)} €`, this._t("revenue")]);
     if (T.prod > 0) more.push([`${num((T.prod * (gen.co2_g_per_kwh || 380)) / 1000, false, 1)} kg`, this._t("co2")]);
     const moreTiles = more.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-    this._root.getElementById("tiles").innerHTML = tiles + share + moreTiles;
+    this._root.getElementById("tiles").innerHTML = tiles + share + moreTiles + (this._priceTilesHtml || "");
     this._root.querySelectorAll(".chart").forEach((x) => x.classList.remove("loading"));
   }
 
@@ -1225,6 +1296,29 @@ class PVAssistantPanel extends HTMLElement {
     if (tIn > 0) tiles.push([`${num(tIn)} kWh`, this._t("sin")]);
     if (tOut > 0) tiles.push([`${num(tOut)} kWh`, this._t("sout")]);
     if (tIn > 0 && tOut > 0) tiles.push([`${num((tOut / tIn) * 100, 0)} %`, this._t("storEff")]);
+    // what the storage brings in money: discharged energy replaces bought energy, charged energy would otherwise have been fed in
+    const stoNotes = [];
+    if (tIn > 0 && tOut > 0) {
+      const numOf = (id) => { const v = parseFloat(this._hass.states[id]?.state); return Number.isNaN(v) ? null : v; };
+      const pImp = (G.priceImp && numOf(G.priceImp)) || gen.price_import || null;
+      const pFeed = (G.priceFeed && numOf(G.priceFeed)) || gen.price_feed_in || null;
+      if (pImp) {
+        tiles.push([`${num(tOut * pImp - tIn * (pFeed || 0))} €`, this._t("stoBenefit")]);
+        stoNotes.push(this._t("stoBenefitNote"));
+      }
+      const loss = Math.max(0, tIn - tOut), lossPrice = pFeed || pImp;
+      tiles.push([`${num(loss)} kWh${lossPrice ? ` · ${num(loss * lossPrice)} €` : ""}`, this._t("stoLoss")]);
+      // efficiency per month (long ranges): a clear drop between the first and the last third is a hint
+      if (rd.long) {
+        const effs = [...eIn].sort((a, b) => a[0] - b[0]).filter(([ts, v]) => v >= 5 && eOut.get(ts) > 0).map(([ts, v]) => (eOut.get(ts) / v) * 100);
+        if (effs.length >= 3) {
+          const third = Math.max(1, Math.floor(effs.length / 3));
+          const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+          const first = mean(effs.slice(0, third)), last = mean(effs.slice(-third));
+          if (first - last >= 5) stoNotes.push(this._t("stoEffDrop").replace("{a}", num(first, 0)).replace("{b}", num(last, 0)));
+        }
+      }
+    }
     // usable capacity = capacity x (1 - minimum level); cycles and the energy that can still be drawn use it
     const cap = gen.storage_capacity_kwh > 0 ? gen.storage_capacity_kwh : 0, minSoc = gen.battery_min_soc > 0 ? Math.min(gen.battery_min_soc, 100) : 0;
     const usable = cap * (1 - minSoc / 100);
@@ -1243,7 +1337,7 @@ class PVAssistantPanel extends HTMLElement {
     }
     root.getElementById("stiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
     const note = root.getElementById("sonote");
-    note.textContent = [tIn > 0 && tOut > 0 ? this._t("stoNote") : "", !(cap > 0) && tIn > 0 ? this._t("stoNoCap") : ""].filter(Boolean).join(" ");
+    note.textContent = [tIn > 0 && tOut > 0 ? this._t("stoNote") : "", !(cap > 0) && tIn > 0 ? this._t("stoNoCap") : "", ...stoNotes].filter(Boolean).join(" ");
     root.querySelectorAll("#sto .chart").forEach((x) => x.classList.remove("loading"));
   }
 
@@ -1255,9 +1349,10 @@ class PVAssistantPanel extends HTMLElement {
     const box = this._root.getElementById("fcs");
     if (!this._forecastOn) { box.replaceChildren(); return; }
     if (!this._fdays) this._fdays = 30;
-    box.innerHTML = `<div class="filters" id="franges"></div><div class="tiles" id="ftiles"></div>
+    box.innerHTML = `<div class="filters" id="franges"></div><div class="tiles" id="ftiles"></div><p class="note" id="fcnote"></p>
       <h3 class="ch" id="fchead">${esc(this._t("anaForecast"))}</h3><div class="chart" id="fcchart"></div>
-      <h3 class="ch">${esc(this._t("anaForecastDev"))}</h3><div class="chart" id="fcdev"></div>`;
+      <h3 class="ch">${esc(this._t("anaForecastDev"))}</h3><div class="chart" id="fcdev"></div>
+      <div id="fcbbox"><h3 class="ch">${esc(this._t("fcBuckets"))}</h3><div class="chart" id="fcbuckets"></div></div>`;
     const ranges = box.querySelector("#franges");
     for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]]) {
       const b = document.createElement("button");
@@ -1275,29 +1370,33 @@ class PVAssistantPanel extends HTMLElement {
   async _loadForecast() {
     if (!this._forecastOn || !this._hass || !this._root.getElementById("franges")) return;
     const token = (this._ftoken = (this._ftoken || 0) + 1);
-    const { E } = this._keys();
+    const { E, P } = this._keys();
     const filt = this._cfg.filtered || {};
+    const profStart = new Date(); profStart.setHours(0, 0, 0, 0); profStart.setDate(profStart.getDate() - 14);
     const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - ((this._fdays === "ytd" ? Math.floor((start - new Date(start.getFullYear(), 0, 1)) / 86400e3) + 1 : this._fdays) - 1));
     const ids = [...new Set(E.prod.concat(E.prod.map((i) => filt[i]).filter(Boolean)))];
     this._root.querySelectorAll("#fcs .chart").forEach((c) => c.classList.add("loading"));
     const todayIds = list(this._cfg.forecast_today_energy_sensors);
-    const [eres, cfg, hist] = await Promise.all([
+    const [eres, cfg, hist, pw] = await Promise.all([
       ids.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: new Date().toISOString(),
         statistic_ids: ids, period: "day", types: ["change"], units: { energy: "kWh" } }).catch(() => ({})) : {},
       this._hass.callWS({ type: "pv_assistant/config" }).catch(() => null), // fresh forecast log
       todayIds.length ? this._forecastFromHistory(todayIds) : {},
+      // hourly power of the last 14 days: the typical daily curve for the best time of large consumers
+      P.prod.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: profStart.toISOString(), end_time: new Date().toISOString(),
+        statistic_ids: [...new Set(P.prod)], period: "hour", types: ["mean"], units: { power: "W" } }).catch(() => ({})) : {},
     ]);
     if (token !== this._ftoken) return;
     if (cfg?.settings) this._cfg.settings = cfg.settings;
-    this._fdata = { eres, hist, start };
+    this._fdata = { eres, hist, start, pw };
     this._drawForecast();
   }
 
   _drawForecast() {
     const d = this._fdata;
     if (!d || !this._forecastOn || !this._root.getElementById("franges")) return;
-    const { eres, hist, start } = d;
-    const { E } = this._keys();
+    const { eres, hist, start, pw } = d;
+    const { E, P } = this._keys();
     const filt = this._cfg.filtered || {};
     const root = this._root;
     const lang = this._hass.locale?.language || this._hass.language;
@@ -1327,11 +1426,45 @@ class PVAssistantPanel extends HTMLElement {
       if (fToday > 0) tiles.push([`${num((soFar / fToday) * 100, 0)} %`, this._t("fcReached")]);
     }
 
+    // best 3-hour window from the typical daily curve (average share of every hour over the last full days) and the forecast
+    const byDayH = new Map();
+    for (const id of P.prod) for (const r of (pw || {})[id] || []) {
+      if (r.mean == null) continue;
+      const k = key(r.start);
+      if (!byDayH.has(k.day)) byDayH.set(k.day, Array(24).fill(0));
+      byDayH.get(k.day)[k.hour] += Math.max(r.mean, 0);
+    }
+    const share = Array(24).fill(0);
+    let profDays = 0;
+    for (const [day, hours] of byDayH) {
+      const tot = hours.reduce((a, v) => a + v, 0);
+      if (day === todayKey || !(tot > 0)) continue;
+      hours.forEach((v, h) => { share[h] += v / tot; });
+      profDays++;
+    }
+    let notePart = "";
+    if (profDays >= 3) {
+      share.forEach((v, h) => { share[h] = v / profDays; });
+      const window = (from, kwh) => {
+        const room = share.slice(from).reduce((a, v) => a + v, 0);
+        if (!(kwh > 0) || !(room > 0) || from > 21) return null;
+        let best = -1, at = from;
+        for (let h = from; h <= 21; h++) { const w = share[h] + share[h + 1] + share[h + 2]; if (w > best) { best = w; at = h; } }
+        return { from: at, to: at + 3, kwh: (kwh * best) / room };
+      };
+      const show = (w, label) => { if (w) tiles.push([this._t("fcBestVal").replace("{from}", String(w.from)).replace("{to}", String(w.to)).replace("{kwh}", num(w.kwh)), label]); };
+      show(window(0, fTom), this._t("fcBestTom"));
+      show(window(key(Date.now()).hour + 1, fRest), this._t("fcBestRest"));
+      if (tiles.some(([, l]) => l === this._t("fcBestTom") || l === this._t("fcBestRest"))) notePart = this._t("fcBestNote");
+    }
+    root.getElementById("fcnote").textContent = notePart;
+
     const tl = { summary: this._t("table"), time: this._t("time") };
     const fv = (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`;
     const fcBox = root.getElementById("fcchart"), fdBox = root.getElementById("fcdev");
     fcBox.classList.remove("loading"); fdBox.classList.remove("loading");
     if (!fcDays.length) {
+      root.getElementById("fcbbox").hidden = true;
       for (const b of [fcBox, fdBox]) b.innerHTML = `<p class="empty">${esc(this._t(list(this._cfg.forecast_today_energy_sensors).length ? "anaNoForecastYet" : "anaNoForecast"))}</p>`;
     } else {
       const fc = fcDays.map((day) => log[day]), ist = fcDays.map((day) => actual.get(day));
@@ -1362,6 +1495,20 @@ class PVAssistantPanel extends HTMLElement {
       const mean = dev.reduce((a, v) => a + v, 0) / dev.length;
       const hit = (dev.filter((v) => Math.abs(v) <= 20).length / dev.length) * 100;
       tiles.push([`${mean > 0 ? "+" : ""}${num(mean)} %`, this._t("fcAvgDev")], [`${num(hit, 0)} %`, this._t("fcHit")], [String(fcDays.length), this._t("fcDays")]);
+      // forecast quality by size of the forecast: weak, medium and strong forecast days in three equal groups
+      const bbox = root.getElementById("fcbbox");
+      bbox.hidden = fcDays.length < 9;
+      if (!bbox.hidden) {
+        const order = fcDays.map((_, i) => i).sort((a, b) => fc[a] - fc[b]);
+        const size = Math.floor(order.length / 3);
+        const groups = [order.slice(0, size), order.slice(size, order.length - size), order.slice(order.length - size)];
+        const rowsHtml = groups.map((g, gi) => {
+          const avgFc = g.reduce((a, i) => a + fc[i], 0) / g.length, avgDev = g.reduce((a, i) => a + dev[i], 0) / g.length;
+          return `<tr><td>${esc(this._t(["fcBLow", "fcBMid", "fcBHigh"][gi]))}</td><td>${g.length}</td><td>${esc(num(avgFc))}</td><td>${esc(`${avgDev > 0 ? "+" : ""}${num(avgDev)} %`)}</td></tr>`;
+        }).join("");
+        root.getElementById("fcbuckets").classList.remove("loading");
+        root.getElementById("fcbuckets").innerHTML = `<table class="dtable"><thead><tr><th></th><th>${esc(this._t("fcBDays"))}</th><th>${esc(this._t("fcBAvg"))}</th><th>${esc(this._t("fcBDev"))}</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
+      }
     }
     root.getElementById("ftiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
   }
@@ -1621,12 +1768,25 @@ class PVAssistantPanel extends HTMLElement {
         }
       }
     }
+    // selected year against the year before, only months that are complete and recorded in both years
+    if (Y > minY) {
+      const both = Array.from({ length: 12 }, (_, m) => m).filter((m) => complete(Y, m) && complete(Y - 1, m) && val(Y, m) != null && val(Y - 1, m) != null);
+      const prevSum = sumOver(both, (m) => val(Y - 1, m));
+      if (both.length >= 6 && prevSum > 0) {
+        const yoy = ((sumOver(both, (m) => val(Y, m)) - prevSum) / prevSum) * 100;
+        extra.push([`${yoy > 0 ? "+" : ""}${num(yoy, false, 1)} %${both.length < 12 ? "*" : ""}`, `${this._t("yearYoY")}`]);
+      }
+    }
     // trend of the yearly total (least squares over years with at least 9 months; depends on the weather)
     const trendYears = yearList.map((y, i) => [y, yDev[i], monthsOf(y).length]).filter(([, dv, n]) => dv != null && n >= 9);
     if (trendYears.length >= 3) {
       const mx = trendYears.reduce((a, [y]) => a + y, 0) / trendYears.length, my = trendYears.reduce((a, [, dv]) => a + dv, 0) / trendYears.length;
       const sxx = trendYears.reduce((a, [y]) => a + (y - mx) ** 2, 0), sxy = trendYears.reduce((a, [y, dv]) => a + (y - mx) * (dv - my), 0);
-      if (sxx > 0) extra.push([`${sxy / sxx > 0 ? "+" : ""}${num(sxy / sxx, false, 1)} % ${this._t("yTrendUnit")}`, this._t("yTrend")]);
+      if (sxx > 0) {
+        extra.push([`${sxy / sxx > 0 ? "+" : ""}${num(sxy / sxx, false, 1)} % ${this._t("yTrendUnit")}`, this._t("yTrend")]);
+        // a steady loss beyond the usual module ageing is worth a look; the weather scatters more than this, so it stays a hint
+        if (sxy / sxx <= -0.7) root.getElementById("adchart").append(Object.assign(document.createElement("p"), { className: "note", textContent: this._t("yearDegr").replace("{pct}", num(-sxy / sxx, false, 1)) }));
+      }
     }
     if (extra.length) {
       root.getElementById("ytiles").insertAdjacentHTML("beforeend", extra.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join(""));
@@ -2153,6 +2313,7 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._adays) this._adays = 30;
     box.innerHTML = `<div class="filters" id="aranges"></div><ul class="hints" id="ahints"></ul><div class="tiles" id="atiles"></div>
       <h3 class="ch">${esc(this._t("anaStrings"))}</h3><div class="chart" id="astrings"></div>
+      <div id="amonthbox"><h3 class="ch">${esc(this._t("anaMonthly"))}</h3><div class="chart" id="amonth"></div></div>
       <h3 class="ch" id="aheath">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
       <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>`;
     const ranges = box.querySelector("#aranges");
@@ -2267,7 +2428,7 @@ class PVAssistantPanel extends HTMLElement {
       // only hours in which every sensor of the plant has data (a gap in one sensor would understate the plant)
       for (const ts of members[0].m.keys()) if (members.every((s) => s.m.has(ts))) m.set(ts, members.reduce((a, s) => a + s.m.get(ts), 0));
       return {
-        id: `plant:${p.sensors.join("+")}`, members, m,
+        id: `plant:${p.sensors.join("+")}`, members, m, max_w: p.max_w || 0,
         name: p.name || (members.length === 1 ? members[0].name : members.map((s) => s.name).join(" + ")),
         peak: members.every((s) => s.peak) ? members.reduce((a, s) => a + s.peak, 0) : null,
         kwh: members.reduce((a, s) => a + s.kwh, 0),
@@ -2462,6 +2623,72 @@ class PVAssistantPanel extends HTMLElement {
       infoSet.add(text);
     }
 
+    // energy lost at the inverter limit and possible shading per plant (both need the plant location)
+    let curtailKwh = 0;
+    const compassOf = (az) => this._t("compass")[((Math.round(az / 45) % 8) + 8) % 8];
+    if (located) {
+      for (const s of series) {
+        const gs = s.groups.filter((g) => g.azimuth != null && g.tilt != null);
+        if (s.max_w > 0) {
+          // without orientation a south-facing plane at 30 degrees stands in; only the daily shape matters for the estimate
+          const est = estimateClipped(s.m, s.max_w, gs.length ? gs : [{ azimuth: 0, tilt: 30 }], lat, lon, key);
+          if (est.days >= 3 && est.kwh >= 0.5) {
+            curtailKwh += est.kwh;
+            const text = this._t("anaCurtail").replace("{name}", s.name).replace("{kwh}", num(est.kwh)).replace("{pct}", num(s.kwh > 0 ? (est.kwh / s.kwh) * 100 : 0));
+            hints.push(text);
+            infoSet.add(text);
+          }
+        }
+        if (gs.length) {
+          for (const dip of shadingDips(s.m, s.max_w, gs, lat, lon, key)) {
+            const text = this._t("anaShade").replace("{name}", s.name).replace("{from}", String(dip.from)).replace("{to}", String(dip.to + 1)).replace("{dir}", compassOf(dip.az));
+            hints.push(text);
+            infoSet.add(text);
+          }
+        }
+      }
+    }
+
+    // yield per plant and month: shows whether a plant is weak all year or only in some season
+    const monthBox = root.getElementById("amonthbox");
+    const monthPlants = series.filter((s) => s.peak);
+    const longRange = this._adays !== 7 && this._adays !== 30;
+    monthBox.hidden = !(longRange && monthPlants.length);
+    if (!monthBox.hidden) {
+      const startMonthDay = key(start.getTime()).day;
+      const skip = new Set([todayKey.slice(0, 7)]); // the running month and a month that starts inside the range are incomplete
+      if (startMonthDay.slice(8, 10) !== "01") skip.add(startMonthDay.slice(0, 7));
+      const perPlant = monthPlants.map((s) => {
+        const mm = new Map(); // Wh per month
+        for (const [ts, w] of s.m) { const k = key(ts).day.slice(0, 7); mm.set(k, (mm.get(k) || 0) + w); }
+        return mm;
+      });
+      const months = [...new Set(perPlant.flatMap((mm) => [...mm.keys()]))].filter((k) => !skip.has(k)).sort();
+      const val = (i, k) => (perPlant[i].has(k) ? perPlant[i].get(k) / monthPlants[i].peak : null); // Wh / W = kWh/kWp
+      const sameYear = months.length && months[0].slice(0, 4) === months.at(-1).slice(0, 4);
+      const monthFmt = new Intl.DateTimeFormat(lang, sameYear ? { month: "short" } : { month: "short", year: "2-digit" });
+      const monthName = (k) => monthFmt.format(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 15));
+      categoryBarChart(root.getElementById("amonth"), {
+        categories: months.map(monthName),
+        series: monthPlants.map((s, i) => ({ name: s.name, color: `--pva-s${(i % 7) + 1}`, values: months.map((k) => val(i, k)) })),
+        fmtValue: (v, axis) => `${num(v, axis ? 0 : 1)}${axis ? "" : " kWh/kWp"}`,
+        empty: this._t("noData"), tableLabels: { summary: this._t("table"), time: this._t("time") }, label: this._t("anaMonthly"),
+      });
+      if (monthPlants.length >= 2) {
+        const weakMonths = monthPlants.map(() => ({ months: [], worst: 100 }));
+        for (const k of months) {
+          const eff = monthPlants.map((s, i) => { const v = val(i, k); return v == null ? null : v / (s.factor || 1); });
+          const known = eff.filter((v) => v != null);
+          if (known.length < 2) continue;
+          const med = median(known);
+          eff.forEach((v, i) => { if (v != null && med > 0 && v < med * 0.85) { weakMonths[i].months.push(monthName(k)); weakMonths[i].worst = Math.min(weakMonths[i].worst, (v / med) * 100); } });
+        }
+        weakMonths.forEach((w, i) => {
+          if (w.months.length) hints.push(this._t("anaMonthWeak").replace("{name}", monthPlants[i].name).replace("{months}", w.months.slice(0, 4).join(", ")).replace("{pct}", num(w.worst, 0)));
+        });
+      }
+    }
+
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio
     const tiles = [];
     const powerTotal = sensors.reduce((a, s) => a + s.kwh, 0);
@@ -2471,6 +2698,7 @@ class PVAssistantPanel extends HTMLElement {
     const energyTotal = energyDays.reduce((a, [, v]) => a + v, 0);
     const prodTotal = energyTotal > 0 ? energyTotal : powerTotal;
     tiles.push([`${num(prodTotal)} kWh`, this._t("anaTotal")]);
+    if (curtailKwh > 0) tiles.push([`${num(curtailKwh)} kWh`, this._t("anaCurtailTile")]);
     if (energyTotal > 0 && powerTotal > 0 && Math.abs(powerTotal - energyTotal) / energyTotal > 0.03) {
       hints.push(this._t("anaPowerDiff").replace("{p}", num(powerTotal, 0)).replace("{e}", num(energyTotal, 0)).replace("{d}", `${powerTotal > energyTotal ? "+" : ""}${num(((powerTotal - energyTotal) / energyTotal) * 100, 1)}`));
     }
