@@ -5,13 +5,13 @@ const version = new URL(import.meta.url).search;
 // HTMLElement, hass and panel would end up as own properties and shadow the setters of the class once it is defined: the
 // panel never gets hass and stays empty. So the element is defined synchronously, the helper modules load in parallel in
 // the background (one round trip instead of two in a row) and _load() waits for them.
-let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips;
+let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile;
 const modulesReady = Promise.all([
   import(`./pv-assistant-charts.js${version}`),
   import(`./pv-assistant-analysis.js${version}`),
 ]).then(([charts, analysis]) => {
   ({ lineChart, barChart, categoryBarChart } = charts);
-  ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips } = analysis);
+  ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile } = analysis);
 });
 // timing log for the browser console: localStorage.setItem("pv_assistant_debug", "1") and reload
 const DBG = (() => { try { return localStorage.getItem("pv_assistant_debug") === "1"; } catch (e) { return false; } })();
@@ -109,6 +109,24 @@ const T = {
     fcBestNote: "Das Fenster ergibt sich aus dem typischen Tagesverlauf der letzten 14 Tage und der Prognose, ein Richtwert für Großverbraucher wie Waschmaschine oder Wallbox.",
     fcBuckets: "Prognose-Güte nach Größe der Prognose", fcBLow: "Schwache Prognose", fcBMid: "Mittlere Prognose", fcBHigh: "Starke Prognose", fcBDays: "Tage", fcBAvg: "Ø Prognose (kWh)", fcBDev: "Ø Abweichung",
     hisEffImp: "Ø Bezugspreis (gewichtet)", hisEffFeed: "Ø Einspeisevergütung (gewichtet)", hisEffVs: "{pct} % gegenüber dem Durchschnittspreis",
+    // tabs and charts added in 0.9.34
+    plantsTab: "Anlagen", balanceTab: "Energiebilanz", moneyTab: "Wirtschaft",
+    pltTable: "Anlagen im Überblick", pltName: "Anlage", pltStrings: "Strings", pltPeak: "Peak (W)", pltInv: "Wechselrichter (W)", pltKwh: "Ertrag (kWh)", pltSpec: "kWh/kWp", pltShare: "Anteil",
+    pltDay: "Typischer Tag: Ø Leistung nach Uhrzeit (W)", pltDur: "Leistungsdauerlinie (W)",
+    pltDurNote: "Die Stundenwerte der Leistung, nach Größe sortiert. Ein flaches Stück ganz oben auf Höhe der Wechselrichter-Grenze zeigt, dass der Wechselrichter begrenzt.",
+    pltShade: "Ertrag nach Uhrzeit im Vergleich zur eigenen Kurve (%)",
+    pltShadeNote: "100 % sind die besten Stunden der Anlage bei klarem Himmel. Einbrüche zu bestimmten Uhrzeiten deuten auf Verschattung hin. Braucht den Standort und die Ausrichtung der Modulstränge.",
+    pltHeat: "Typischer Tag je Monat (Ø kWh je Stunde)", pltAll: "Gesamtanlage", pltLimit: "Wechselrichter-Grenze", pltHoursUnit: "h", pltPlant: "Anlage",
+    balUse: "Verwendung der PV-Erzeugung (kWh)", balCover: "Deckung des Verbrauchs (kWh)", balRates: "Autarkie und Eigenverbrauch (%)",
+    balToStorage: "In Speicher", balFromGrid: "Aus dem Netz",
+    balNote: "Direkt verbraucht = Erzeugung − Einspeisung − Ladung des Speichers (Annahme: der Speicher wird aus PV geladen). Die Deckung des Verbrauchs setzt sich aus direkt genutzter PV, Speicher-Entladung und Netzbezug zusammen.",
+    monBenefit: "Nutzen je Monat (€)", monSaving: "Ersparnis durch Eigenverbrauch", monRevenue: "Einspeisevergütung", monCum: "Kumulierter Nutzen gegen Anlagenkosten (€)", monCost: "Anlagenkosten", monCumLabel: "Kumulierter Nutzen",
+    monSto: "Speicher-Nutzen je Monat (€)", monPayDate: "Amortisation voraussichtlich", monTotal: "Nutzen im Zeitraum", monAvg: "Ø Nutzen je Monat", monPaid: "Amortisiert",
+    monNoPrice: "Trage in den Einstellungen den Strompreis und die Einspeisevergütung ein (oder wähle Preis-Sensoren im Config Flow), dann erscheint hier die Auswertung.",
+    monNote: "Alle Monate werden mit den aktuellen Preisen gerechnet: (Erzeugung − Einspeisung) × Strompreis + Einspeisung × Vergütung. Das Amortisationsdatum ergibt sich aus dem Durchschnitt der letzten 12 Monate.",
+    stoBenChart: "Speicher-Nutzen und -Verluste je Monat (€)", stoEffChart: "Wirkungsgrad je Monat (%)", stoSocHist: "Verteilung des Ladestands (Anteil der Zeit in %)",
+    fcHourChart: "Erwartete Erzeugung morgen je Stunde (kWh)", fcWindow: "Bestes Fenster", fcOtherHours: "Übrige Stunden", fcBChart: "Ø Abweichung nach Größe der Prognose (%)",
+    yearRoll: "Erzeugung der letzten 12 Monate, rollierend (kWh)",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -200,6 +218,24 @@ const T = {
     fcBestNote: "The window comes from the typical daily curve of the last 14 days and the forecast, a guide for large consumers such as washing machine or wallbox.",
     fcBuckets: "Forecast quality by forecast size", fcBLow: "Weak forecast", fcBMid: "Medium forecast", fcBHigh: "Strong forecast", fcBDays: "Days", fcBAvg: "Avg. forecast (kWh)", fcBDev: "Avg. deviation",
     hisEffImp: "Avg. import price (weighted)", hisEffFeed: "Avg. feed-in tariff (weighted)", hisEffVs: "{pct} % vs. the average price",
+    // tabs and charts added in 0.9.34
+    plantsTab: "Plants", balanceTab: "Balance", moneyTab: "Economics",
+    pltTable: "Plants at a glance", pltName: "Plant", pltStrings: "Strings", pltPeak: "Peak (W)", pltInv: "Inverter (W)", pltKwh: "Yield (kWh)", pltSpec: "kWh/kWp", pltShare: "Share",
+    pltDay: "Typical day: avg. power by time of day (W)", pltDur: "Power duration curve (W)",
+    pltDurNote: "The hourly power values sorted by size. A flat piece at the very top at the level of the inverter limit shows that the inverter is limiting.",
+    pltShade: "Yield by time of day against the plant's own curve (%)",
+    pltShadeNote: "100 % are the best hours of the plant under a clear sky. Dips at certain times of day point to shading. Needs the location and the orientation of the module strings.",
+    pltHeat: "Typical day per month (avg. kWh per hour)", pltAll: "Whole system", pltLimit: "Inverter limit", pltHoursUnit: "h", pltPlant: "Plant",
+    balUse: "Use of the PV production (kWh)", balCover: "Coverage of the consumption (kWh)", balRates: "Self-sufficiency and self-consumption (%)",
+    balToStorage: "Into storage", balFromGrid: "From the grid",
+    balNote: "Used directly = production − feed-in − charging of the storage (assumes the storage is charged from PV). The coverage of the consumption is made up of PV used directly, storage discharge and grid import.",
+    monBenefit: "Benefit per month (€)", monSaving: "Savings from self-consumption", monRevenue: "Feed-in revenue", monCum: "Cumulative benefit against plant cost (€)", monCost: "Plant cost", monCumLabel: "Cumulative benefit",
+    monSto: "Storage benefit per month (€)", monPayDate: "Payback expected", monTotal: "Benefit in the range", monAvg: "Avg. benefit per month", monPaid: "Paid back",
+    monNoPrice: "Enter the electricity price and the feed-in tariff in the settings (or choose price sensors in the config flow) and the evaluation appears here.",
+    monNote: "All months are calculated with the current prices: (production − feed-in) × electricity price + feed-in × tariff. The payback date comes from the average of the last 12 months.",
+    stoBenChart: "Storage benefit and losses per month (€)", stoEffChart: "Efficiency per month (%)", stoSocHist: "Distribution of the level (share of time in %)",
+    fcHourChart: "Expected production tomorrow per hour (kWh)", fcWindow: "Best window", fcOtherHours: "Other hours", fcBChart: "Avg. deviation by forecast size (%)",
+    yearRoll: "Production of the last 12 months, rolling (kWh)",
   },
 };
 
@@ -461,7 +497,7 @@ class PVAssistantPanel extends HTMLElement {
         </style>
         <header><span id="menu"></span><span id="title"></span></header>
         <nav id="tabs" role="tablist"></nav>
-        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="ana" role="tabpanel"></div><div id="sto" role="tabpanel"></div><div id="fcs" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
+        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="plt" role="tabpanel"></div><div id="ana" role="tabpanel"></div><div id="bal" role="tabpanel"></div><div id="sto" role="tabpanel"></div><div id="mon" role="tabpanel"></div><div id="fcs" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
       const menu = document.createElement("ha-menu-button");
       this._root.getElementById("menu").appendChild(menu);
       this._menu = menu;
@@ -501,6 +537,9 @@ class PVAssistantPanel extends HTMLElement {
     this._buildHistory();
     this._buildYears();
     this._buildSettings();
+    this._buildPlants();
+    this._buildBalance();
+    this._buildMoney();
     this._buildAnalysis();
     this._buildStorage();
     this._buildForecast();
@@ -1123,7 +1162,10 @@ class PVAssistantPanel extends HTMLElement {
     box.innerHTML = `<div class="filters" id="sranges"></div><div class="tiles" id="stiles"></div>${G.soc.length ? `
       <h3 class="ch">${esc(this._t("socChart"))}</h3><div class="chart" id="sosoc"></div>` : ""}${has(P) ? `
       <h3 class="ch" id="sopowh">${esc(this._t("stoPower"))} (W)</h3><div class="chart" id="sopow"></div>` : ""}${has(E) ? `
-      <h3 class="ch">${esc(this._t("stoEnergy"))} (kWh)</h3><div class="chart" id="soen"></div>` : ""}
+      <h3 class="ch">${esc(this._t("stoEnergy"))} (kWh)</h3><div class="chart" id="soen"></div>` : ""}${has(E) ? `
+      <div id="sobenbox"><h3 class="ch">${esc(this._t("stoBenChart"))}</h3><div class="chart" id="soben"></div></div>
+      <div id="soeffbox"><h3 class="ch">${esc(this._t("stoEffChart"))}</h3><div class="chart" id="soeff"></div></div>` : ""}${G.soc.length ? `
+      <h3 class="ch">${esc(this._t("stoSocHist"))}</h3><div class="chart" id="sosochist"></div>` : ""}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
     for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
@@ -1336,6 +1378,42 @@ class PVAssistantPanel extends HTMLElement {
       tiles.push([`${num(vals.reduce((a, v) => a + v, 0) / vals.length, 0)} %`, this._t("stoAvgSoc")]);
     }
     root.getElementById("stiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+    // monthly benefit / losses and efficiency (long ranges), distribution of the level
+    const numOf2 = (id) => { const v = parseFloat(this._hass.states[id]?.state); return Number.isNaN(v) ? null : v; };
+    const pImp2 = (G.priceImp && numOf2(G.priceImp)) || gen.price_import || null, pFeed2 = (G.priceFeed && numOf2(G.priceFeed)) || gen.price_feed_in || null;
+    const monthly = rd.long && tIn > 0 && tOut > 0;
+    const benBox = root.getElementById("sobenbox"), effBox = root.getElementById("soeffbox");
+    if (benBox) benBox.hidden = !(monthly && pImp2);
+    if (effBox) effBox.hidden = !monthly;
+    if (monthly) {
+      const { categories, toArr } = this._monthAxis(rd, tz, fMon);
+      const bens = new Map(), losses = new Map(), effs = new Map();
+      for (const [ts, vin] of eIn) {
+        const vout = eOut.get(ts) || 0;
+        if (pImp2) { bens.set(ts, vout * pImp2 - vin * (pFeed2 || 0)); losses.set(ts, Math.max(vin - vout, 0) * (pFeed2 || pImp2)); }
+        if (vin >= 5) effs.set(ts, (vout / vin) * 100);
+      }
+      if (pImp2) categoryBarChart(root.getElementById("soben"), {
+        categories,
+        series: [{ name: this._t("stoBenefit"), color: "--pva-pos", values: toArr(bens) }, { name: this._t("stoLoss"), color: "--pva-neg", values: toArr(losses) }],
+        fmtValue: (v, axis) => `${num(v, axis ? 0 : 2)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: timeLabels, label: this._t("stoBenChart"),
+      });
+      categoryBarChart(root.getElementById("soeff"), {
+        categories, series: [{ name: this._t("storEff"), color: "--pva-bout", values: toArr(effs) }],
+        fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: timeLabels, label: this._t("stoEffChart"),
+      });
+    }
+    const histBox = root.getElementById("sosochist");
+    if (histBox) {
+      const bands = Array(10).fill(0);
+      for (const v of soc) if (v != null) bands[Math.min(9, Math.max(0, Math.floor(v / 10)))]++;
+      const n = bands.reduce((a, v) => a + v, 0);
+      categoryBarChart(histBox, {
+        categories: bands.map((_, i) => `${i * 10}–${i * 10 + 10}`),
+        series: [{ name: this._t("stoSocHist"), color: "--pva-bout", values: n ? bands.map((v) => (v / n) * 100) : [] }],
+        fmtValue: (v, axis) => `${num(v, axis ? 0 : 1)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: timeLabels, label: this._t("stoSocHist"),
+      });
+    }
     const note = root.getElementById("sonote");
     note.textContent = [tIn > 0 && tOut > 0 ? this._t("stoNote") : "", !(cap > 0) && tIn > 0 ? this._t("stoNoCap") : "", ...stoNotes].filter(Boolean).join(" ");
     root.querySelectorAll("#sto .chart").forEach((x) => x.classList.remove("loading"));
@@ -1352,7 +1430,8 @@ class PVAssistantPanel extends HTMLElement {
     box.innerHTML = `<div class="filters" id="franges"></div><div class="tiles" id="ftiles"></div><p class="note" id="fcnote"></p>
       <h3 class="ch" id="fchead">${esc(this._t("anaForecast"))}</h3><div class="chart" id="fcchart"></div>
       <h3 class="ch">${esc(this._t("anaForecastDev"))}</h3><div class="chart" id="fcdev"></div>
-      <div id="fcbbox"><h3 class="ch">${esc(this._t("fcBuckets"))}</h3><div class="chart" id="fcbuckets"></div></div>`;
+      <div id="fcdaybox"><h3 class="ch">${esc(this._t("fcHourChart"))}</h3><div class="chart" id="fcday"></div></div>
+      <div id="fcbbox"><h3 class="ch">${esc(this._t("fcBuckets"))}</h3><div class="chart" id="fcbchart"></div><div class="chart" id="fcbuckets"></div></div>`;
     const ranges = box.querySelector("#franges");
     for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]]) {
       const b = document.createElement("button");
@@ -1453,10 +1532,25 @@ class PVAssistantPanel extends HTMLElement {
         return { from: at, to: at + 3, kwh: (kwh * best) / room };
       };
       const show = (w, label) => { if (w) tiles.push([this._t("fcBestVal").replace("{from}", String(w.from)).replace("{to}", String(w.to)).replace("{kwh}", num(w.kwh)), label]); };
-      show(window(0, fTom), this._t("fcBestTom"));
+      const wTom = window(0, fTom);
+      show(wTom, this._t("fcBestTom"));
+      // expected production tomorrow per hour; the best window is highlighted
+      const hoursOn = share.map((v, h) => [v, h]).filter(([v]) => v > 0.003).map(([, h]) => h);
+      const dayBox = root.getElementById("fcdaybox");
+      dayBox.hidden = !(wTom && hoursOn.length);
+      if (!dayBox.hidden) {
+        const inWin = (h) => h >= wTom.from && h < wTom.to;
+        categoryBarChart(root.getElementById("fcday"), {
+          categories: hoursOn.map((h) => `${String(h).padStart(2, "0")}`), stacked: true,
+          series: [{ name: this._t("fcWindow"), color: "--pva-prod", values: hoursOn.map((h) => (inWin(h) ? fTom * share[h] : null)) },
+                   { name: this._t("fcOtherHours"), color: "--pva-avg", values: hoursOn.map((h) => (inWin(h) ? null : fTom * share[h])) }],
+          fmtValue: (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`, empty: this._t("noData"), tableLabels: { summary: this._t("table"), time: this._t("time") }, label: this._t("fcHourChart"),
+        });
+      }
       show(window(key(Date.now()).hour + 1, fRest), this._t("fcBestRest"));
       if (tiles.some(([, l]) => l === this._t("fcBestTom") || l === this._t("fcBestRest"))) notePart = this._t("fcBestNote");
     }
+    if (profDays < 3) root.getElementById("fcdaybox").hidden = true;
     root.getElementById("fcnote").textContent = notePart;
 
     const tl = { summary: this._t("table"), time: this._t("time") };
@@ -1507,6 +1601,12 @@ class PVAssistantPanel extends HTMLElement {
           return `<tr><td>${esc(this._t(["fcBLow", "fcBMid", "fcBHigh"][gi]))}</td><td>${g.length}</td><td>${esc(num(avgFc))}</td><td>${esc(`${avgDev > 0 ? "+" : ""}${num(avgDev)} %`)}</td></tr>`;
         }).join("");
         root.getElementById("fcbuckets").classList.remove("loading");
+        categoryBarChart(root.getElementById("fcbchart"), {
+          categories: groups.map((_, gi) => this._t(["fcBLow", "fcBMid", "fcBHigh"][gi])),
+          series: [{ name: this._t("fcBDev"), color: "--pva-pos", colorOf: (v) => (v >= 0 ? "--pva-pos" : "--pva-neg"), values: groups.map((g) => g.reduce((a, i) => a + dev[i], 0) / g.length) }],
+          legendItems: [{ name: this._t("aboveFc"), color: "--pva-pos" }, { name: this._t("belowFc"), color: "--pva-neg" }],
+          fmtValue: (v, axis) => `${v > 0 ? "+" : ""}${num(v, axis ? 0 : 1)} %`, empty: this._t("noData"), tableLabels: tl, label: this._t("fcBChart"),
+        });
         root.getElementById("fcbuckets").innerHTML = `<table class="dtable"><thead><tr><th></th><th>${esc(this._t("fcBDays"))}</th><th>${esc(this._t("fcBAvg"))}</th><th>${esc(this._t("fcBDev"))}</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
       }
     }
@@ -1542,6 +1642,7 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch">${esc(this._t("deviation"))}</h3><div class="chart" id="dchart"></div>
       <h3 class="ch">${esc(this._t("yearTotal"))}</h3><div class="chart" id="achart"></div>
       <h3 class="ch">${esc(this._t("yearDev"))}</h3><div class="chart" id="adchart"></div>
+      <h3 class="ch">${esc(this._t("yearRoll"))}</h3><div class="chart" id="rollchart"></div>
       <p class="note">${esc(this._t("yearNote"))}</p>`;
     box.querySelector("#yprev").addEventListener("click", () => { this._yy -= 1; this._drawYears(); });
     box.querySelector("#ynext").addEventListener("click", () => { this._yy += 1; this._drawYears(); });
@@ -1792,6 +1893,29 @@ class PVAssistantPanel extends HTMLElement {
       root.getElementById("ytiles").insertAdjacentHTML("beforeend", extra.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join(""));
     }
 
+    // production of the last 12 months as a rolling sum: smooths the seasons, a steady slope shows ageing or a lasting problem
+    {
+      const first = keys.length ? minY : cy;
+      const seq = [];
+      for (let y = first; y <= cy; y++) for (let m = 0; m < 12; m++) if (complete(y, m)) seq.push([y, m]);
+      const pts = [];
+      for (let i = 11; i < seq.length; i++) {
+        const win = seq.slice(i - 11, i + 1);
+        if (win.every(([y, m]) => val(y, m) != null)) pts.push([new Date(seq[i][0], seq[i][1] + 1, 1).getTime(), win.reduce((a, [y, m]) => a + val(y, m), 0)]);
+      }
+      const rollBox = root.getElementById("rollchart");
+      if (pts.length >= 2) {
+        const fRoll = new Intl.DateTimeFormat(lang, { month: "short", year: "2-digit" });
+        const t0 = pts[0][0], t1 = pts.at(-1)[0];
+        lineChart(rollBox, {
+          series: [{ name: this._t("yearRoll"), short: "12 M", color: "--pva-prod", points: pts }], t0, t1, step: 40 * 86400e3,
+          tickStep: Math.max(30 * 86400e3, Math.round((t1 - t0) / 5 / (30 * 86400e3)) * 30 * 86400e3),
+          fmtValue: (v, axis) => `${num(v, axis, 0)}${axis ? "" : " kWh"}`, fmtTime: (t) => fRoll.format(t - 86400e3), fmtTick: (t) => fRoll.format(t - 86400e3),
+          empty: this._t("noData"), tableLabels: tl, label: this._t("yearRoll"),
+        });
+      } else rollBox.innerHTML = `<p class="empty">${esc(this._t("noData"))}</p>`;
+    }
+
     if (Y === cy) root.getElementById("ychart").append(Object.assign(document.createElement("p"), { className: "note", textContent: `* ${this._t("running")}` }));
   }
 
@@ -1800,10 +1924,13 @@ class PVAssistantPanel extends HTMLElement {
   _buildTabs() {
     const list = [["now", "now", "now"]];
     if (this._keys().P.prod.length) list.push(["powerTab", "pwr", "power"]);
+    if (this._plantsOn) list.push(["plantsTab", "plt", "plants"]);
     if (this._keys().P.prod.length) list.push(["analysisTab", "ana", "analysis"]);
     if (this._hist) list.push(["history", "hist", "history"]);
+    if (this._balanceOn) list.push(["balanceTab", "bal", "balance"]);
     if (this._storageOn) list.push(["storageTab", "sto", "storage"]);
     if (this._forecastOn) list.push(["forecastTab", "fcs", "forecast"]);
+    if (this._moneyOn) list.push(["moneyTab", "mon", "money"]);
     if (this._yearsOn) list.push(["years", "yearsec", "years"]);
     if (this._keys().P.prod.length || this._keys().E.prod.length) list.push(["settingsTab", "setsec", "settings"]);
     this._tabs = list;
@@ -1839,6 +1966,9 @@ class PVAssistantPanel extends HTMLElement {
       b.tabIndex = b.dataset.tab === id ? 0 : -1;
     });
     // charts measure their container; hidden tabs have no width, so draw once visible
+    if (id === "plants") this._loadPlants();
+    if (id === "balance") this._loadBalance();
+    if (id === "money") { if (!this._mdata) this._loadMoney(); else this._drawMoney(); }
     if (id === "analysis") this._loadAnalysis();
     if (id === "history") this._draw();
     if (id === "storage") this._loadStorage();
@@ -2303,6 +2433,438 @@ class PVAssistantPanel extends HTMLElement {
     });
   }
 
+  // ---------------------------------------------------------------- plants tab
+
+  // Range buttons for the tabs that load their own data: list of [value, label key]; cb(value) is called on a click.
+  _rangeButtons(box, list, current, cb) {
+    box.replaceChildren();
+    for (const [v, label] of list) {
+      const b = document.createElement("button");
+      b.textContent = this._t(label);
+      b.setAttribute("aria-pressed", String(v === current));
+      b.addEventListener("click", () => {
+        box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        cb(v);
+      });
+      box.append(b);
+    }
+  }
+
+  // points on the straight line from a to b ([ts, value] pairs), one per step: the line charts break a line where
+  // the gap between two points is larger than 1.5 steps, so a long straight line needs intermediate points
+  _linePoints(a, b, step) {
+    const n = Math.max(1, Math.ceil((b[0] - a[0]) / step));
+    return Array.from({ length: n + 1 }, (_, i) => [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n]);
+  }
+
+  // start of a range given in days (or "ytd"): midnight, local time
+  _daysStart(days) {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const n = days === "ytd" ? Math.floor((start - new Date(start.getFullYear(), 0, 1)) / 86400e3) + 1 : days;
+    start.setDate(start.getDate() - (n - 1));
+    return start;
+  }
+
+  _buildPlants() {
+    const { P } = this._keys();
+    const box = this._root.getElementById("plt");
+    this._plantsOn = P.prod.length > 0;
+    if (!this._plantsOn) { box.replaceChildren(); return; }
+    if (!this._pdays) this._pdays = 90;
+    box.innerHTML = `<div class="filters" id="pranges"></div><div class="tiles" id="pltiles"></div>
+      <h3 class="ch">${esc(this._t("pltTable"))}</h3><div class="chart" id="plttable"></div>
+      <h3 class="ch">${esc(this._t("pltDay"))}</h3><div class="chart" id="pltday"></div>
+      <h3 class="ch">${esc(this._t("pltDur"))}</h3><div class="chart" id="pltdur"></div><p class="note">${esc(this._t("pltDurNote"))}</p>
+      <h3 class="ch">${esc(this._t("pltShade"))}</h3><div class="chart" id="pltshade"></div><p class="note">${esc(this._t("pltShadeNote"))}</p>
+      <h3 class="ch">${esc(this._t("anaMonthly"))}</h3><div class="chart" id="pltmonth"></div>
+      <h3 class="ch">${esc(this._t("pltHeat"))}</h3><div class="filters" id="pltsel"></div><div class="chart" id="pltheat"></div>`;
+    this._rangeButtons(box.querySelector("#pranges"), [[30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]], this._pdays, (d) => { this._pdays = d; this._loadPlants(); });
+  }
+
+  async _loadPlants() {
+    if (!this._plantsOn || !this._hass || !this._root.getElementById("pranges")) return;
+    const token = (this._pltoken = (this._pltoken || 0) + 1);
+    const { P } = this._keys();
+    const start = this._daysStart(this._pdays);
+    this._root.querySelectorAll("#plt .chart").forEach((c) => c.classList.add("loading"));
+    let pres = {};
+    try {
+      pres = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: new Date().toISOString(),
+        statistic_ids: [...new Set(P.prod)], period: "hour", types: ["mean"], units: { power: "W" } });
+    } catch (e) { pres = {}; }
+    if (token !== this._pltoken) return;
+    this._pldata = { pres, start };
+    this._drawPlants();
+  }
+
+  _drawPlants() {
+    const d = this._pldata;
+    const root = this._root;
+    if (!d || !this._plantsOn || !root.getElementById("plttable")) return;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const key = localKeyFn(tz);
+    const num = (v, dec = 1) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const { series } = this._buildPlantSeries(d.pres);
+    const H = 3600e3, AX0 = Date.UTC(2000, 0, 1);
+    const tl = { summary: this._t("table"), time: this._t("time") };
+    root.querySelectorAll("#plt .chart").forEach((c) => c.classList.remove("loading"));
+    const hh = (h) => `${String(h).padStart(2, "0")}:00`;
+    const color = (k) => `--pva-s${(k % 7) + 1}`;
+    const short = (n) => `${n.slice(0, 11)}${n.length > 11 ? "…" : ""}`;
+    const genSet = this._cfg.settings?.general || {};
+    const lat = genSet.latitude || this._hass.config?.latitude, lon = genSet.longitude || this._hass.config?.longitude;
+    const located = typeof lat === "number" && typeof lon === "number";
+
+    // overview table
+    const total = series.reduce((a, s) => a + s.kwh, 0);
+    root.getElementById("pltiles").innerHTML = total > 0
+      ? `<div class="tile"><b>${esc(num(total))} kWh</b><span>${esc(this._t("anaTotal"))}</span></div><div class="tile"><b>${esc(String(series.length))}</b><span>${esc(this._t("pltPlant"))}</span></div>` : "";
+    const sorted = [...series].sort((a, b) => b.kwh - a.kwh);
+    root.getElementById("plttable").innerHTML = series.length
+      ? `<table class="dtable"><thead><tr><th>${esc(this._t("pltName"))}</th><th>${esc(this._t("pltStrings"))}</th><th>${esc(this._t("pltPeak"))}</th><th>${esc(this._t("pltInv"))}</th><th>${esc(this._t("pltKwh"))}</th><th>${esc(this._t("pltSpec"))}</th><th>${esc(this._t("pltShare"))}</th></tr></thead><tbody>${
+        sorted.map((s) => `<tr><td>${esc(s.name)}</td><td>${s.members.length}</td><td>${s.peak ? esc(num(s.peak, 0)) : "–"}</td><td>${s.max_w > 0 ? esc(num(s.max_w, 0)) : "–"}</td><td>${esc(num(s.kwh))}</td><td>${s.peak ? esc(num(s.kwh / (s.peak / 1000), 1)) : "–"}</td><td>${total > 0 ? esc(num((s.kwh / total) * 100, 0)) : "–"} %</td></tr>`).join("")}</tbody></table>`
+      : `<p class="empty">${esc(this._t("noData"))}</p>`;
+
+    // typical day: average power per hour of the day
+    const hourly = (m) => {
+      const sums = Array(24).fill(0), n = Array(24).fill(0);
+      for (const [ts, w] of m) { const h = key(ts).hour; sums[h] += w; n[h]++; }
+      return sums.map((v, h) => (n[h] ? v / n[h] : 0));
+    };
+    const axisFmt = { t0: AX0, t1: AX0 + 23 * H, step: H, tickStep: 3 * H, fmtTime: (t) => hh((t - AX0) / H), fmtTick: (t) => hh((t - AX0) / H) };
+    const wv = (v, axis) => `${num(v, 0)}${axis ? "" : " W"}`;
+    lineChart(root.getElementById("pltday"), {
+      series: series.map((s, k) => ({ name: s.name, short: short(s.name), color: color(k), points: hourly(s.m).map((v, h) => [AX0 + h * H, v]) })),
+      ...axisFmt, fmtValue: wv, empty: this._t("noData"), tableLabels: tl, label: this._t("pltDay"),
+    });
+
+    // power duration curve: the hourly values sorted by size, with the inverter limit as a line
+    const maxN = Math.max(0, ...series.map((s) => s.m.size));
+    const thin = Math.max(1, Math.ceil(maxN / 240)); // at most about 240 points per curve
+    const durSeries = [];
+    series.forEach((s, k) => {
+      const vals = [...s.m.values()].filter((v) => v > 0).sort((a, b) => b - a);
+      const pts = [];
+      for (let i = 0; i < vals.length; i += thin) pts.push([i * H, vals[i]]);
+      if (pts.length) durSeries.push({ name: s.name, short: short(s.name), color: color(k), points: pts });
+    });
+    const durEnd = Math.max(H, ...durSeries.map((s) => s.points.at(-1)[0]));
+    series.forEach((s, k) => {
+      if (s.max_w > 0) durSeries.push({ name: `${this._t("pltLimit")}: ${s.name}`, short: this._t("pltLimit"), color: "--pva-neg", points: this._linePoints([0, s.max_w], [durEnd, s.max_w], thin * H) });
+    });
+    const durTick = Math.max(H, Math.round(durEnd / 5 / H / 10) * 10 * H || H);
+    lineChart(root.getElementById("pltdur"), {
+      series: durSeries, t0: 0, t1: durEnd, step: thin * H * 1.5, tickStep: durTick,
+      fmtTime: (t) => `${num(t / H, 0)} ${this._t("pltHoursUnit")}`, fmtTick: (t) => `${num(t / H, 0)} ${this._t("pltHoursUnit")}`,
+      fmtValue: wv, empty: this._t("noData"), tableLabels: tl, label: this._t("pltDur"),
+    });
+
+    // yield by time of day against the plant's own clear-sky curve (dips = possible shading)
+    const shadeSeries = [];
+    if (located) series.forEach((s, k) => {
+      const gs = s.groups.filter((g) => g.azimuth != null && g.tilt != null);
+      if (!gs.length) return;
+      const sp = shadingProfile(s.m, s.max_w, gs, lat, lon, key);
+      if (sp) shadeSeries.push({ name: s.name, short: short(s.name), color: color(k), points: sp.profile.map((x) => [AX0 + x.hour * H, x.pct]) });
+    });
+    lineChart(root.getElementById("pltshade"), {
+      series: shadeSeries, ...axisFmt, fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`,
+      empty: this._t("noData"), tableLabels: tl, label: this._t("pltShade"),
+    });
+
+    // yield per month
+    const my = this._monthlyYield(series, d.start, key, key(Date.now()).day);
+    const sameYear = my.months.length && my.months[0].slice(0, 4) === my.months.at(-1).slice(0, 4);
+    const monthFmt = new Intl.DateTimeFormat(lang, sameYear ? { month: "short" } : { month: "short", year: "2-digit" });
+    const monthName = (k) => monthFmt.format(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 15));
+    categoryBarChart(root.getElementById("pltmonth"), {
+      categories: my.months.map(monthName),
+      series: my.plants.map((s, i) => ({ name: s.name, color: color(series.indexOf(s)), values: my.months.map((k) => my.val(i, k)) })),
+      fmtValue: (v, axis) => `${num(v, axis ? 0 : 1)}${axis ? "" : " kWh/kWp"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("anaMonthly"),
+    });
+
+    // typical day per month as a heat map, for the whole system or one plant
+    const selBox = root.getElementById("pltsel");
+    const options = [["all", this._t("pltAll")], ...series.map((s) => [s.id, s.name])];
+    if (!options.some(([v]) => v === this._pplant)) this._pplant = "all";
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", this._t("pltHeat"));
+    for (const [v, label] of options) { const o = document.createElement("option"); o.value = v; o.textContent = label; o.selected = v === this._pplant; sel.append(o); }
+    sel.addEventListener("change", () => { this._pplant = sel.value; this._drawPlants(); });
+    selBox.replaceChildren(sel);
+    const chosen = this._pplant === "all" ? series : series.filter((s) => s.id === this._pplant);
+    const cells = new Map(); // month -> {sum[24], n[24]}
+    for (const s of chosen) for (const [ts, w] of s.m) {
+      const k = key(ts); const mk = k.day.slice(0, 7);
+      if (!cells.has(mk)) cells.set(mk, { sum: Array(24).fill(0), n: Array(24).fill(0) });
+      const c = cells.get(mk); c.sum[k.hour] += w; c.n[k.hour] += 1 / chosen.length; // the plants add up, the samples count once per hour
+    }
+    const heatMonths = [...cells.keys()].sort();
+    heatmap(root.getElementById("pltheat"), {
+      days: heatMonths.map((mk) => ({ label: monthName(mk), cells: cells.get(mk).sum.map((v, h) => (cells.get(mk).n[h] ? v / cells.get(mk).n[h] / 1000 : 0)) })),
+      colorVar: "--pva-prod", fmt: (v) => `${num(v, 2)} kWh`, hourLabel: hh, empty: this._t("noData"), label: this._t("pltHeat"),
+    });
+    root.getElementById("pltheat").classList.remove("loading");
+  }
+
+  // ---------------------------------------------------------------- balance tab
+
+  _buildBalance() {
+    const { E, G } = this._keys();
+    const box = this._root.getElementById("bal");
+    this._balanceOn = !!(E.prod.length && (E.feed.length || G.impE.length || E.sin.length || E.sout.length || E.comb.length));
+    if (!this._balanceOn) { box.replaceChildren(); return; }
+    if (!this._brange) this._brange = "d30";
+    box.innerHTML = `<div class="filters" id="branges"></div><div class="tiles" id="btiles"></div>
+      <div id="buse"><h3 class="ch">${esc(this._t("balUse"))}</h3><div class="chart" id="busec"></div></div>
+      <div id="bcov"><h3 class="ch">${esc(this._t("balCover"))}</h3><div class="chart" id="bcovc"></div></div>
+      <div id="brat"><h3 class="ch">${esc(this._t("balRates"))}</h3><div class="chart" id="bratc"></div></div>
+      <p class="note">${esc(this._t("balNote"))}</p>`;
+    this._rangeButtons(box.querySelector("#branges"), [["today", "today"], ["d7", "d7"], ["d30", "d30"], ["ytd", "dYear"], ["y12", "d365"]], this._brange, (r) => { this._brange = r; this._loadBalance(); });
+  }
+
+  async _loadBalance() {
+    if (!this._balanceOn || !this._hass || !this._root.getElementById("branges")) return;
+    const token = (this._btoken = (this._btoken || 0) + 1);
+    const rd = this._rangeDef(this._brange);
+    const { E, G } = this._keys();
+    const filt = this._cfg.filtered || {};
+    const ids = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb, ...G.impE, ...G.houseE];
+    this._root.querySelectorAll("#bal .chart").forEach((c) => c.classList.add("loading"));
+    const eres = await this._stats(ids.concat(ids.map((i) => filt[i]).filter(Boolean)), rd.long ? "month" : rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd);
+    if (token !== this._btoken) return;
+    this._bdata = { rd, eres, filt };
+    this._drawBalance();
+  }
+
+  _drawBalance() {
+    const d = this._bdata;
+    const root = this._root;
+    if (!d || !this._balanceOn || !root.getElementById("branges")) return;
+    const { rd, eres, filt } = d;
+    const { E, G } = this._keys();
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const fm = (o) => new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
+    const num = (v, dec = 1) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const sumMap = (ids, fn = (v) => v) => {
+      const m = new Map();
+      for (const id of ids) for (const r of mergedRows(eres, id, filt, "change")) m.set(r.start, (m.get(r.start) || 0) + fn(r.change));
+      return m;
+    };
+    const flip = (inv) => (v) => (inv ? -v : v), nz = (v) => Math.max(v, 0);
+    const merge = (a, b) => { const m = new Map(a); for (const [k, v] of b) m.set(k, (m.get(k) || 0) + v); return m; };
+    const prod = sumMap(E.prod), feed = sumMap(E.feed), imp = sumMap(G.impE), house = sumMap(G.houseE);
+    const sIn = merge(sumMap(E.sin), sumMap(E.comb, (v) => nz(-flip(E.inv)(v))));
+    const sOut = merge(sumMap(E.sout), sumMap(E.comb, (v) => nz(flip(E.inv)(v))));
+    const keys = [...prod.keys()].sort((a, b) => a - b);
+    const hourly = rd.eBucket === 3600e3 && !rd.long;
+    const fMon = fm(new Date(rd.t0).getFullYear() === new Date(rd.t1 - 1).getFullYear() ? { month: "short" } : { month: "short", year: "2-digit" });
+    const label = rd.long ? (t) => fMon.format(t + 15 * 24 * 3600e3) : hourly ? (t) => fm({ hour: "2-digit", minute: "2-digit" }).format(t) : (t) => fm({ day: "numeric", month: "numeric" }).format(t);
+    const cats = keys.map(label);
+    const at = (m, k) => m.get(k) ?? 0;
+    // split of the production: into the storage (limited by what is not fed in), used directly, fed in
+    const toStorage = keys.map((k) => Math.min(at(sIn, k), nz(at(prod, k) - at(feed, k))));
+    const direct = keys.map((k, i) => nz(at(prod, k) - at(feed, k) - toStorage[i]));
+    const feedV = keys.map((k) => at(feed, k));
+    const tl = { summary: this._t("table"), time: this._t("time") };
+    const fv = (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`;
+    root.querySelectorAll("#bal .chart").forEach((c) => c.classList.remove("loading"));
+
+    const useBox = root.getElementById("buse");
+    useBox.hidden = !E.feed.length;
+    if (E.feed.length) categoryBarChart(root.getElementById("busec"), {
+      categories: cats, stacked: true,
+      series: [{ name: this._t("direct"), color: "--pva-direct", values: direct }, ...(sIn.size ? [{ name: this._t("balToStorage"), color: "--pva-bin", values: toStorage }] : []), { name: this._t("feed"), color: "--pva-feed", values: feedV }],
+      fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("balUse"),
+    });
+    const outV = keys.map((k) => at(sOut, k)), impV = keys.map((k) => at(imp, k));
+    const covBox = root.getElementById("bcov");
+    const hasCover = G.impE.length || sOut.size;
+    covBox.hidden = !hasCover;
+    if (hasCover) categoryBarChart(root.getElementById("bcovc"), {
+      categories: cats, stacked: true,
+      series: [{ name: this._t("direct"), color: "--pva-direct", values: direct }, ...(sOut.size ? [{ name: this._t("sout"), color: "--pva-bout", values: outV }] : []), ...(G.impE.length ? [{ name: this._t("balFromGrid"), color: "--pva-grid", values: impV }] : [])],
+      fmtValue: fv, empty: this._t("noData"), tableLabels: tl, label: this._t("balCover"),
+    });
+    // self-sufficiency: share of the consumption not taken from the grid; self-consumption: share of the production not fed in
+    const covered = (i, k) => direct[i] + at(sOut, k);
+    const autarky = keys.map((k, i) => {
+      if (!G.impE.length) return null;
+      const use = house.size ? at(house, k) : covered(i, k) + at(imp, k);
+      return use > 0 ? (Math.max(use - at(imp, k), 0) / use) * 100 : null;
+    });
+    const selfCons = keys.map((k) => (E.feed.length && at(prod, k) > 0 ? (nz(at(prod, k) - at(feed, k)) / at(prod, k)) * 100 : null));
+    const ratBox = root.getElementById("brat");
+    ratBox.hidden = !(G.impE.length || E.feed.length);
+    if (!ratBox.hidden) categoryBarChart(root.getElementById("bratc"), {
+      categories: cats,
+      series: [...(G.impE.length ? [{ name: this._t("autarky"), color: "--pva-pos", values: autarky }] : []), ...(E.feed.length ? [{ name: this._t("selfShare"), color: "--pva-prod", values: selfCons }] : [])],
+      fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("balRates"),
+    });
+
+    // totals of the range
+    const sum = (a) => a.reduce((x, y) => x + y, 0);
+    const tProd = sum([...prod.values()]), tDirect = sum(direct), tFeed = sum(feedV), tStore = sum(toStorage), tOut = sum(outV), tImp = sum(impV);
+    const tiles = [[tProd, this._t("production")]];
+    if (E.feed.length) tiles.push([tDirect, this._t("direct")], [tFeed, this._t("feed")]);
+    if (sIn.size) tiles.push([tStore, this._t("balToStorage")]);
+    if (sOut.size) tiles.push([tOut, this._t("sout")]);
+    if (G.impE.length) tiles.push([tImp, this._t("balFromGrid")]);
+    let html = tiles.filter(([v]) => v > 0).map(([v, l]) => `<div class="tile"><b>${esc(num(v))} kWh</b><span>${esc(l)}</span></div>`).join("");
+    const tHouse = house.size ? sum([...house.values()]) : tDirect + tOut + tImp;
+    if (G.impE.length && tHouse > 0) html += `<div class="tile"><b>${esc(num((Math.max(tHouse - tImp, 0) / tHouse) * 100, 0))} %</b><span>${esc(this._t("autarky"))}</span></div>`;
+    if (E.feed.length && tProd > 0) html += `<div class="tile"><b>${esc(num((tDirect + tStore) / tProd * 100, 0))} %</b><span>${esc(this._t("selfShare"))}</span></div>`;
+    root.getElementById("btiles").innerHTML = html;
+  }
+
+  // ---------------------------------------------------------------- economics tab
+
+  _buildMoney() {
+    const { E } = this._keys();
+    const box = this._root.getElementById("mon");
+    this._moneyOn = !!(E.prod.length && E.feed.length);
+    if (!this._moneyOn) { box.replaceChildren(); return; }
+    if (!this._mrange) this._mrange = "y12";
+    box.innerHTML = `<div class="filters" id="mranges"></div><div class="tiles" id="mtiles"></div><p class="note" id="mnote"></p>
+      <div id="mben"><h3 class="ch">${esc(this._t("monBenefit"))}</h3><div class="chart" id="mbenc"></div></div>
+      <div id="mcum"><h3 class="ch">${esc(this._t("monCum"))}</h3><div class="chart" id="mcumc"></div></div>
+      <div id="msto"><h3 class="ch">${esc(this._t("monSto"))}</h3><div class="chart" id="mstoc"></div></div>`;
+    this._rangeButtons(box.querySelector("#mranges"), [["ytd", "dYear"], ["y12", "d365"], ["all", "all"]], this._mrange, (r) => { this._mrange = r; this._drawMoney(); });
+  }
+
+  async _loadMoney() {
+    if (!this._moneyOn || !this._hass || !this._root.getElementById("mranges")) return;
+    const token = (this._mtoken = (this._mtoken || 0) + 1);
+    const { E } = this._keys();
+    const filt = this._cfg.filtered || {};
+    const ids = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb];
+    this._root.querySelectorAll("#mon .chart").forEach((c) => c.classList.add("loading"));
+    let res = {};
+    try { res = await this._ltMonthly("money", ids.concat(ids.map((i) => filt[i]).filter(Boolean)), "change", { energy: "kWh" }); } catch (e) { res = {}; }
+    if (token !== this._mtoken) return;
+    this._mdata = { res, filt };
+    this._drawMoney();
+  }
+
+  _drawMoney() {
+    const d = this._mdata;
+    const root = this._root;
+    if (!d || !this._moneyOn || !root.getElementById("mranges")) return;
+    const { res, filt } = d;
+    const { E } = this._keys();
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const num = (v, dec = 0) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const eur = (v, dec = 0) => `${num(v, dec)} €`;
+    const gen = this._cfg.settings?.general || {};
+    const Gk = this._keys().G;
+    const numOf = (id) => { const v = parseFloat(this._hass.states[id]?.state); return Number.isNaN(v) ? null : v; };
+    const pImp = (Gk.priceImp && numOf(Gk.priceImp)) || gen.price_import || null;
+    const pFeed = (Gk.priceFeed && numOf(Gk.priceFeed)) || gen.price_feed_in || null;
+    root.querySelectorAll("#mon .chart").forEach((c) => c.classList.remove("loading"));
+    const hide = (hidden) => ["mben", "mcum", "msto"].forEach((id) => { root.getElementById(id).hidden = hidden; });
+    if (!pImp && !pFeed) {
+      hide(true);
+      root.getElementById("mtiles").replaceChildren();
+      root.getElementById("mnote").textContent = this._t("monNoPrice");
+      return;
+    }
+    root.getElementById("mnote").textContent = this._t("monNote");
+    // month -> kWh summed over the sensors; the filtered copy wins per month
+    const ym = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "numeric", timeZone: tz });
+    const monthKey = (ts) => { const p = Object.fromEntries(ym.formatToParts(ts).map((x) => [x.type, x.value])); return `${p.year}-${String(p.month).padStart(2, "0")}`; };
+    const sumMap = (ids, fn = (v) => v) => {
+      const m = new Map();
+      for (const id of ids) {
+        const own = new Map();
+        for (const r of res[id] || []) if (r.change != null) own.set(r.start, r.change);
+        for (const r of res[filt[id]] || []) if (r.change != null) own.set(r.start, r.change);
+        for (const [ts, v] of own) { const k = monthKey(ts); m.set(k, (m.get(k) || 0) + fn(v)); }
+      }
+      return m;
+    };
+    const flip = (inv) => (v) => (inv ? -v : v), nz = (v) => Math.max(v, 0);
+    const prod = sumMap(E.prod), feed = sumMap(E.feed);
+    const merge = (a, b) => { const m = new Map(a); for (const [k, v] of b) m.set(k, (m.get(k) || 0) + v); return m; };
+    const sIn = merge(sumMap(E.sin), sumMap(E.comb, (v) => nz(-flip(E.inv)(v))));
+    const sOut = merge(sumMap(E.sout), sumMap(E.comb, (v) => nz(flip(E.inv)(v))));
+    const all = [...prod.keys()].filter((k) => feed.has(k)).sort();
+    const saving = (k) => nz(prod.get(k) - feed.get(k)) * (pImp || 0);
+    const revenue = (k) => feed.get(k) * (pFeed || 0);
+    const nowKey = monthKey(Date.now());
+    const monthLabel = (k, withYear) => new Intl.DateTimeFormat(lang, withYear ? { month: "short", year: "2-digit" } : { month: "short" }).format(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 15));
+    // months of the chosen range
+    const year = nowKey.slice(0, 4);
+    const nowIdx = Number(nowKey.slice(5, 7));
+    const cutoff12 = (() => { const t = new Date(Number(year), nowIdx - 12, 1); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`; })();
+    const months = all.filter((k) => (this._mrange === "ytd" ? k.slice(0, 4) === year : this._mrange === "y12" ? k >= cutoff12 : true));
+    const withYear = months.length && months[0].slice(0, 4) !== months.at(-1).slice(0, 4);
+    const cats = months.map((k) => `${monthLabel(k, withYear)}${k === nowKey ? "*" : ""}`);
+    const tl = { summary: this._t("table"), time: this._t("time") };
+    hide(false);
+    categoryBarChart(root.getElementById("mbenc"), {
+      categories: cats, stacked: true,
+      series: [...(pImp ? [{ name: this._t("monSaving"), color: "--pva-direct", values: months.map(saving) }] : []), ...(pFeed ? [{ name: this._t("monRevenue"), color: "--pva-feed", values: months.map(revenue) }] : [])],
+      fmtValue: (v, axis) => `${num(v, axis ? 0 : 2)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("monBenefit"),
+    });
+
+    // cumulative benefit since the first recorded month against the plant cost, with the extrapolation to the payback
+    const cost = gen.system_cost_eur > 0 ? gen.system_cost_eur : 0;
+    const monthTs = (k) => new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1).getTime();
+    let run = 0;
+    const cumPts = all.map((k) => { run += saving(k) + revenue(k); return [monthTs(k) + 31 * 86400e3, run]; }); // value at the end of the month
+    const done = all.filter((k) => k !== nowKey);
+    const last12 = done.slice(-12);
+    const avg12 = last12.length >= 6 ? last12.reduce((a, k) => a + saving(k) + revenue(k), 0) / last12.length : 0;
+    let payTs = null;
+    if (cost > 0 && cumPts.length && avg12 > 0 && run < cost) {
+      const monthsLeft = (cost - run) / avg12;
+      if (monthsLeft <= 12 * 40) payTs = cumPts.at(-1)[0] + monthsLeft * (365.25 / 12) * 86400e3;
+    }
+    const cumBox = root.getElementById("mcumc");
+    if (cumPts.length >= 2) {
+      const t0 = cumPts[0][0], t1 = Math.max(cumPts.at(-1)[0], payTs || 0, 1);
+      const fY = new Intl.DateTimeFormat(lang, { month: "short", year: "2-digit", timeZone: tz });
+      const series = [{ name: this._t("monCumLabel"), short: this._t("monCumLabel"), color: "--pva-prod", points: cumPts }];
+      if (cost > 0) series.push({ name: this._t("monCost"), short: this._t("monCost"), color: "--pva-neg", points: this._linePoints([t0, cost], [t1, cost], 30 * 86400e3) });
+      if (payTs) series.push({ name: this._t("monPayDate"), short: this._t("monPayDate"), color: "--pva-s1", points: this._linePoints(cumPts.at(-1), [payTs, cost], 30 * 86400e3) });
+      lineChart(cumBox, {
+        series, t0, t1, step: 40 * 86400e3, tickStep: Math.max(30 * 86400e3, Math.round((t1 - t0) / 5 / (30 * 86400e3)) * 30 * 86400e3),
+        fmtValue: (v, axis) => `${num(v, axis ? 0 : 2)}${axis ? "" : " €"}`, fmtTime: (t) => fY.format(t), fmtTick: (t) => fY.format(t),
+        empty: this._t("noData"), tableLabels: tl, label: this._t("monCum"),
+      });
+    } else cumBox.innerHTML = `<p class="empty">${esc(this._t("noData"))}</p>`;
+
+    // storage benefit per month: discharged energy replaces bought energy, charged energy would otherwise have been fed in
+    const stoBox = root.getElementById("msto");
+    const hasSto = !!(pImp && (sIn.size || sOut.size));
+    stoBox.hidden = !hasSto;
+    const stoVal = (k) => (sOut.get(k) || 0) * pImp - (sIn.get(k) || 0) * (pFeed || 0);
+    if (hasSto) categoryBarChart(root.getElementById("mstoc"), {
+      categories: cats,
+      series: [{ name: this._t("stoBenefit"), color: "--pva-bout", colorOf: (v) => (v >= 0 ? "--pva-bout" : "--pva-neg"), values: months.map(stoVal) }],
+      fmtValue: (v, axis) => `${num(v, axis ? 0 : 2)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("monSto"),
+    });
+
+    // tiles
+    const tiles = [];
+    const total = months.reduce((a, k) => a + saving(k) + revenue(k), 0);
+    if (months.length) {
+      tiles.push([eur(total), this._t("monTotal")]);
+      tiles.push([eur(total / months.length), this._t("monAvg")]);
+    }
+    if (cost > 0 && run > 0) {
+      tiles.push([`${num((run / cost) * 100)} %`, this._t("monPaid")]);
+      if (payTs) {
+        tiles.push([new Intl.DateTimeFormat(lang, { month: "long", year: "numeric", timeZone: tz }).format(payTs), this._t("monPayDate")]);
+      }
+    }
+    if (hasSto && months.length) tiles.push([eur(months.reduce((a, k) => a + stoVal(k), 0)), this._t("stoBenefit")]);
+    root.getElementById("mtiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  }
+
   // ---------------------------------------------------------------- analysis tab
 
   _buildAnalysis() {
@@ -2313,7 +2875,7 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._adays) this._adays = 30;
     box.innerHTML = `<div class="filters" id="aranges"></div><ul class="hints" id="ahints"></ul><div class="tiles" id="atiles"></div>
       <h3 class="ch">${esc(this._t("anaStrings"))}</h3><div class="chart" id="astrings"></div>
-      <div id="amonthbox"><h3 class="ch">${esc(this._t("anaMonthly"))}</h3><div class="chart" id="amonth"></div></div>
+
       <h3 class="ch" id="aheath">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
       <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>`;
     const ranges = box.querySelector("#aranges");
@@ -2390,6 +2952,50 @@ class PVAssistantPanel extends HTMLElement {
     return log;
   }
 
+  // Hourly mean power per power sensor and per plant (inverter with its sensors; a sensor without an inverter is a plant of its own).
+  // pres: statistics result of the power sensors. Returns { sensors, series }: series are the plants with m (Map hour start -> W,
+  // only hours in which every sensor of the plant has data), peak (null if a sensor has no peak), kwh, max_w, groups and members.
+  _buildPlantSeries(pres) {
+    const { P } = this._keys();
+    const strs = this._cfg.settings?.strings || {};
+    const peakOf = (id) => { const v = strs[id]?.peak; return v > 0 ? v : null; };
+    const sensors = P.prod.map((id) => {
+      const m = new Map();
+      for (const r of pres[id] || []) if (r.mean != null) m.set(r.start, Math.max(r.mean, 0));
+      return { id, name: this._read(id).name, peak: peakOf(id), m, groups: groupsOf(strs[id]) };
+    });
+    for (const s of sensors) s.kwh = [...s.m.values()].reduce((a, v) => a + v, 0) / 1000;
+    const series = plantsOf(this._cfg.settings, P.prod).map((p) => {
+      const members = p.sensors.map((id) => sensors.find((s) => s.id === id)).filter(Boolean);
+      const m = new Map();
+      for (const ts of members[0].m.keys()) if (members.every((s) => s.m.has(ts))) m.set(ts, members.reduce((a, s) => a + s.m.get(ts), 0));
+      return {
+        id: `plant:${p.sensors.join("+")}`, members, m, max_w: p.max_w || 0,
+        name: p.name || (members.length === 1 ? members[0].name : members.map((s) => s.name).join(" + ")),
+        peak: members.every((s) => s.peak) ? members.reduce((a, s) => a + s.peak, 0) : null,
+        kwh: members.reduce((a, s) => a + s.kwh, 0),
+        groups: members.flatMap((s) => s.groups),
+      };
+    }).filter((s) => s.members.length);
+    return { sensors, series };
+  }
+
+  // Yield per plant and month in kWh/kWp for the plants that have a peak. The running month and a first month that starts inside
+  // the range are incomplete and left out. Returns { plants, months: ["YYYY-MM"], val(i, month) -> kWh/kWp | null }.
+  _monthlyYield(series, start, key, todayKey) {
+    const plants = series.filter((s) => s.peak);
+    const skip = new Set([todayKey.slice(0, 7)]);
+    const startDay = key(start.getTime()).day;
+    if (startDay.slice(8, 10) !== "01") skip.add(startDay.slice(0, 7));
+    const perPlant = plants.map((s) => {
+      const mm = new Map(); // Wh per month
+      for (const [ts, w] of s.m) { const k = key(ts).day.slice(0, 7); mm.set(k, (mm.get(k) || 0) + w); }
+      return mm;
+    });
+    const months = [...new Set(perPlant.flatMap((mm) => [...mm.keys()]))].filter((k) => !skip.has(k)).sort();
+    return { plants, months, val: (i, k) => (perPlant[i].has(k) ? perPlant[i].get(k) / plants[i].peak : null) }; // Wh / W = kWh/kWp
+  }
+
   _drawAnalysis() {
     const d = this._adata;
     if (!d || !this._root.getElementById("astrings")) return;
@@ -2401,7 +3007,6 @@ class PVAssistantPanel extends HTMLElement {
     const key = localKeyFn(tz);
     const num = (v, dec = 1) => v.toLocaleString(lang, { maximumFractionDigits: dec });
     const root = this._root;
-    const peakOf = (id) => { const v = this._cfg.settings?.strings?.[id]?.peak; return v > 0 ? v : null; };
     const dayLabel = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}.`;
     const dayLabelY = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}`; // with year where a range can span years
     const todayKey = key(Date.now()).day;
@@ -2413,28 +3018,8 @@ class PVAssistantPanel extends HTMLElement {
       for (const r of rows) if (r.change != null) { const day = key(r.start).day; actual.set(day, (actual.get(day) || 0) + r.change); }
     }
 
-    // hourly mean power per power sensor: Map ts -> W
+    const { sensors, series } = this._buildPlantSeries(pres);
     const strs = this._cfg.settings?.strings || {};
-    const sensors = P.prod.map((id) => {
-      const m = new Map();
-      for (const r of pres[id] || []) if (r.mean != null) m.set(r.start, Math.max(r.mean, 0));
-      return { id, name: this._read(id).name, peak: peakOf(id), m, groups: groupsOf(strs[id]) };
-    });
-    for (const s of sensors) s.kwh = [...s.m.values()].reduce((a, v) => a + v, 0) / 1000;
-    // the unit of comparison is the plant (inverter): its sensors (MPPT inputs, strings) are summed; a sensor without an inverter is a plant of its own
-    const series = plantsOf(this._cfg.settings, P.prod).map((p) => {
-      const members = p.sensors.map((id) => sensors.find((s) => s.id === id)).filter(Boolean);
-      const m = new Map();
-      // only hours in which every sensor of the plant has data (a gap in one sensor would understate the plant)
-      for (const ts of members[0].m.keys()) if (members.every((s) => s.m.has(ts))) m.set(ts, members.reduce((a, s) => a + s.m.get(ts), 0));
-      return {
-        id: `plant:${p.sensors.join("+")}`, members, m, max_w: p.max_w || 0,
-        name: p.name || (members.length === 1 ? members[0].name : members.map((s) => s.name).join(" + ")),
-        peak: members.every((s) => s.peak) ? members.reduce((a, s) => a + s.peak, 0) : null,
-        kwh: members.reduce((a, s) => a + s.kwh, 0),
-        groups: members.flatMap((s) => s.groups),
-      };
-    }).filter((s) => s.members.length);
 
     // plant location: own value from the settings, otherwise the Home Assistant home location
     const genSet = this._cfg.settings?.general || {};
@@ -2649,44 +3234,24 @@ class PVAssistantPanel extends HTMLElement {
       }
     }
 
-    // yield per plant and month: shows whether a plant is weak all year or only in some season
-    const monthBox = root.getElementById("amonthbox");
-    const monthPlants = series.filter((s) => s.peak);
+    // yield per plant and month (chart on the Plants tab): a hint if a plant is clearly below the others in some months
     const longRange = this._adays !== 7 && this._adays !== 30;
-    monthBox.hidden = !(longRange && monthPlants.length);
-    if (!monthBox.hidden) {
-      const startMonthDay = key(start.getTime()).day;
-      const skip = new Set([todayKey.slice(0, 7)]); // the running month and a month that starts inside the range are incomplete
-      if (startMonthDay.slice(8, 10) !== "01") skip.add(startMonthDay.slice(0, 7));
-      const perPlant = monthPlants.map((s) => {
-        const mm = new Map(); // Wh per month
-        for (const [ts, w] of s.m) { const k = key(ts).day.slice(0, 7); mm.set(k, (mm.get(k) || 0) + w); }
-        return mm;
-      });
-      const months = [...new Set(perPlant.flatMap((mm) => [...mm.keys()]))].filter((k) => !skip.has(k)).sort();
-      const val = (i, k) => (perPlant[i].has(k) ? perPlant[i].get(k) / monthPlants[i].peak : null); // Wh / W = kWh/kWp
-      const sameYear = months.length && months[0].slice(0, 4) === months.at(-1).slice(0, 4);
+    const my = this._monthlyYield(series, start, key, todayKey);
+    if (longRange && my.plants.length >= 2) {
+      const sameYear = my.months.length && my.months[0].slice(0, 4) === my.months.at(-1).slice(0, 4);
       const monthFmt = new Intl.DateTimeFormat(lang, sameYear ? { month: "short" } : { month: "short", year: "2-digit" });
       const monthName = (k) => monthFmt.format(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 15));
-      categoryBarChart(root.getElementById("amonth"), {
-        categories: months.map(monthName),
-        series: monthPlants.map((s, i) => ({ name: s.name, color: `--pva-s${(i % 7) + 1}`, values: months.map((k) => val(i, k)) })),
-        fmtValue: (v, axis) => `${num(v, axis ? 0 : 1)}${axis ? "" : " kWh/kWp"}`,
-        empty: this._t("noData"), tableLabels: { summary: this._t("table"), time: this._t("time") }, label: this._t("anaMonthly"),
-      });
-      if (monthPlants.length >= 2) {
-        const weakMonths = monthPlants.map(() => ({ months: [], worst: 100 }));
-        for (const k of months) {
-          const eff = monthPlants.map((s, i) => { const v = val(i, k); return v == null ? null : v / (s.factor || 1); });
-          const known = eff.filter((v) => v != null);
-          if (known.length < 2) continue;
-          const med = median(known);
-          eff.forEach((v, i) => { if (v != null && med > 0 && v < med * 0.85) { weakMonths[i].months.push(monthName(k)); weakMonths[i].worst = Math.min(weakMonths[i].worst, (v / med) * 100); } });
-        }
-        weakMonths.forEach((w, i) => {
-          if (w.months.length) hints.push(this._t("anaMonthWeak").replace("{name}", monthPlants[i].name).replace("{months}", w.months.slice(0, 4).join(", ")).replace("{pct}", num(w.worst, 0)));
-        });
+      const weakMonths = my.plants.map(() => ({ months: [], worst: 100 }));
+      for (const k of my.months) {
+        const eff = my.plants.map((s, i) => { const v = my.val(i, k); return v == null ? null : v / (s.factor || 1); });
+        const known = eff.filter((v) => v != null);
+        if (known.length < 2) continue;
+        const med = median(known);
+        eff.forEach((v, i) => { if (v != null && med > 0 && v < med * 0.85) { weakMonths[i].months.push(monthName(k)); weakMonths[i].worst = Math.min(weakMonths[i].worst, (v / med) * 100); } });
       }
+      weakMonths.forEach((w, i) => {
+        if (w.months.length) hints.push(this._t("anaMonthWeak").replace("{name}", my.plants[i].name).replace("{months}", w.months.slice(0, 4).join(", ")).replace("{pct}", num(w.worst, 0)));
+      });
     }
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio

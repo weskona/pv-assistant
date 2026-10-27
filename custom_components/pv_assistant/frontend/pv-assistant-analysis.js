@@ -231,41 +231,54 @@ export function estimateClipped(m, maxW, groups, lat, lon, key) {
 }
 
 /**
- * Possible shading: hours of the day in which a plant keeps clearly below its own clear-sky shape on many days.
- * The ratio of power to clear-sky irradiance is compared with the best ratios of the plant (90th percentile), hour by
- * hour of the day over all days; hours at the inverter limit are ignored. Returns [{from, to, az}] (local hours,
- * sun azimuth like Forecast.Solar). Only interior hours count, the first and last hours of a day are too uncertain.
+ * Shading profile of a plant: for every hour of the day the typical yield relative to the plant's own clear-sky curve
+ * (100 % = the best 10 % of the plant, 90th percentile of power / clear-sky irradiance). Hours at the inverter limit and hours
+ * with little sun are ignored. Returns { profile: [{hour, pct, az, n}], typical } (hours with at least 6 samples, local hours,
+ * az = mean sun azimuth like Forecast.Solar) or null when there is too little data. m: Map(hour start ms -> W).
  */
-export function shadingDips(m, maxW, groups, lat, lon, key) {
+export function shadingProfile(m, maxW, groups, lat, lon, key) {
   const samples = [];
+  const clippedAt = new Map(); // hour of the day -> hours at the inverter limit
   for (const [ts, w] of m) {
     const g = plantIrradiance(ts, lat, lon, groups);
     if (g < 200) continue;
-    if (maxW > 0 && w >= maxW * 0.85) continue;
-    samples.push({ hour: key(ts).hour, ratio: w / g, ts });
+    const hour = key(ts).hour;
+    if (maxW > 0 && w >= maxW * 0.85) { clippedAt.set(hour, (clippedAt.get(hour) || 0) + 1); continue; }
+    samples.push({ hour, ratio: w / g, az: sunPosition(ts + 1800e3, lat, lon).az });
   }
-  if (samples.length < 40) return [];
-  const sorted = samples.map((s) => s.ratio).sort((a, b) => a - b);
+  if (samples.length < 40) return null;
+  const sorted = samples.map((x) => x.ratio).sort((a, b) => a - b);
   const best = sorted[Math.floor(sorted.length * 0.9)];
-  if (!(best > 0)) return [];
+  if (!(best > 0)) return null;
   const perHour = new Map();
-  for (const s of samples) {
-    if (!perHour.has(s.hour)) perHour.set(s.hour, []);
-    perHour.get(s.hour).push(s);
+  for (const x of samples) {
+    if (!perHour.has(x.hour)) perHour.set(x.hour, []);
+    perHour.get(x.hour).push(x);
   }
-  const hours = [...perHour.keys()].sort((a, b) => a - b).filter((h) => perHour.get(h).length >= 6);
-  if (hours.length < 5) return [];
-  const med = new Map(hours.map((h) => [h, median(perHour.get(h).map((s) => s.ratio / best))]));
-  const typical = median([...med.values()]);
-  const dips = hours.slice(1, -1).filter((h) => med.get(h) < typical * 0.7);
-  const out = [];
-  for (const h of dips) {
-    const last = out.at(-1);
-    if (last && h === last.to + 1) last.to = h;
-    else out.push({ from: h, to: h });
-  }
-  return out.map((r) => {
-    const mid = perHour.get(r.from)[0].ts;
-    return { ...r, az: sunPosition(mid + 1800e3, lat, lon).az };
+  // an hour in which the inverter often limits is left out: only the cloudy days would remain there and look like a dip
+  const unbiased = (h) => (clippedAt.get(h) || 0) <= perHour.get(h).length / 3;
+  const profile = [...perHour.keys()].sort((a, b) => a - b).filter((h) => perHour.get(h).length >= 6 && unbiased(h)).map((h) => {
+    const list = perHour.get(h);
+    return { hour: h, pct: median(list.map((x) => x.ratio / best)) * 100, az: list.reduce((a, x) => a + x.az, 0) / list.length, n: list.length };
   });
+  if (profile.length < 5) return null;
+  return { profile, typical: median(profile.map((x) => x.pct)) };
+}
+
+/**
+ * Possible shading: hours of the day in which a plant keeps clearly below its own clear-sky shape on many days (see
+ * shadingProfile). Only interior hours count, the first and last hours of a day are too uncertain.
+ * Returns [{from, to, az}] (local hours, sun azimuth like Forecast.Solar).
+ */
+export function shadingDips(m, maxW, groups, lat, lon, key) {
+  const sp = shadingProfile(m, maxW, groups, lat, lon, key);
+  if (!sp) return [];
+  const dips = sp.profile.slice(1, -1).filter((x) => x.pct < sp.typical * 0.7);
+  const out = [];
+  for (const x of dips) {
+    const last = out.at(-1);
+    if (last && x.hour === last.to + 1) { last.to = x.hour; last.az = (last.az + x.az) / 2; }
+    else out.push({ from: x.hour, to: x.hour, az: x.az });
+  }
+  return out;
 }
