@@ -18,53 +18,24 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
-from homeassistant.core import Event, HomeAssistant, State, callback
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_PRODUCTION_POWER, DOMAIN
+from .helpers import as_list, plants, watts
 
 FAULT_AFTER = timedelta(minutes=15)
 LOW_RATIO = 0.05  # plant below 5 % of its peak ...
 OTHERS_MIN_RATIO = 0.25  # ... while the median of the others is at least 25 %
 
 
-def _ids(value: Any) -> list[str]:
-    return [value] if isinstance(value, str) else list(value or [])
-
-
-def _watts(state: State | None) -> float | None:
-    if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-        return None
-    try:
-        value = float(state.state)
-    except ValueError:
-        return None
-    return value * {"kW": 1000, "MW": 1e6}.get(state.attributes.get("unit_of_measurement"), 1)
-
-
-def _plants(settings: dict[str, Any], ids: list[str]) -> list[tuple[str, list[str]]]:
-    """Plants as (key, sensor ids): the saved inverters, then every other sensor on its own."""
-    plants: list[tuple[str, list[str]]] = []
-    taken: set[str] = set()
-    for inverter in settings.get("inverters", []):
-        sensors = [i for i in inverter.get("sensors", []) if i in ids and i not in taken]
-        if sensors:
-            taken.update(sensors)
-            plants.append((sensors[0], sensors))
-    for eid in ids:
-        if eid not in taken:
-            plants.append((eid, [eid]))
-    return plants
-
-
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    ids = _ids(entry.data.get(CONF_PRODUCTION_POWER))
+    ids = as_list(entry.data.get(CONF_PRODUCTION_POWER))
     if len(ids) >= 2:  # a comparison needs at least two plants (sensors)
         async_add_entities([StringFaultSensor(entry, ids)])
 
@@ -95,7 +66,7 @@ class StringFaultSensor(BinarySensorEntity):
         names = []
         entity_ids: list[str] = []
         for key in self._faulty:
-            sensors = dict(_plants(settings, self._ids)).get(key, [key])
+            sensors = dict(plants(settings, self._ids)).get(key, [key])
             entity_ids.extend(sensors)
             inverter_name = next((i.get("name") for i in inverters if key in i.get("sensors", []) and i.get("name")), None)
             labels = []
@@ -124,11 +95,11 @@ class StringFaultSensor(BinarySensorEntity):
         settings = self.hass.data.get(DOMAIN, {}).get("settings", {})
         strings = settings.get("strings", {})
         ratios: dict[str, float | None] = {}
-        for key, sensors in _plants(settings, self._ids):
+        for key, sensors in plants(settings, self._ids):
             peaks = [strings.get(eid, {}).get("peak") for eid in sensors]
             if not all(peak and peak > 0 for peak in peaks):  # every sensor of the plant needs a peak
                 continue
-            watts = [_watts(self.hass.states.get(eid)) for eid in sensors]
+            watts = [watts(self.hass.states.get(eid)) for eid in sensors]
             known = [max(w, 0.0) for w in watts if w is not None]
             ratios[key] = sum(known) / sum(peaks) if known else None
         now = dt_util.utcnow()

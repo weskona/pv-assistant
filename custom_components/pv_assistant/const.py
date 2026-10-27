@@ -42,6 +42,11 @@ SETTINGS_STORE_VERSION = 1
 MAX_NAME_LENGTH = 60
 MAX_PEAK_W = 10_000_000
 
+# dispatcher signals: the settings were saved in the panel / a new day started (calculated sensors recompute)
+SIGNAL_SETTINGS = f"{DOMAIN}_settings_updated"
+SIGNAL_DAILY = f"{DOMAIN}_daily_rollover"
+DAILY_STORE_KEY = "pv_assistant.daily"
+
 PANEL_URL = "pv-assistant"
 PANEL_ELEMENT = "pv-assistant-panel"
 STATIC_URL = "/pv_assistant_static"

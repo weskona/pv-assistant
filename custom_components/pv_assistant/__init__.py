@@ -11,6 +11,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.storage import Store
 from homeassistant.loader import async_get_integration
@@ -27,6 +28,7 @@ from .const import (
     PANEL_URL,
     SETTINGS_STORE_KEY,
     SETTINGS_STORE_VERSION,
+    SIGNAL_SETTINGS,
     STATIC_URL,
 )
 from .sensor import filtered_unique_id, source_entity_ids
@@ -183,6 +185,7 @@ async def _ws_set_settings(hass: HomeAssistant, connection, msg: dict) -> None:
     if inverters is not None:
         store["settings"]["inverters"] = inverters
     await store["store"].async_save(store["settings"])
+    async_dispatcher_send(hass, SIGNAL_SETTINGS)  # the calculated sensors pick up new peaks, names and plants
     connection.send_result(msg["id"], store["settings"])
 
 
