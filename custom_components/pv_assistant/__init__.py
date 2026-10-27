@@ -197,8 +197,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         websocket_api.async_register_command(hass, _ws_set_settings)
         await hass.http.async_register_static_paths(
             [
+                # cache headers on: the panel and its modules are always requested with ?v=<version>, a new
+                # version loads fresh files, the browser keeps the old one otherwise (no re-download per visit)
                 StaticPathConfig(
-                    STATIC_URL, str(Path(__file__).parent / "frontend"), False
+                    STATIC_URL, str(Path(__file__).parent / "frontend"), True
                 )
             ]
         )

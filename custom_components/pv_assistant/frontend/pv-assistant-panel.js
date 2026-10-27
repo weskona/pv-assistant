@@ -1,7 +1,22 @@
 // the helper modules are loaded with the same ?v=<version> as this file, so an update never mixes new and cached modules
 const version = new URL(import.meta.url).search;
-const { lineChart, barChart, categoryBarChart } = await import(`./pv-assistant-charts.js${version}`);
-const { localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } = await import(`./pv-assistant-analysis.js${version}`);
+// No top-level await here: Home Assistant creates the panel element as soon as the load event of this script fires, and for
+// a module with a top-level await that is BEFORE the module has run to the end. The element would be created as a plain
+// HTMLElement, hass and panel would end up as own properties and shadow the setters of the class once it is defined: the
+// panel never gets hass and stays empty. So the element is defined synchronously, the helper modules load in parallel in
+// the background (one round trip instead of two in a row) and _load() waits for them.
+let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition;
+const modulesReady = Promise.all([
+  import(`./pv-assistant-charts.js${version}`),
+  import(`./pv-assistant-analysis.js${version}`),
+]).then(([charts, analysis]) => {
+  ({ lineChart, barChart, categoryBarChart } = charts);
+  ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition } = analysis);
+});
+// timing log for the browser console: localStorage.setItem("pv_assistant_debug", "1") and reload
+const DBG = (() => { try { return localStorage.getItem("pv_assistant_debug") === "1"; } catch (e) { return false; } })();
+const dbg = (...a) => { if (DBG) console.info(`[pv-assistant ${Math.round(performance.now())} ms]`, ...a); };
+dbg("modules loaded");
 
 const T = {
   de: {
@@ -221,6 +236,14 @@ const plantsOf = (settings, ids) => {
 
 class PVAssistantPanel extends HTMLElement {
   connectedCallback() {
+    // properties set on the element before it was upgraded (see the top of the file) would shadow the setters
+    for (const k of ["hass", "panel", "narrow", "route"]) {
+      if (Object.prototype.hasOwnProperty.call(this, k)) {
+        const v = this[k];
+        delete this[k];
+        this[k] = v;
+      }
+    }
     if (!this._root) {
       this._root = this.attachShadow({ mode: "open" });
       this._root.innerHTML = `
@@ -420,7 +443,7 @@ class PVAssistantPanel extends HTMLElement {
       this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); if (this._tab === "analysis") this._drawAnalysis(); if (this._tab === "storage") this._drawStorage(); if (this._tab === "forecast") this._drawForecast(); if (this._tab === "power") this._drawPowerChart(); });
     });
     this._ro.observe(this);
-    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn) this._loadYears(); if (this._tab === "storage") this._loadStorage(); if (this._tab === "forecast") this._loadForecast(); if (this._tab === "power") this._loadPowerChart(); this._loadPowerMax(); }, 5 * 60 * 1000);
+    this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn && this._tab === "years") this._loadYears(); if (this._tab === "storage") this._loadStorage(); if (this._tab === "forecast") this._loadForecast(); if (this._tab === "power") this._loadPowerChart(); if (this._tab === "power" || this._tab === "settings") this._loadPowerMax(); }, 5 * 60 * 1000);
     this._load();
   }
 
@@ -431,11 +454,17 @@ class PVAssistantPanel extends HTMLElement {
 
   async _load() {
     if (!this._hass) { this._wantLoad = true; return; }
+    dbg("load: waiting for the configuration");
+    let cfg;
     try {
-      this._cfg = await this._hass.callWS({ type: "pv_assistant/config" });
+      cfg = await this._hass.callWS({ type: "pv_assistant/config" });
     } catch (e) {
-      this._cfg = {};
+      cfg = {};
+      dbg("configuration failed", e);
     }
+    await modulesReady; // _render() and the charts need the helper modules; this._cfg stays unset until they are there
+    this._cfg = cfg;
+    dbg("configuration received, building tabs");
     this._last = null;
     this._buildHistory();
     this._buildYears();
@@ -446,9 +475,10 @@ class PVAssistantPanel extends HTMLElement {
     this._flowBuilt = false;
     this._buildTabs();
     this._render();
+    dbg("first render done");
     this._loadHistory();
-    this._loadYears();
-    this._loadPowerMax();
+    // the long-term queries (years, peak power) start when their tab is opened (see _showTab), not at
+    // startup: on a large database they take seconds and delayed the chart that is visible first
   }
 
   set hass(hass) {
@@ -729,7 +759,9 @@ class PVAssistantPanel extends HTMLElement {
     ]);
     if (token !== this._token) return; // a newer range was requested meanwhile
     this._data = { rd, P, E, G, pres, eres, filt, hres, dres };
+    dbg("history data received", rd.days, "day(s)");
     this._draw();
+    dbg("history drawn");
   }
 
   _draw() {
@@ -1369,21 +1401,48 @@ class PVAssistantPanel extends HTMLElement {
     box.querySelector("#ynum").addEventListener("change", (e) => { this._yn = Number(e.target.value); this._saveYearPrefs(); this._drawYears(); });
   }
 
+  // Long-term monthly statistics: completed months never change, so they are cached in the browser
+  // (localStorage) and only the previous and the current month are queried again. The first call for a set
+  // of sensors still reads the whole history (up to 15 years), later calls take a fraction of a second.
+  async _ltMonthly(key, ids, type, units) {
+    ids = [...new Set(ids)];
+    if (!ids.length) return {};
+    const ck = `pv_assistant_lt_${key}`;
+    const sig = `${type}|${JSON.stringify(units)}|${[...ids].sort().join(",")}`;
+    let cache = null;
+    try {
+      const c = JSON.parse(localStorage.getItem(ck) || "null");
+      if (c && c.sig === sig && c.res) cache = c;
+    } catch (e) { cache = null; }
+    const now = new Date();
+    const from = cache
+      ? new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      : (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 15, 0, 1); d.setHours(0, 0, 0, 0); return d; })();
+    let fresh;
+    try {
+      fresh = await this._hass.callWS({
+        type: "recorder/statistics_during_period",
+        start_time: from.toISOString(), end_time: now.toISOString(),
+        statistic_ids: ids, period: "month", types: [type], units,
+      });
+    } catch (e) { return cache ? cache.res : {}; }
+    const res = {};
+    for (const id of ids) {
+      const old = cache ? (cache.res[id] || []).filter((r) => r.start < from.getTime()) : [];
+      res[id] = old.concat(fresh[id] || []);
+    }
+    try { localStorage.setItem(ck, JSON.stringify({ sig, res })); } catch (e) { /* storage unavailable or full */ }
+    return res;
+  }
+
   async _loadYears() {
     if (!this._yearsOn) return;
     const filt = this._cfg.filtered || {};
     const ids = this._keys().E.prod;
     const fids = this._keys().E.feed;
     const all = [...ids, ...fids].concat([...ids, ...fids].map((i) => filt[i]).filter(Boolean));
-    const start = new Date(); start.setFullYear(start.getFullYear() - 15, 0, 1); start.setHours(0, 0, 0, 0);
     let res = {};
-    try {
-      res = await this._hass.callWS({
-        type: "recorder/statistics_during_period",
-        start_time: start.toISOString(), end_time: new Date().toISOString(),
-        statistic_ids: [...new Set(all)], period: "month", types: ["change"], units: { energy: "kWh" },
-      });
-    } catch (e) { res = {}; }
+    try { res = await this._ltMonthly("years", all, "change", { energy: "kWh" }); } catch (e) { res = {}; }
     const tz = this._hass.config?.time_zone;
     const fmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "numeric", timeZone: tz });
     const ym = (ts) => { const p = Object.fromEntries(fmt.formatToParts(ts).map((x) => [x.type, x.value])); return [Number(p.year), Number(p.month) - 1]; };
@@ -1626,7 +1685,8 @@ class PVAssistantPanel extends HTMLElement {
     if (id === "forecast") this._loadForecast();
     if (id === "power") this._loadPowerChart();
     if (id === "settings") this._refreshPrices?.();
-    if (id === "years") this._drawYears();
+    if (id === "years") { if (!this._ydata) this._loadYears(); this._drawYears(); }
+    if ((id === "power" || id === "settings") && !this._pmax) this._loadPowerMax();
   }
 
   // ---------------------------------------------------------------- power per string
@@ -1634,15 +1694,8 @@ class PVAssistantPanel extends HTMLElement {
   async _loadPowerMax() {
     const ids = this._keys().P.prod;
     if (!ids.length || !this._hass) return;
-    const start = new Date(); start.setFullYear(start.getFullYear() - 15, 0, 1); start.setHours(0, 0, 0, 0);
     let res = {};
-    try {
-      res = await this._hass.callWS({
-        type: "recorder/statistics_during_period",
-        start_time: start.toISOString(), end_time: new Date().toISOString(),
-        statistic_ids: ids, period: "month", types: ["max"], units: { power: "W" },
-      });
-    } catch (e) { res = {}; }
+    try { res = await this._ltMonthly("pmax", ids, "max", { power: "W" }); } catch (e) { res = {}; }
     const max = {};
     for (const id of ids) {
       const vals = (res[id] || []).map((r) => r.max).filter((v) => v != null && !isNaN(v));
