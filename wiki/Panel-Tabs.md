@@ -33,7 +33,7 @@ Ranges 7, 30, 90 days, **This year** or **12 months**.
 - Production comes from the energy counters (like the Energy dashboard); a hint appears if it differs from the power sum by 3 % or more.
 
 ### History
-Ranges Today, Yesterday, 7 days, 30 days, **This year**, **12 months**. In the year ranges the power charts show daily means and the energy chart shows monthly groups.
+Ranges Today, Yesterday, 7 days, 30 days, **Month** (with arrows to page through the months), **This year**, **12 months**. In the year ranges the power charts show daily means and the energy chart shows monthly groups.
 - Key figures: production, feed-in, storage, direct consumption, grid import, house consumption, autarky, self-consumption rate, shifting potential, savings, feed-in revenue, CO₂; with price sensors that have long-term statistics also the average import price and feed-in tariff weighted by the energy, compared with the plain average price
 - Charts: power, effective power of the strings in %, energy
 - Mouseover splits sources (for example the individual strings); every chart is also available as a table.
@@ -107,7 +107,7 @@ Zeiträume 7, 30, 90 Tage, **Dieses Jahr** oder **12 Monate**.
 - Die Erzeugung stammt aus den Energiezählern (wie im Energy-Dashboard); ab 3 % Abweichung zur Leistungssumme erscheint ein Hinweis.
 
 ### Verlauf
-Zeiträume Heute, Gestern, 7 Tage, 30 Tage, **Dieses Jahr**, **12 Monate**. Bei den Jahreszeiträumen zeigen Leistungsdiagramme Tagesmittel und das Energiediagramm Monatsgruppen.
+Zeiträume Heute, Gestern, 7 Tage, 30 Tage, **Monat** (mit Pfeilen zum Blättern durch die Monate), **Dieses Jahr**, **12 Monate**. Bei den Jahreszeiträumen zeigen Leistungsdiagramme Tagesmittel und das Energiediagramm Monatsgruppen.
 - Kennzahlen: Erzeugung, Einspeisung, Speicher, Direktverbrauch, Netzbezug, Hausverbrauch, Autarkie, Eigenverbrauchsquote, Verschiebepotenzial, Ersparnis, Einspeiseerlös, CO₂; mit Preis-Sensoren, die Langzeitstatistiken haben, außerdem der mit der Energie gewichtete Ø Bezugspreis und die gewichtete Einspeisevergütung im Vergleich zum einfachen Durchschnittspreis
 - Diagramme: Leistung, effektive Leistung der Strings in %, Energie
 - Mouseover teilt Quellen auf (z. B. die einzelnen Strings); jedes Diagramm gibt es auch als Tabelle.

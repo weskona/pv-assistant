@@ -26,7 +26,7 @@ const T = {
     fromStorage: "aus Speicher", intoStorage: "in Speicher", missing: "nicht verfügbar",
     posFrom: "positiv = aus Speicher", posInto: "positiv = in Speicher",
     now: "Aktuell", history: "Verlauf", powerChart: "Leistung", energyChart: "Energie",
-    today: "Heute", yesterday: "Gestern", d7: "7 Tage", d30: "30 Tage",
+    today: "Heute", yesterday: "Gestern", d7: "7 Tage", d30: "30 Tage", month: "Monat", prevMonth: "Vormonat", nextMonth: "Folgemonat",
     years: "Jahresübersicht", avgOver: "Schnitt über", yearsUnit: "Jahre", all: "alle", yearProd: "Erzeugung", sofar: "bisher",
     forecast: "Jahresprognose", avgMonth: "Ø Monat", monthly: "Erzeugung je Monat (kWh)", deviation: "Abweichung zum Schnitt (%)",
     avg: "Ø", above: "über Schnitt", below: "unter Schnitt", running: "laufender Monat",
@@ -136,7 +136,7 @@ const T = {
     fromStorage: "from storage", intoStorage: "into storage", missing: "unavailable",
     posFrom: "positive = from storage", posInto: "positive = into storage",
     now: "Now", history: "History", powerChart: "Power", energyChart: "Energy",
-    today: "Today", yesterday: "Yesterday", d7: "7 days", d30: "30 days",
+    today: "Today", yesterday: "Yesterday", d7: "7 days", d30: "30 days", month: "Month", prevMonth: "Previous month", nextMonth: "Next month",
     years: "Yearly overview", avgOver: "Average over", yearsUnit: "years", all: "all", yearProd: "Production", sofar: "so far",
     forecast: "Year forecast", avgMonth: "Avg. month", monthly: "Production per month (kWh)", deviation: "Deviation from average (%)",
     avg: "Avg", above: "above average", below: "below average", running: "current month",
@@ -366,6 +366,11 @@ class PVAssistantPanel extends HTMLElement {
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
           .filters button { font:inherit; font-weight:600; color:var(--g-muted); background:var(--g-tile);
                   border:1px solid var(--g-tileb); border-radius:14px; padding:7px 15px; cursor:pointer; }
+          .monthnav { display:flex; align-items:center; gap:8px; margin:-4px 0 12px; }
+          .monthnav[hidden] { display:none; }
+          .monthnav button { font:inherit; font-weight:600; color:var(--g-muted); background:var(--g-tile); border:1px solid transparent; border-radius:8px; padding:4px 12px; cursor:pointer; }
+          .monthnav button:disabled { opacity:.4; cursor:default; }
+          .monthnav span { min-width:9em; text-align:center; font-weight:600; font-variant-numeric:tabular-nums; }
           .filters button:hover { background:var(--secondary-background-color); }
           .filters button[aria-pressed="true"] { border-color:color-mix(in srgb, var(--g-accent) 40%, transparent); color:var(--g-accent); background:color-mix(in srgb, var(--g-accent) 14%, transparent); }
           /* all key figures of a tab sit together in one card */
@@ -760,7 +765,8 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch" id="xchead">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
-    for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
+    let syncNav = () => {};
+    for (const r of ["today", "yesterday", "d7", "d30", "month", "ytd", "y12"]) {
       const b = document.createElement("button");
       b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
       b.dataset.range = r;
@@ -768,10 +774,43 @@ class PVAssistantPanel extends HTMLElement {
       b.addEventListener("click", () => {
         this._range = r;
         box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
+        syncNav();
         this._loadHistory();
       });
       box.append(b);
     }
+    syncNav = this._addMonthNav(box, () => this._range, () => this._loadHistory());
+  }
+
+  // selected calendar month (shared by the tabs with a month range); never later than the current month
+  _monthSel() {
+    const now = new Date();
+    let { y, m } = this._msel || { y: now.getFullYear(), m: now.getMonth() };
+    if (y * 12 + m > now.getFullYear() * 12 + now.getMonth()) { y = now.getFullYear(); m = now.getMonth(); }
+    return { y, m };
+  }
+
+  // arrows below a range bar that page through the months; only visible while the range "month" is active
+  _addMonthNav(filters, getRange, reload) {
+    const nav = document.createElement("div");
+    nav.className = "monthnav";
+    const mk = (txt, label) => { const b = document.createElement("button"); b.textContent = txt; b.setAttribute("aria-label", this._t(label)); return b; };
+    const prev = mk("◀", "prevMonth"), next = mk("▶", "nextMonth"), lab = document.createElement("span");
+    lab.setAttribute("aria-live", "polite");
+    nav.append(prev, lab, next);
+    const sync = () => {
+      const { y, m } = this._monthSel(), now = new Date();
+      nav.hidden = getRange() !== "month";
+      const lang = this._hass?.locale?.language || this._hass?.language;
+      lab.textContent = new Intl.DateTimeFormat(lang, { month: "long", year: "numeric" }).format(new Date(y, m, 15));
+      next.disabled = y * 12 + m >= now.getFullYear() * 12 + now.getMonth();
+    };
+    const step = (d) => { const { y, m } = this._monthSel(); const n = new Date(y, m + d, 1); this._msel = { y: n.getFullYear(), m: n.getMonth() }; sync(); reload(); };
+    prev.addEventListener("click", () => step(-1));
+    next.addEventListener("click", () => step(1));
+    filters.after(nav);
+    sync();
+    return sync;
   }
 
   _rangeDef(range) {
@@ -784,6 +823,13 @@ class PVAssistantPanel extends HTMLElement {
       const H = 3600e3;
       return { t0: s.getTime(), t1: tomorrow.getTime(), end: Date.now(), days: Math.round((tomorrow - s) / (24 * H)), long: true,
         pPeriod: "day", pStep: 24 * H, eBucket: "month", eStep: 30 * 24 * H, tickStep: (365.25 / 12) * 24 * H };
+    }
+    if (r === "month") { // a calendar month picked with the arrows, up to the current one
+      const m = this._monthSel();
+      const s = new Date(m.y, m.m, 1), e = new Date(m.y, m.m + 1, 1);
+      const H = 3600e3;
+      return { t0: s.getTime(), t1: e.getTime(), end: Math.min(Date.now(), e.getTime()), days: Math.round((e - s) / (24 * H)),
+        pPeriod: "hour", pStep: H, eBucket: 24 * H, eStep: 24 * H, tickStep: 5 * 24 * H };
     }
     const start = r === "yesterday" ? at(1) : r === "d7" ? at(6) : r === "d30" ? at(29) : at(0);
     const days = r === "d7" ? 7 : r === "d30" ? 30 : 1;
@@ -1178,7 +1224,8 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch">${esc(this._t("stoSocHist"))}</h3><div class="chart" id="sosochist"></div>` : ""}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
-    for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
+    let syncNav = () => {};
+    for (const r of ["today", "yesterday", "d7", "d30", "month", "ytd", "y12"]) {
       const b = document.createElement("button");
       b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
       b.dataset.range = r;
@@ -1186,10 +1233,12 @@ class PVAssistantPanel extends HTMLElement {
       b.addEventListener("click", () => {
         this._srange = r;
         ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
+        syncNav();
         this._loadStorage();
       });
       ranges.append(b);
     }
+    syncNav = this._addMonthNav(ranges, () => this._srange, () => this._loadStorage());
   }
 
   async _loadStorage() {
