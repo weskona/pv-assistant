@@ -13,7 +13,7 @@ Below it cards for all configured sensors (energy and power) with current values
 Current power per string as a bar relative to the highest measured power (or the entered peak) and the effective power of the **whole plant** in percent. Below it a chart with the power curve per string and for the whole plant (today, yesterday, 7 days).
 
 ### Plants
-Ranges 30, 90 days, This year, 12 months. A plant is an inverter with all its strings (see [[Settings]]).
+Ranges 30, 90 days, **Month** (arrows), This year, 12 months. A plant is an inverter with all its strings (see [[Settings]]).
 - Table of all plants: strings, peak, inverter power, yield, kWh/kWp and share
 - Typical day: average power of every plant by time of day
 - Power duration curve: the hourly power values sorted by size, with the inverter limit as a line; a flat piece at the limit shows clipping
@@ -22,7 +22,7 @@ Ranges 30, 90 days, This year, 12 months. A plant is an inverter with all its st
 - Heat map month × hour of the typical day, for the whole system or one plant
 
 ### Analysis
-Ranges 7, 30, 90 days, **This year** or **12 months**.
+Ranges 7, 30 days, **Month** (arrows), 90 days, **This year** or **12 months**.
 - Plant comparison in kWh/kWp (sum per inverter), corrected for orientation and tilt, with a hint and a **suggestion** for weak plants; a plant with several sensors lists its strings indented below it, each with its yield and compared with the best string of the plant
 - A hint if a plant is clearly below the others in some months (the monthly chart is on the Plants tab)
 - Estimated energy lost at the inverter limit (kWh and share, needs the plant location) and **possible shading**: hours of the day in which a plant stays clearly below its own clear-sky curve on many days, with the direction of the sun
@@ -39,7 +39,7 @@ Ranges Today, Yesterday, 7 days, 30 days, **Month** (with arrows to page through
 - Mouseover splits sources (for example the individual strings); every chart is also available as a table.
 
 ### Balance
-Ranges Today, 7 days, 30 days, This year, 12 months. Needs production energy sensors and at least one of feed-in, grid import or storage.
+Ranges Today, 7 days, 30 days, **Month** (arrows), This year, 12 months. Needs production energy sensors and at least one of feed-in, grid import or storage.
 - Use of the PV production as stacked bars: used directly, into the storage, fed in
 - Coverage of the consumption as stacked bars: PV used directly, from the storage, from the grid
 - Self-sufficiency and self-consumption rate per day or month
@@ -51,7 +51,7 @@ Only visible with storage sensors or a battery level. Same ranges as History.
 - Charts: level, storage power (from storage +, into storage −, per device), charged and discharged energy; in long ranges also benefit and losses per month in € and the efficiency per month; the distribution of the level (share of the time per 10 % band)
 
 ### Forecast
-Only visible with forecast sensors. Ranges 7, 30, 90 days, This year, 12 months.
+Only visible with forecast sensors. Ranges 7, 30 days, **Month** (arrows), 90 days, This year, 12 months.
 - Forecast today, tomorrow, rest of today, produced so far, share of forecast reached
 - Forecast vs actual and deviation per day (per month from 90 days on), average deviation, hit rate (±20 %)
 - **Best 3-hour window** for tomorrow and for the rest of today (typical daily curve of the last 14 days combined with the forecast) as a guide for large consumers
@@ -59,7 +59,7 @@ Only visible with forecast sensors. Ranges 7, 30, 90 days, This year, 12 months.
 - Chart of the expected production tomorrow per hour with the best window highlighted
 
 ### Economics
-Only visible with production and feed-in energy sensors and prices (settings or price sensors). Ranges This year, 12 months, All.
+Only visible with production and feed-in energy sensors and prices (settings or price sensors). Ranges **Month** (arrows), This year, 12 months, All.
 - Benefit per month as stacked bars: savings from self-consumption and feed-in revenue
 - Cumulative benefit since the first recorded month against the plant cost, with the extrapolation to the payback date (average of the last 12 months, up to 40 years)
 - Storage benefit per month with storage sensors
@@ -87,7 +87,7 @@ Darunter Karten für alle konfigurierten Sensoren (Energie und Leistung) mit akt
 Aktuelle Leistung je String als Balken im Verhältnis zur höchsten gemessenen Leistung (oder dem eingetragenen Peak) und die effektive Leistung der **Gesamtanlage** in Prozent. Darunter ein Diagramm mit dem Leistungsverlauf je String und der Gesamtanlage (Heute, Gestern, 7 Tage).
 
 ### Anlagen
-Zeiträume 30, 90 Tage, Dieses Jahr, 12 Monate. Eine Anlage ist ein Wechselrichter mit allen seinen Strings (siehe [[Einstellungen|Settings]]).
+Zeiträume 30, 90 Tage, **Monat** (Pfeile), Dieses Jahr, 12 Monate. Eine Anlage ist ein Wechselrichter mit allen seinen Strings (siehe [[Einstellungen|Settings]]).
 - Tabelle aller Anlagen: Strings, Peak, Wechselrichter-Leistung, Ertrag, kWh/kWp und Anteil
 - Typischer Tag: durchschnittliche Leistung jeder Anlage nach Uhrzeit
 - Leistungsdauerlinie: die Stundenwerte der Leistung nach Größe sortiert, mit der Wechselrichter-Grenze als Linie; ein flaches Stück an der Grenze zeigt Begrenzung
@@ -96,7 +96,7 @@ Zeiträume 30, 90 Tage, Dieses Jahr, 12 Monate. Eine Anlage ist ein Wechselricht
 - Heatmap Monat × Stunde des typischen Tages, für die Gesamtanlage oder eine Anlage
 
 ### Analyse
-Zeiträume 7, 30, 90 Tage, **Dieses Jahr** oder **12 Monate**.
+Zeiträume 7, 30 Tage, **Monat** (Pfeile), 90 Tage, **Dieses Jahr** oder **12 Monate**.
 - Anlagen-Vergleich in kWh/kWp (Summe je Wechselrichter), bereinigt um Ausrichtung und Neigung, mit Hinweis und **Vorschlag** bei schwachen Anlagen; eine Anlage mit mehreren Sensoren zeigt ihre Strings eingerückt darunter, je mit Ertrag und im Vergleich zum besten String der Anlage
 - Hinweis, wenn eine Anlage in einzelnen Monaten deutlich unter den anderen liegt (das Monatsdiagramm steht im Tab „Anlagen“)
 - Geschätzte Energie, die an der Wechselrichter-Grenze verloren ging (kWh und Anteil, braucht den Anlagenstandort) und **mögliche Verschattung**: Tagesstunden, in denen eine Anlage an vielen Tagen deutlich unter ihrer eigenen Kurve bei klarem Himmel bleibt, mit der Richtung der Sonne
@@ -113,7 +113,7 @@ Zeiträume Heute, Gestern, 7 Tage, 30 Tage, **Monat** (mit Pfeilen zum Blättern
 - Mouseover teilt Quellen auf (z. B. die einzelnen Strings); jedes Diagramm gibt es auch als Tabelle.
 
 ### Energiebilanz
-Zeiträume Heute, 7 Tage, 30 Tage, Dieses Jahr, 12 Monate. Braucht Erzeugungs-Energiesensoren und mindestens einen von Einspeisung, Netzbezug oder Speicher.
+Zeiträume Heute, 7 Tage, 30 Tage, **Monat** (Pfeile), Dieses Jahr, 12 Monate. Braucht Erzeugungs-Energiesensoren und mindestens einen von Einspeisung, Netzbezug oder Speicher.
 - Verwendung der PV-Erzeugung als gestapelte Balken: direkt verbraucht, in den Speicher, eingespeist
 - Deckung des Verbrauchs als gestapelte Balken: direkt genutzte PV, aus dem Speicher, aus dem Netz
 - Autarkie und Eigenverbrauchsquote je Tag oder Monat
@@ -125,7 +125,7 @@ Nur sichtbar mit Speichersensoren oder Ladestand. Gleiche Zeiträume wie der Ver
 - Diagramme: Ladestand, Speicherleistung (aus Speicher +, in Speicher −, je Gerät), geladene und entladene Energie; in langen Zeiträumen außerdem Nutzen und Verluste je Monat in € und der Wirkungsgrad je Monat; die Verteilung des Ladestands (Anteil der Zeit je 10-%-Stufe)
 
 ### Prognose
-Nur sichtbar mit Prognose-Sensoren. Zeiträume 7, 30, 90 Tage, Dieses Jahr, 12 Monate.
+Nur sichtbar mit Prognose-Sensoren. Zeiträume 7, 30 Tage, **Monat** (Pfeile), 90 Tage, Dieses Jahr, 12 Monate.
 - Prognose heute, morgen, Rest heute, bisher erzeugt, von Prognose erreicht
 - Prognose gegen Ist und Abweichung je Tag (ab 90 Tagen je Monat), Ø Abweichung, Trefferquote (±20 %)
 - **Bestes 3-Stunden-Fenster** für morgen und für den Rest von heute (typischer Tagesverlauf der letzten 14 Tage zusammen mit der Prognose) als Richtwert für Großverbraucher
@@ -133,7 +133,7 @@ Nur sichtbar mit Prognose-Sensoren. Zeiträume 7, 30, 90 Tage, Dieses Jahr, 12 M
 - Diagramm der erwarteten Erzeugung morgen je Stunde, das beste Fenster hervorgehoben
 
 ### Wirtschaft
-Nur sichtbar mit Erzeugungs- und Einspeise-Energiesensoren und Preisen (Einstellungen oder Preis-Sensoren). Zeiträume Dieses Jahr, 12 Monate, Alle.
+Nur sichtbar mit Erzeugungs- und Einspeise-Energiesensoren und Preisen (Einstellungen oder Preis-Sensoren). Zeiträume **Monat** (Pfeile), Dieses Jahr, 12 Monate, Alle.
 - Nutzen je Monat als gestapelte Balken: Ersparnis durch Eigenverbrauch und Einspeisevergütung
 - Kumulierter Nutzen seit dem ersten aufgezeichneten Monat gegen die Anlagenkosten, mit der Fortschreibung bis zur Amortisation (Durchschnitt der letzten 12 Monate, bis 40 Jahre)
 - Speicher-Nutzen je Monat mit Speichersensoren
