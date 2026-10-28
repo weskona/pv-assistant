@@ -26,7 +26,7 @@ const T = {
     fromStorage: "aus Speicher", intoStorage: "in Speicher", missing: "nicht verfügbar",
     posFrom: "positiv = aus Speicher", posInto: "positiv = in Speicher",
     now: "Aktuell", history: "Verlauf", powerChart: "Leistung", energyChart: "Energie",
-    today: "Heute", yesterday: "Gestern", d7: "7 Tage", d30: "30 Tage",
+    today: "Heute", yesterday: "Gestern", d7: "7 Tage", d30: "30 Tage", month: "Monat", prevMonth: "Vormonat", nextMonth: "Folgemonat",
     years: "Jahresübersicht", avgOver: "Schnitt über", yearsUnit: "Jahre", all: "alle", yearProd: "Erzeugung", sofar: "bisher",
     forecast: "Jahresprognose", avgMonth: "Ø Monat", monthly: "Erzeugung je Monat (kWh)", deviation: "Abweichung zum Schnitt (%)",
     avg: "Ø", above: "über Schnitt", below: "unter Schnitt", running: "laufender Monat",
@@ -136,7 +136,7 @@ const T = {
     fromStorage: "from storage", intoStorage: "into storage", missing: "unavailable",
     posFrom: "positive = from storage", posInto: "positive = into storage",
     now: "Now", history: "History", powerChart: "Power", energyChart: "Energy",
-    today: "Today", yesterday: "Yesterday", d7: "7 days", d30: "30 days",
+    today: "Today", yesterday: "Yesterday", d7: "7 days", d30: "30 days", month: "Month", prevMonth: "Previous month", nextMonth: "Next month",
     years: "Yearly overview", avgOver: "Average over", yearsUnit: "years", all: "all", yearProd: "Production", sofar: "so far",
     forecast: "Year forecast", avgMonth: "Avg. month", monthly: "Production per month (kWh)", deviation: "Deviation from average (%)",
     avg: "Avg", above: "above average", below: "below average", running: "current month",
@@ -366,6 +366,11 @@ class PVAssistantPanel extends HTMLElement {
           .filters { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
           .filters button { font:inherit; font-weight:600; color:var(--g-muted); background:var(--g-tile);
                   border:1px solid var(--g-tileb); border-radius:14px; padding:7px 15px; cursor:pointer; }
+          .monthnav { display:flex; align-items:center; gap:8px; margin:-4px 0 12px; }
+          .monthnav[hidden] { display:none; }
+          .monthnav button { font:inherit; font-size:1.3em; line-height:1; font-weight:700; min-width:2.4em; color:var(--g-muted); background:var(--g-tile); border:1px solid transparent; border-radius:8px; padding:4px 12px; cursor:pointer; }
+          .monthnav button:disabled { opacity:.4; cursor:default; }
+          .monthnav span { min-width:9em; text-align:center; font-weight:600; font-variant-numeric:tabular-nums; }
           .filters button:hover { background:var(--secondary-background-color); }
           .filters button[aria-pressed="true"] { border-color:color-mix(in srgb, var(--g-accent) 40%, transparent); color:var(--g-accent); background:color-mix(in srgb, var(--g-accent) 14%, transparent); }
           /* all key figures of a tab sit together in one card */
@@ -760,7 +765,8 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch" id="xchead">${esc(this._t("effChart"))}</h3><div class="chart" id="xchart"></div>
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
-    for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
+    let syncNav = () => {};
+    for (const r of ["today", "yesterday", "d7", "d30", "month", "ytd", "y12"]) {
       const b = document.createElement("button");
       b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
       b.dataset.range = r;
@@ -768,10 +774,44 @@ class PVAssistantPanel extends HTMLElement {
       b.addEventListener("click", () => {
         this._range = r;
         box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
+        syncNav();
         this._loadHistory();
       });
       box.append(b);
     }
+    syncNav = this._addMonthNav(box, () => this._range, () => this._loadHistory());
+  }
+
+  // selected calendar month (shared by the tabs with a month range); never later than the current month
+  _monthSel() {
+    const now = new Date();
+    let { y, m } = this._msel || { y: now.getFullYear(), m: now.getMonth() };
+    if (y * 12 + m > now.getFullYear() * 12 + now.getMonth()) { y = now.getFullYear(); m = now.getMonth(); }
+    return { y, m };
+  }
+
+  // arrows below a range bar that page through the months; only visible while the range "month" is active
+  _addMonthNav(filters, getRange, reload) {
+    const nav = document.createElement("div");
+    nav.className = "monthnav";
+    const mk = (txt, label) => { const b = document.createElement("button"); b.textContent = txt; b.setAttribute("aria-label", this._t(label)); return b; };
+    const prev = mk("‹", "prevMonth"), next = mk("›", "nextMonth"), lab = document.createElement("span");
+    lab.setAttribute("aria-live", "polite");
+    nav.append(prev, lab, next);
+    const sync = () => {
+      const { y, m } = this._monthSel(), now = new Date();
+      nav.hidden = getRange() !== "month";
+      const lang = this._hass?.locale?.language || this._hass?.language;
+      lab.textContent = new Intl.DateTimeFormat(lang, { month: "long", year: "numeric" }).format(new Date(y, m, 15));
+      next.disabled = y * 12 + m >= now.getFullYear() * 12 + now.getMonth();
+    };
+    const step = (d) => { const { y, m } = this._monthSel(); const n = new Date(y, m + d, 1); this._msel = { y: n.getFullYear(), m: n.getMonth() }; sync(); reload(); };
+    prev.addEventListener("click", () => step(-1));
+    next.addEventListener("click", () => step(1));
+    filters.after(nav);
+    sync();
+    (this._navSyncs ||= new Map()).set(filters, sync); // the month is shared, so every tab refreshes its label when it is shown
+    return sync;
   }
 
   _rangeDef(range) {
@@ -784,6 +824,13 @@ class PVAssistantPanel extends HTMLElement {
       const H = 3600e3;
       return { t0: s.getTime(), t1: tomorrow.getTime(), end: Date.now(), days: Math.round((tomorrow - s) / (24 * H)), long: true,
         pPeriod: "day", pStep: 24 * H, eBucket: "month", eStep: 30 * 24 * H, tickStep: (365.25 / 12) * 24 * H };
+    }
+    if (r === "month") { // a calendar month picked with the arrows, up to the current one
+      const m = this._monthSel();
+      const s = new Date(m.y, m.m, 1), e = new Date(m.y, m.m + 1, 1);
+      const H = 3600e3;
+      return { t0: s.getTime(), t1: e.getTime(), end: Math.min(Date.now(), e.getTime()), days: Math.round((e - s) / (24 * H)),
+        pPeriod: "hour", pStep: H, eBucket: 24 * H, eStep: 24 * H, tickStep: 5 * 24 * H };
     }
     const start = r === "yesterday" ? at(1) : r === "d7" ? at(6) : r === "d30" ? at(29) : at(0);
     const days = r === "d7" ? 7 : r === "d30" ? 30 : 1;
@@ -1178,7 +1225,8 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch">${esc(this._t("stoSocHist"))}</h3><div class="chart" id="sosochist"></div>` : ""}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
-    for (const r of ["today", "yesterday", "d7", "d30", "ytd", "y12"]) {
+    let syncNav = () => {};
+    for (const r of ["today", "yesterday", "d7", "d30", "month", "ytd", "y12"]) {
       const b = document.createElement("button");
       b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
       b.dataset.range = r;
@@ -1186,10 +1234,12 @@ class PVAssistantPanel extends HTMLElement {
       b.addEventListener("click", () => {
         this._srange = r;
         ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
+        syncNav();
         this._loadStorage();
       });
       ranges.append(b);
     }
+    syncNav = this._addMonthNav(ranges, () => this._srange, () => this._loadStorage());
   }
 
   async _loadStorage() {
@@ -1443,17 +1493,7 @@ class PVAssistantPanel extends HTMLElement {
       <div id="fcdaybox"><h3 class="ch">${esc(this._t("fcHourChart"))}</h3><div class="chart" id="fcday"></div></div>
       <div id="fcbbox"><h3 class="ch">${esc(this._t("fcBuckets"))}</h3><div class="chart" id="fcbchart"></div><div class="chart" id="fcbuckets"></div></div>`;
     const ranges = box.querySelector("#franges");
-    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]]) {
-      const b = document.createElement("button");
-      b.textContent = this._t(label);
-      b.setAttribute("aria-pressed", String(d === this._fdays));
-      b.addEventListener("click", () => {
-        this._fdays = d;
-        ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-        this._loadForecast();
-      });
-      ranges.append(b);
-    }
+    this._rangeButtons(ranges, [[7, "d7"], [30, "d30"], ["month", "month"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]], this._fdays, (d) => { this._fdays = d; this._loadForecast(); });
   }
 
   async _loadForecast() {
@@ -1462,12 +1502,12 @@ class PVAssistantPanel extends HTMLElement {
     const { E, P } = this._keys();
     const filt = this._cfg.filtered || {};
     const profStart = new Date(); profStart.setHours(0, 0, 0, 0); profStart.setDate(profStart.getDate() - 14);
-    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - ((this._fdays === "ytd" ? Math.floor((start - new Date(start.getFullYear(), 0, 1)) / 86400e3) + 1 : this._fdays) - 1));
+    const { start, end } = this._window(this._fdays);
     const ids = [...new Set(E.prod.concat(E.prod.map((i) => filt[i]).filter(Boolean)))];
     this._root.querySelectorAll("#fcs .chart").forEach((c) => c.classList.add("loading"));
     const todayIds = list(this._cfg.forecast_today_energy_sensors);
     const [eres, cfg, hist, pw] = await Promise.all([
-      ids.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: new Date().toISOString(),
+      ids.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
         statistic_ids: ids, period: "day", types: ["change"], units: { energy: "kWh" } }).catch(() => ({})) : {},
       this._hass.callWS({ type: "pv_assistant/config" }).catch(() => null), // fresh forecast log
       todayIds.length ? this._forecastFromHistory(todayIds) : {},
@@ -1975,12 +2015,13 @@ class PVAssistantPanel extends HTMLElement {
       b.setAttribute("aria-selected", String(b.dataset.tab === id));
       b.tabIndex = b.dataset.tab === id ? 0 : -1;
     });
+    for (const [el, sync] of this._navSyncs || []) { if (el.isConnected) sync(); else this._navSyncs.delete(el); }
     // charts measure their container; hidden tabs have no width, so draw once visible
     if (id === "plants") this._loadPlants();
     if (id === "balance") this._loadBalance();
     if (id === "money") { if (!this._mdata) this._loadMoney(); else this._drawMoney(); }
     if (id === "analysis") this._loadAnalysis();
-    if (id === "history") this._draw();
+    if (id === "history") { if (this._range === "month") this._loadHistory(); else this._draw(); }
     if (id === "storage") this._loadStorage();
     if (id === "forecast") this._loadForecast();
     if (id === "power") this._loadPowerChart();
@@ -2495,16 +2536,22 @@ class PVAssistantPanel extends HTMLElement {
   // Range buttons for the tabs that load their own data: list of [value, label key]; cb(value) is called on a click.
   _rangeButtons(box, list, current, cb) {
     box.replaceChildren();
+    let syncNav = () => {};
+    const get = () => this._rbCur.get(box);
+    (this._rbCur ||= new Map()).set(box, current);
     for (const [v, label] of list) {
       const b = document.createElement("button");
       b.textContent = this._t(label);
       b.setAttribute("aria-pressed", String(v === current));
       b.addEventListener("click", () => {
         box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        this._rbCur.set(box, v);
+        syncNav();
         cb(v);
       });
       box.append(b);
     }
+    if (list.some(([v]) => v === "month")) syncNav = this._addMonthNav(box, get, () => cb("month"));
   }
 
   // points on the straight line from a to b ([ts, value] pairs), one per step: the line charts break a line where
@@ -2512,6 +2559,16 @@ class PVAssistantPanel extends HTMLElement {
   _linePoints(a, b, step) {
     const n = Math.max(1, Math.ceil((b[0] - a[0]) / step));
     return Array.from({ length: n + 1 }, (_, i) => [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n]);
+  }
+
+  // query window of a range given in days, "ytd" or "month" (the month picked with the arrows)
+  _window(v) {
+    if (v === "month") {
+      const { y, m } = this._monthSel();
+      const e = new Date(y, m + 1, 1);
+      return { start: new Date(y, m, 1), end: new Date(Math.min(Date.now(), e.getTime())) };
+    }
+    return { start: this._daysStart(v), end: new Date() };
   }
 
   // start of a range given in days (or "ytd"): midnight, local time
@@ -2535,18 +2592,18 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch">${esc(this._t("pltShade"))}</h3><div class="chart" id="pltshade"></div><p class="note">${esc(this._t("pltShadeNote"))}</p>
       <h3 class="ch">${esc(this._t("anaMonthly"))}</h3><div class="chart" id="pltmonth"></div>
       <h3 class="ch">${esc(this._t("pltHeat"))}</h3><div class="filters" id="pltsel"></div><div class="chart" id="pltheat"></div>`;
-    this._rangeButtons(box.querySelector("#pranges"), [[30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]], this._pdays, (d) => { this._pdays = d; this._loadPlants(); });
+    this._rangeButtons(box.querySelector("#pranges"), [[30, "d30"], [90, "d90"], ["month", "month"], ["ytd", "dYear"], [365, "d365"]], this._pdays, (d) => { this._pdays = d; this._loadPlants(); });
   }
 
   async _loadPlants() {
     if (!this._plantsOn || !this._hass || !this._root.getElementById("pranges")) return;
     const token = (this._pltoken = (this._pltoken || 0) + 1);
     const { P } = this._keys();
-    const start = this._daysStart(this._pdays);
+    const { start, end } = this._window(this._pdays);
     this._root.querySelectorAll("#plt .chart").forEach((c) => c.classList.add("loading"));
     let pres = {};
     try {
-      pres = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: new Date().toISOString(),
+      pres = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
         statistic_ids: [...new Set(P.prod)], period: "hour", types: ["mean"], units: { power: "W" } });
     } catch (e) { pres = {}; }
     if (token !== this._pltoken) return;
@@ -2678,7 +2735,7 @@ class PVAssistantPanel extends HTMLElement {
       <div id="bcov"><h3 class="ch">${esc(this._t("balCover"))}</h3><div class="chart" id="bcovc"></div></div>
       <div id="brat"><h3 class="ch">${esc(this._t("balRates"))}</h3><div class="chart" id="bratc"></div></div>
       <p class="note">${esc(this._t("balNote"))}</p>`;
-    this._rangeButtons(box.querySelector("#branges"), [["today", "today"], ["d7", "d7"], ["d30", "d30"], ["ytd", "dYear"], ["y12", "d365"]], this._brange, (r) => { this._brange = r; this._loadBalance(); });
+    this._rangeButtons(box.querySelector("#branges"), [["today", "today"], ["d7", "d7"], ["d30", "d30"], ["month", "month"], ["ytd", "dYear"], ["y12", "d365"]], this._brange, (r) => { this._brange = r; this._loadBalance(); });
   }
 
   async _loadBalance() {
@@ -2788,7 +2845,7 @@ class PVAssistantPanel extends HTMLElement {
       <div id="mben"><h3 class="ch">${esc(this._t("monBenefit"))}</h3><div class="chart" id="mbenc"></div></div>
       <div id="mcum"><h3 class="ch">${esc(this._t("monCum"))}</h3><div class="chart" id="mcumc"></div></div>
       <div id="msto"><h3 class="ch">${esc(this._t("monSto"))}</h3><div class="chart" id="mstoc"></div></div>`;
-    this._rangeButtons(box.querySelector("#mranges"), [["ytd", "dYear"], ["y12", "d365"], ["all", "all"]], this._mrange, (r) => { this._mrange = r; this._drawMoney(); });
+    this._rangeButtons(box.querySelector("#mranges"), [["month", "month"], ["ytd", "dYear"], ["y12", "d365"], ["all", "all"]], this._mrange, (r) => { this._mrange = r; this._drawMoney(); });
   }
 
   async _loadMoney() {
@@ -2856,7 +2913,8 @@ class PVAssistantPanel extends HTMLElement {
     const year = nowKey.slice(0, 4);
     const nowIdx = Number(nowKey.slice(5, 7));
     const cutoff12 = (() => { const t = new Date(Number(year), nowIdx - 12, 1); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`; })();
-    const months = all.filter((k) => (this._mrange === "ytd" ? k.slice(0, 4) === year : this._mrange === "y12" ? k >= cutoff12 : true));
+    const sel = this._monthSel(), selKey = `${sel.y}-${String(sel.m + 1).padStart(2, "0")}`;
+    const months = all.filter((k) => (this._mrange === "month" ? k === selKey : this._mrange === "ytd" ? k.slice(0, 4) === year : this._mrange === "y12" ? k >= cutoff12 : true));
     const withYear = months.length && months[0].slice(0, 4) !== months.at(-1).slice(0, 4);
     const cats = months.map((k) => `${monthLabel(k, withYear)}${k === nowKey ? "*" : ""}`);
     const tl = { summary: this._t("table"), time: this._t("time") };
@@ -2936,17 +2994,7 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch" id="aheath">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
       <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>`;
     const ranges = box.querySelector("#aranges");
-    for (const [d, label] of [[7, "d7"], [30, "d30"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]]) {
-      const b = document.createElement("button");
-      b.textContent = this._t(label);
-      b.setAttribute("aria-pressed", String(d === this._adays));
-      b.addEventListener("click", () => {
-        this._adays = d;
-        ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-        this._loadAnalysis();
-      });
-      ranges.append(b);
-    }
+    this._rangeButtons(ranges, [[7, "d7"], [30, "d30"], ["month", "month"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]], this._adays, (d) => { this._adays = d; this._loadAnalysis(); });
   }
 
   async _loadAnalysis() {
@@ -2954,12 +3002,12 @@ class PVAssistantPanel extends HTMLElement {
     const token = (this._atoken = (this._atoken || 0) + 1);
     const { P, E, G } = this._keys();
     const filt = this._cfg.filtered || {};
-    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - ((this._adays === "ytd" ? Math.floor((start - new Date(start.getFullYear(), 0, 1)) / 86400e3) + 1 : this._adays) - 1));
+    const { start, end } = this._window(this._adays);
     const call = async (ids, from, period, type, units) => {
       ids = [...new Set(ids)];
       if (!ids.length) return {};
       try {
-        return await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: from.toISOString(), end_time: new Date().toISOString(), statistic_ids: ids, period, types: [type], units });
+        return await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: from.toISOString(), end_time: end.toISOString(), statistic_ids: ids, period, types: [type], units });
       } catch (e) { return {}; }
     };
     this._root.querySelectorAll("#ana .chart").forEach((c) => c.classList.add("loading"));
@@ -3292,7 +3340,7 @@ class PVAssistantPanel extends HTMLElement {
     }
 
     // yield per plant and month (chart on the Plants tab): a hint if a plant is clearly below the others in some months
-    const longRange = this._adays !== 7 && this._adays !== 30;
+    const longRange = this._adays !== 7 && this._adays !== 30 && this._adays !== "month";
     const my = this._monthlyYield(series, start, key, todayKey);
     if (longRange && my.plants.length >= 2) {
       const sameYear = my.months.length && my.months[0].slice(0, 4) === my.months.at(-1).slice(0, 4);
