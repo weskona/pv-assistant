@@ -368,7 +368,7 @@ class PVAssistantPanel extends HTMLElement {
                   border:1px solid var(--g-tileb); border-radius:14px; padding:7px 15px; cursor:pointer; }
           .monthnav { display:flex; align-items:center; gap:8px; margin:-4px 0 12px; }
           .monthnav[hidden] { display:none; }
-          .monthnav button { font:inherit; font-weight:600; color:var(--g-muted); background:var(--g-tile); border:1px solid transparent; border-radius:8px; padding:4px 12px; cursor:pointer; }
+          .monthnav button { font:inherit; font-size:1.3em; line-height:1; font-weight:700; min-width:2.4em; color:var(--g-muted); background:var(--g-tile); border:1px solid transparent; border-radius:8px; padding:4px 12px; cursor:pointer; }
           .monthnav button:disabled { opacity:.4; cursor:default; }
           .monthnav span { min-width:9em; text-align:center; font-weight:600; font-variant-numeric:tabular-nums; }
           .filters button:hover { background:var(--secondary-background-color); }
@@ -795,7 +795,7 @@ class PVAssistantPanel extends HTMLElement {
     const nav = document.createElement("div");
     nav.className = "monthnav";
     const mk = (txt, label) => { const b = document.createElement("button"); b.textContent = txt; b.setAttribute("aria-label", this._t(label)); return b; };
-    const prev = mk("◀", "prevMonth"), next = mk("▶", "nextMonth"), lab = document.createElement("span");
+    const prev = mk("‹", "prevMonth"), next = mk("›", "nextMonth"), lab = document.createElement("span");
     lab.setAttribute("aria-live", "polite");
     nav.append(prev, lab, next);
     const sync = () => {
