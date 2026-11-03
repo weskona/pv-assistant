@@ -128,6 +128,7 @@ const T = {
     stoBenChart: "Speicher-Nutzen und -Verluste je Monat (€)", stoEffChart: "Wirkungsgrad je Monat (%)", stoSocHist: "Verteilung des Ladestands (Anteil der Zeit in %)",
     fcHourChart: "Erwartete Erzeugung morgen je Stunde (kWh)", fcWindow: "Bestes Fenster", fcOtherHours: "Übrige Stunden", fcBChart: "Ø Abweichung nach Größe der Prognose (%)",
     yearRoll: "Erzeugung der letzten 12 Monate, rollierend (kWh)",
+    fcHorizon: "Der Prognose-Verlauf beginnt am {date}. Ältere Prognosen gibt es nur, wenn der Prognose-Sensor eine Langzeitstatistik hat (State Class) oder Home Assistant seine Werte noch im Verlauf hält; das Protokoll der Integration sammelt ab jetzt weiter, bis zu 800 Tage.",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -238,6 +239,7 @@ const T = {
     stoBenChart: "Storage benefit and losses per month (€)", stoEffChart: "Efficiency per month (%)", stoSocHist: "Distribution of the level (share of time in %)",
     fcHourChart: "Expected production tomorrow per hour (kWh)", fcWindow: "Best window", fcOtherHours: "Other hours", fcBChart: "Avg. deviation by forecast size (%)",
     yearRoll: "Production of the last 12 months, rolling (kWh)",
+    fcHorizon: "The forecast history starts on {date}. Older forecasts only exist if the forecast sensor has long-term statistics (state class) or Home Assistant still keeps its values in the history; the log of the integration keeps collecting from now on, up to 800 days.",
   },
 };
 
@@ -1516,7 +1518,7 @@ class PVAssistantPanel extends HTMLElement {
     const ids = [...new Set(E.prod.concat(E.prod.map((i) => filt[i]).filter(Boolean)))];
     this._root.querySelectorAll("#fcs .chart").forEach((c) => c.classList.add("loading"));
     const todayIds = list(this._cfg.forecast_today_energy_sensors);
-    const [eres, cfg, hist, pw] = await Promise.all([
+    const [eres, cfg, hist, pw, fstats] = await Promise.all([
       ids.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
         statistic_ids: ids, period: "day", types: ["change"], units: { energy: "kWh" } }).catch(() => ({})) : {},
       this._hass.callWS({ type: "pv_assistant/config" }).catch(() => null), // fresh forecast log
@@ -1524,10 +1526,13 @@ class PVAssistantPanel extends HTMLElement {
       // hourly power of the last 14 days: the typical daily curve for the best time of large consumers
       P.prod.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: profStart.toISOString(), end_time: new Date().toISOString(),
         statistic_ids: [...new Set(P.prod)], period: "hour", types: ["mean"], units: { power: "W" } }).catch(() => ({})) : {},
+      // long-term statistics of the forecast sensors (only exist when the sensor has a state class): the oldest source
+      todayIds.length ? this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+        statistic_ids: todayIds, period: "day", types: ["state", "max", "mean"], units: { energy: "kWh" } }).catch(() => ({})) : {},
     ]);
     if (token !== this._ftoken) return;
     if (cfg?.settings) this._cfg.settings = cfg.settings;
-    this._fdata = { eres, hist, start, pw };
+    this._fdata = { eres, hist: { ...this._forecastFromStats(todayIds, fstats), ...hist }, start, pw };
     this._drawForecast();
   }
 
@@ -1611,6 +1616,9 @@ class PVAssistantPanel extends HTMLElement {
       if (tiles.some(([, l]) => l === this._t("fcBestTom") || l === this._t("fcBestRest"))) notePart = this._t("fcBestNote");
     }
     if (profDays < 3) root.getElementById("fcdaybox").hidden = true;
+    // the forecast history is as long as its sources reach: say where it starts when the chosen range asks for more
+    const firstDay = Object.keys(log).sort()[0];
+    if (firstDay && firstDay > startDay) notePart = [notePart, this._t("fcHorizon").replace("{date}", `${firstDay.slice(8, 10)}.${firstDay.slice(5, 7)}.${firstDay.slice(0, 4)}`)].filter(Boolean).join(" ");
     root.getElementById("fcnote").textContent = notePart;
 
     const tl = { summary: this._t("table"), time: this._t("time") };
@@ -3025,12 +3033,34 @@ class PVAssistantPanel extends HTMLElement {
     this._drawAnalysis();
   }
 
+  // Forecast of past days from the long-term statistics of the "forecast today" sensors (daily value: the last value of the day for a
+  // counter, otherwise the maximum or mean); a day only counts when every sensor has a value. Sensors without a state class have none.
+  _forecastFromStats(ids, res) {
+    if (!ids.length) return {};
+    const key = localKeyFn(this._hass.config?.time_zone);
+    const perId = ids.map((id) => {
+      const m = new Map();
+      for (const r of (res || {})[id] || []) {
+        const v = r.state ?? r.max ?? r.mean;
+        if (v != null && !Number.isNaN(Number(v))) m.set(key(r.start).day, Number(v));
+      }
+      return m;
+    });
+    const out = {};
+    for (const day of perId[0].keys()) {
+      if (!perId.every((m) => m.has(day))) continue;
+      const total = perId.reduce((a, m) => a + m.get(day), 0);
+      if (total > 0) out[day] = Math.round(total * 100) / 100;
+    }
+    return out;
+  }
+
   // Forecast of past days from the recorder history of the "forecast today" sensors (last value of each day);
   // makes the comparison available right after setup. The log kept by the integration takes precedence.
   async _forecastFromHistory(ids) {
     const tz = this._hass.config?.time_zone;
     const key = localKeyFn(tz);
-    const start = new Date(); start.setDate(start.getDate() - 12); start.setHours(0, 0, 0, 0);
+    const start = new Date(); start.setDate(start.getDate() - 60); start.setHours(0, 0, 0, 0); // as far back as the recorder keeps states (purge_keep_days)
     let res;
     try {
       res = await this._hass.callWS({ type: "history/history_during_period", start_time: start.toISOString(), end_time: new Date().toISOString(),
