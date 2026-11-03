@@ -266,6 +266,16 @@ const mergedRows = (res, id, filt, field) => {
   return [...m.values()].sort((a, b) => a.start - b.start);
 };
 
+// bucket start -> change of a sensor over the whole history, the filtered copy winning where it has data. The first
+// bucket of the copy is skipped when the original has it too: the copy starts mid-month, so that bucket is only partial.
+const mergedChange = (res, id, filt) => {
+  const m = new Map();
+  for (const r of res[id] || []) if (r.change != null) m.set(r.start, r.change);
+  const copy = ((filt[id] && res[filt[id]]) || []).filter((r) => r.change != null);
+  copy.forEach((r, i) => { if (i > 0 || !m.has(r.start)) m.set(r.start, r.change); });
+  return m;
+};
+
 // module strings of a plant unit; older versions stored one or two orientations directly on the entry
 const groupsOf = (o) => {
   if (!o) return [];
@@ -1748,18 +1758,14 @@ class PVAssistantPanel extends HTMLElement {
     const months = new Map();
     const byId = new Map(); // sensor -> month -> kWh (source split for the tooltips)
     for (const id of ids) {
-      const own = new Map();
-      for (const r of res[id] || []) if (r.change != null) own.set(r.start, r.change);
-      for (const r of res[filt[id]] || []) if (r.change != null) own.set(r.start, r.change);
+      const own = mergedChange(res, id, filt);
       const mine = new Map();
       for (const [ts, v] of own) { const [y, m] = ym(ts); const k = `${y}-${m}`; months.set(k, (months.get(k) || 0) + v); mine.set(k, v); }
       byId.set(id, mine);
     }
     const feedMonths = new Map(); // feed-in energy per month (needed for savings and revenue)
     for (const id of fids) {
-      const own = new Map();
-      for (const r of res[id] || []) if (r.change != null) own.set(r.start, r.change);
-      for (const r of res[filt[id]] || []) if (r.change != null) own.set(r.start, r.change);
+      const own = mergedChange(res, id, filt);
       for (const [ts, v] of own) { const [y, m] = ym(ts); const k = `${y}-${m}`; feedMonths.set(k, (feedMonths.get(k) || 0) + v); }
     }
     this._ydata = { months, byId, ids, feedMonths, hasFeed: fids.length > 0 };
@@ -2892,9 +2898,7 @@ class PVAssistantPanel extends HTMLElement {
     const sumMap = (ids, fn = (v) => v) => {
       const m = new Map();
       for (const id of ids) {
-        const own = new Map();
-        for (const r of res[id] || []) if (r.change != null) own.set(r.start, r.change);
-        for (const r of res[filt[id]] || []) if (r.change != null) own.set(r.start, r.change);
+        const own = mergedChange(res, id, filt);
         for (const [ts, v] of own) { const k = monthKey(ts); m.set(k, (m.get(k) || 0) + fn(v)); }
       }
       return m;
