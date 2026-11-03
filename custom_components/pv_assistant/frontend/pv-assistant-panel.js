@@ -27,7 +27,7 @@ const T = {
     posFrom: "positiv = aus Speicher", posInto: "positiv = in Speicher",
     now: "Aktuell", history: "Verlauf", powerChart: "Leistung", energyChart: "Energie",
     today: "Heute", yesterday: "Gestern", d7: "7 Tage", d30: "30 Tage", month: "Monat", prevMonth: "Vormonat", nextMonth: "Folgemonat",
-    years: "Jahresübersicht", avgOver: "Schnitt über", yearsUnit: "Jahre", all: "alle", yearProd: "Erzeugung", sofar: "bisher",
+    years: "Jahresübersicht", avgOver: "Schnitt über", yearsUnit: "Jahre", all: "alle", total: "Gesamt", rangeCapped: "Gesamt umfasst hier höchstens die letzten {n} Jahre (ältere Stundenwerte werden nicht geladen).", monAvgDay: "Ø Nutzen je Tag", monBenefitDay: "Nutzen je Tag (€)", monStoDay: "Speicher-Nutzen je Tag (€)", yearProd: "Erzeugung", sofar: "bisher",
     forecast: "Jahresprognose", avgMonth: "Ø Monat", monthly: "Erzeugung je Monat (kWh)", deviation: "Abweichung zum Schnitt (%)",
     avg: "Ø", above: "über Schnitt", below: "unter Schnitt", running: "laufender Monat",
     yearNote: "Der Schnitt je Monat nutzt nur echte, abgeschlossene Monate der letzten Jahre (Anzahl einstellbar) bis zum aktuellsten Jahr mit Daten, unabhängig vom angezeigten Jahr. Die Jahresprognose ist die Summe dieser Monatsschnitte. Der laufende Monat und künftige Monate zählen nicht mit. Nutzen und Amortisation rechnen mit den aktuellen Preisen (Ersparnis = nicht eingespeiste Erzeugung × Strompreis, plus Einspeiseerlös); der Trend der Jahressumme ist wetterabhängig.",
@@ -138,7 +138,7 @@ const T = {
     posFrom: "positive = from storage", posInto: "positive = into storage",
     now: "Now", history: "History", powerChart: "Power", energyChart: "Energy",
     today: "Today", yesterday: "Yesterday", d7: "7 days", d30: "30 days", month: "Month", prevMonth: "Previous month", nextMonth: "Next month",
-    years: "Yearly overview", avgOver: "Average over", yearsUnit: "years", all: "all", yearProd: "Production", sofar: "so far",
+    years: "Yearly overview", avgOver: "Average over", yearsUnit: "years", all: "all", total: "Total", rangeCapped: "Total covers at most the last {n} years here (older hourly values are not loaded).", monAvgDay: "Avg. benefit per day", monBenefitDay: "Benefit per day (€)", monStoDay: "Storage benefit per day (€)", yearProd: "Production", sofar: "so far",
     forecast: "Year forecast", avgMonth: "Avg. month", monthly: "Production per month (kWh)", deviation: "Deviation from average (%)",
     avg: "Avg", above: "above average", below: "below average", running: "current month",
     yearNote: "The monthly average only uses real, completed months of the last years (number selectable) up to the latest year with data, independent of the displayed year. The year forecast is the sum of these monthly averages. The current and future months do not count. Benefit and payback use the current prices (savings = production not fed in × import price, plus feed-in revenue); the trend of the yearly total depends on the weather.",
@@ -315,6 +315,10 @@ const plantsOf = (settings, ids) => {
   for (const id of ids) if (!taken.has(id)) out.push({ name: settings?.strings?.[id]?.name || "", max_w: 0, sensors: [id], implicit: true });
   return out;
 };
+
+// the ranges that the tabs offer: [value, label key]; a tab shows the ones that make sense for it
+const RANGES = [["today", "today"], ["yesterday", "yesterday"], ["d7", "d7"], ["d30", "d30"], ["month", "month"], ["d90", "d90"], ["ytd", "dYear"], ["y12", "d365"], ["all", "total"]];
+const MAX_ALL_YEARS = 5; // hourly tabs load at most this many years for "Total"
 
 class PVAssistantPanel extends HTMLElement {
   connectedCallback() {
@@ -778,12 +782,13 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch">${esc(this._t("energyChart"))} (kWh)</h3><div class="chart" id="echart"></div>`;
     const box = h.querySelector("#ranges");
     let syncNav = () => {};
-    for (const r of ["today", "yesterday", "d7", "d30", "month", "ytd", "y12"]) {
+    for (const [r, label] of RANGES) {
       const b = document.createElement("button");
-      b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
+      b.textContent = this._t(label);
       b.dataset.range = r;
       b.setAttribute("aria-pressed", String(r === this._range));
-      b.addEventListener("click", () => {
+      b.addEventListener("click", async () => {
+        if (r === "all") await this._ensureDataStart();
         this._range = r;
         box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
         syncNav();
@@ -830,12 +835,14 @@ class PVAssistantPanel extends HTMLElement {
     const day = new Date(); day.setHours(0, 0, 0, 0);
     const at = (back) => { const d = new Date(day); d.setDate(d.getDate() - back); return d; };
     const r = range || this._range;
-    if (r === "ytd" || r === "y12") { // calendar year so far / last 12 months (month aligned, like the Energy dashboard)
-      const s = r === "ytd" ? new Date(day.getFullYear(), 0, 1) : new Date(day.getFullYear(), day.getMonth() - 11, 1);
+    if (r === "ytd" || r === "y12" || r === "all") { // calendar year so far / last 12 months / everything recorded (month aligned, like the Energy dashboard)
+      let s = r === "ytd" ? new Date(day.getFullYear(), 0, 1) : new Date(day.getFullYear(), day.getMonth() - 11, 1);
+      if (r === "all") { const first = new Date(this._dataStart || s.getTime()); s = new Date(first.getFullYear(), first.getMonth(), 1); }
       const tomorrow = new Date(day); tomorrow.setDate(tomorrow.getDate() + 1);
       const H = 3600e3;
-      return { t0: s.getTime(), t1: tomorrow.getTime(), end: Date.now(), days: Math.round((tomorrow - s) / (24 * H)), long: true,
-        pPeriod: "day", pStep: 24 * H, eBucket: "month", eStep: 30 * 24 * H, tickStep: (365.25 / 12) * 24 * H };
+      const months = Math.max(1, Math.round((tomorrow - s) / (30.44 * 24 * H)));
+      return { t0: s.getTime(), t1: tomorrow.getTime(), end: Date.now(), days: Math.round((tomorrow - s) / (24 * H)), long: true, all: r === "all",
+        pPeriod: "day", pStep: 24 * H, eBucket: "month", eStep: 30 * 24 * H, tickStep: Math.ceil(months / 12) * (365.25 / 12) * 24 * H }; // one tick per month, fewer for long ranges
     }
     if (r === "month") { // a calendar month picked with the arrows, up to the current one
       const m = this._monthSel();
@@ -844,8 +851,8 @@ class PVAssistantPanel extends HTMLElement {
       return { t0: s.getTime(), t1: e.getTime(), end: Math.min(Date.now(), e.getTime()), days: Math.round((e - s) / (24 * H)),
         pPeriod: "hour", pStep: H, eBucket: 24 * H, eStep: 24 * H, tickStep: 5 * 24 * H };
     }
-    const start = r === "yesterday" ? at(1) : r === "d7" ? at(6) : r === "d30" ? at(29) : at(0);
-    const days = r === "d7" ? 7 : r === "d30" ? 30 : 1;
+    const start = r === "yesterday" ? at(1) : r === "d7" ? at(6) : r === "d30" ? at(29) : r === "d90" ? at(89) : at(0);
+    const days = r === "d7" ? 7 : r === "d30" ? 30 : r === "d90" ? 90 : 1;
     const t0 = start.getTime();
     const t1 = new Date(start); t1.setDate(t1.getDate() + days);
     const end = r === "yesterday" ? t1.getTime() : Math.min(Date.now(), t1.getTime());
@@ -853,7 +860,22 @@ class PVAssistantPanel extends HTMLElement {
     return { t0, t1: t1.getTime(), end, days,
       pPeriod: days === 1 ? "5minute" : "hour", pStep: days === 1 ? 300e3 : H,
       eBucket: days === 1 ? H : 24 * H, eStep: days === 1 ? H : 24 * H,
-      tickStep: days === 1 ? 3 * H : days === 7 ? 24 * H : 5 * 24 * H };
+      tickStep: days === 1 ? 3 * H : days === 7 ? 24 * H : days <= 31 ? 5 * 24 * H : 15 * 24 * H };
+  }
+
+  // Start of the recorded data (first month with production), needed for the range "Total". Read once from the long-term statistics.
+  async _ensureDataStart() {
+    if (this._dataStart) return this._dataStart;
+    const { P, E } = this._keys();
+    const energy = E.prod.length > 0;
+    const ids = energy ? E.prod : P.prod;
+    let first = Infinity;
+    try {
+      const res = await this._ltMonthly("start", ids, energy ? "change" : "mean", energy ? { energy: "kWh" } : { power: "W" });
+      for (const id of ids) { const r = (res[id] || [])[0]; if (r && r.start < first) first = r.start; }
+    } catch (e) { first = Infinity; }
+    const fallback = new Date(); fallback.setFullYear(fallback.getFullYear() - 1);
+    return (this._dataStart = Number.isFinite(first) ? first : fallback.getTime());
   }
 
   // categories (one per month of a long range) and a converter from {bucket start -> value} to one value per month
@@ -894,7 +916,7 @@ class PVAssistantPanel extends HTMLElement {
     const [pres, eres, hres, dres] = await Promise.all([
       this._stats(powerIds, rd.pPeriod, "mean", { power: "W" }, rd),
       this._stats(energyAll, rd.long ? "month" : rd.eBucket === 3600e3 ? "hour" : "day", "change", { energy: "kWh" }, rd),
-      rd.long ? this._stats(P.prod, "hour", "mean", { power: "W" }, rd) : null, // for the daily peaks of the effective power
+      rd.long ? this._stats(P.prod, rd.all ? "day" : "hour", rd.all ? "max" : "mean", { power: "W" }, rd) : null, // for the daily peaks of the effective power (Total: the daily maximum itself)
       rd.long ? this._stats(energyAll, "day", "change", { energy: "kWh" }, rd) : null, // daily mean power = daily energy / 24 h
     ]);
     if (token !== this._token) return; // a newer range was requested meanwhile
@@ -910,6 +932,7 @@ class PVAssistantPanel extends HTMLElement {
   // Needs price sensors with long-term statistics (state class); without them nothing is added. The comparison with the plain
   // time average of the price shows whether the energy was bought at cheap or at expensive hours (dynamic tariffs).
   async _loadPriceTiles(rd, token) {
+    if (rd.all) return; // hourly prices for years would be too much
     const { E, G } = this._keys();
     const wanted = [];
     if (G.priceImp && G.impE.length) wanted.push([G.priceImp, G.impE, "hisEffImp"]);
@@ -1092,7 +1115,8 @@ class PVAssistantPanel extends HTMLElement {
       }
       return new Map([...best].map(([day, v]) => [first.get(day), v]));
     };
-    const hourlyOf = (id) => new Map(get(hres || {}, id, "mean").map((r) => [r.start, Math.max(r.mean, 0)]));
+    const peakField = rd.all ? "max" : "mean";
+    const hourlyOf = (id) => new Map(get(hres || {}, id, peakField).map((r) => [r.start, Math.max(r[peakField], 0)]));
     const effSrc = (id) => (rd.long ? dailyMax(hourlyOf(id)) : each([id], pr, "mean", nz)[0].values);
     const effSeries = peaked.map((id, k) => {
       const m = effSrc(id);
@@ -1238,12 +1262,13 @@ class PVAssistantPanel extends HTMLElement {
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
     let syncNav = () => {};
-    for (const r of ["today", "yesterday", "d7", "d30", "month", "ytd", "y12"]) {
+    for (const [r, label] of RANGES) {
       const b = document.createElement("button");
-      b.textContent = this._t({ ytd: "dYear", y12: "d365" }[r] || r);
+      b.textContent = this._t(label);
       b.dataset.range = r;
       b.setAttribute("aria-pressed", String(r === this._srange));
-      b.addEventListener("click", () => {
+      b.addEventListener("click", async () => {
+        if (r === "all") await this._ensureDataStart();
         this._srange = r;
         ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
         syncNav();
@@ -1505,7 +1530,7 @@ class PVAssistantPanel extends HTMLElement {
       <div id="fcdaybox"><h3 class="ch">${esc(this._t("fcHourChart"))}</h3><div class="chart" id="fcday"></div></div>
       <div id="fcbbox"><h3 class="ch">${esc(this._t("fcBuckets"))}</h3><div class="chart" id="fcbchart"></div><div class="chart" id="fcbuckets"></div></div>`;
     const ranges = box.querySelector("#franges");
-    this._rangeButtons(ranges, [[7, "d7"], [30, "d30"], ["month", "month"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]], this._fdays, (d) => { this._fdays = d; this._loadForecast(); });
+    this._rangeButtons(ranges, [["today", "today"], ["yesterday", "yesterday"], [7, "d7"], [30, "d30"], ["month", "month"], [90, "d90"], ["ytd", "dYear"], [365, "d365"], ["all", "total"]], this._fdays, (d) => { this._fdays = d; this._loadForecast(); });
   }
 
   async _loadForecast() {
@@ -2107,18 +2132,7 @@ class PVAssistantPanel extends HTMLElement {
       box.innerHTML = `<div id="pwrcards"></div><h3 class="ch">${esc(this._t("pwrChart"))} (W)</h3><div class="filters" id="pwranges"></div><div class="chart" id="pwrchart"></div><p class="note">${esc(this._t("pwrTipNote"))}</p><p class="note">${esc(this._t("pwrNote"))}</p>`;
       if (!this._prange) this._prange = "today";
       const ranges = box.querySelector("#pwranges");
-      for (const r of ["today", "yesterday", "d7"]) {
-        const b = document.createElement("button");
-        b.textContent = this._t(r);
-        b.dataset.range = r;
-        b.setAttribute("aria-pressed", String(r === this._prange));
-        b.addEventListener("click", () => {
-          this._prange = r;
-          ranges.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.range === r)));
-          this._loadPowerChart();
-        });
-        ranges.append(b);
-      }
+      this._rangeButtons(ranges, RANGES, this._prange, (r) => { this._prange = r; this._loadPowerChart(); });
     }
     if (html !== this._lastPwr) { this._lastPwr = html; box.querySelector("#pwrcards").innerHTML = html; }
   }
@@ -2148,6 +2162,7 @@ class PVAssistantPanel extends HTMLElement {
     const fD = fm({ weekday: "short", day: "numeric", month: "numeric" });
     const fH = fm({ hour: "2-digit", minute: "2-digit" });
     const fDM = fm({ day: "numeric", month: "numeric" });
+    const fMon = fm(new Date(rd.t0).getFullYear() === new Date(rd.t1 - 1).getFullYear() ? { month: "short" } : { month: "short", year: "2-digit" });
     const num = (v, axis) => v.toLocaleString(lang, { maximumFractionDigits: axis ? 1 : 0 });
     const perId = ids.map((id) => {
       const m = new Map();
@@ -2170,7 +2185,7 @@ class PVAssistantPanel extends HTMLElement {
       series, t0: rd.t0, t1: rd.t1, step: rd.pStep, tickStep: rd.tickStep,
       fmtValue: (v, axis) => `${num(v, axis)}${axis ? "" : " W"}`,
       fmtTime: (t) => fDT.format(t),
-      fmtTick: rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t),
+      fmtTick: rd.long ? (t) => fMon.format(t + 15 * 24 * 3600e3) : rd.days === 1 ? (t) => fH.format(t) : rd.days === 7 ? (t) => fD.format(t) : (t) => fDM.format(t),
       empty: this._t("noData"), tableLabels: { summary: this._t("table"), time: this._t("time") }, label: `${this._t("pwrChart")} (W)`,
     });
   }
@@ -2557,8 +2572,9 @@ class PVAssistantPanel extends HTMLElement {
       const b = document.createElement("button");
       b.textContent = this._t(label);
       b.setAttribute("aria-pressed", String(v === current));
-      b.addEventListener("click", () => {
+      b.addEventListener("click", async () => {
         box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        if (v === "all") await this._ensureDataStart();
         this._rbCur.set(box, v);
         syncNav();
         cb(v);
@@ -2575,14 +2591,23 @@ class PVAssistantPanel extends HTMLElement {
     return Array.from({ length: n + 1 }, (_, i) => [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n]);
   }
 
-  // query window of a range given in days, "ytd" or "month" (the month picked with the arrows)
+  // query window of a range: days (7, 30, 90, 365), "today", "yesterday", "ytd", "month" (the month picked with the arrows) or
+  // "all" (everything recorded, at most MAX_ALL_YEARS years: the tabs that use this load hourly values). capped: "all" was cut.
   _window(v) {
+    const day = new Date(); day.setHours(0, 0, 0, 0);
     if (v === "month") {
       const { y, m } = this._monthSel();
       const e = new Date(y, m + 1, 1);
       return { start: new Date(y, m, 1), end: new Date(Math.min(Date.now(), e.getTime())) };
     }
-    return { start: this._daysStart(v), end: new Date() };
+    if (v === "yesterday") { const s = new Date(day); s.setDate(s.getDate() - 1); return { start: s, end: day }; }
+    if (v === "all") {
+      const first = new Date(this._dataStart || day.getTime());
+      const limit = new Date(day.getFullYear() - MAX_ALL_YEARS, day.getMonth(), 1);
+      const start = new Date(Math.max(new Date(first.getFullYear(), first.getMonth(), 1).getTime(), limit.getTime()));
+      return { start, end: new Date(), capped: first < limit };
+    }
+    return { start: this._daysStart(v === "today" ? 1 : v), end: new Date() };
   }
 
   // start of a range given in days (or "ytd"): midnight, local time
@@ -2599,21 +2624,21 @@ class PVAssistantPanel extends HTMLElement {
     this._plantsOn = P.prod.length > 0;
     if (!this._plantsOn) { box.replaceChildren(); return; }
     if (!this._pdays) this._pdays = 90;
-    box.innerHTML = `<div class="filters" id="pranges"></div><div class="tiles" id="pltiles"></div>
+    box.innerHTML = `<div class="filters" id="pranges"></div><p class="note" id="pnote"></p><div class="tiles" id="pltiles"></div>
       <h3 class="ch">${esc(this._t("pltTable"))}</h3><div class="chart" id="plttable"></div>
       <h3 class="ch">${esc(this._t("pltDay"))}</h3><div class="chart" id="pltday"></div>
       <h3 class="ch">${esc(this._t("pltDur"))}</h3><div class="chart" id="pltdur"></div><p class="note">${esc(this._t("pltDurNote"))}</p>
       <h3 class="ch">${esc(this._t("pltShade"))}</h3><div class="chart" id="pltshade"></div><p class="note">${esc(this._t("pltShadeNote"))}</p>
       <h3 class="ch">${esc(this._t("anaMonthly"))}</h3><div class="chart" id="pltmonth"></div>
       <h3 class="ch">${esc(this._t("pltHeat"))}</h3><div class="filters" id="pltsel"></div><div class="chart" id="pltheat"></div>`;
-    this._rangeButtons(box.querySelector("#pranges"), [[30, "d30"], [90, "d90"], ["month", "month"], ["ytd", "dYear"], [365, "d365"]], this._pdays, (d) => { this._pdays = d; this._loadPlants(); });
+    this._rangeButtons(box.querySelector("#pranges"), [["today", "today"], ["yesterday", "yesterday"], [7, "d7"], [30, "d30"], ["month", "month"], [90, "d90"], ["ytd", "dYear"], [365, "d365"], ["all", "total"]], this._pdays, (d) => { this._pdays = d; this._loadPlants(); });
   }
 
   async _loadPlants() {
     if (!this._plantsOn || !this._hass || !this._root.getElementById("pranges")) return;
     const token = (this._pltoken = (this._pltoken || 0) + 1);
     const { P } = this._keys();
-    const { start, end } = this._window(this._pdays);
+    const { start, end, capped } = this._window(this._pdays);
     this._root.querySelectorAll("#plt .chart").forEach((c) => c.classList.add("loading"));
     let pres = {};
     try {
@@ -2621,7 +2646,7 @@ class PVAssistantPanel extends HTMLElement {
         statistic_ids: [...new Set(P.prod)], period: "hour", types: ["mean"], units: { power: "W" } });
     } catch (e) { pres = {}; }
     if (token !== this._pltoken) return;
-    this._pldata = { pres, start };
+    this._pldata = { pres, start, capped };
     this._drawPlants();
   }
 
@@ -2643,6 +2668,8 @@ class PVAssistantPanel extends HTMLElement {
     const genSet = this._cfg.settings?.general || {};
     const lat = genSet.latitude || this._hass.config?.latitude, lon = genSet.longitude || this._hass.config?.longitude;
     const located = typeof lat === "number" && typeof lon === "number";
+
+    root.getElementById("pnote").textContent = d.capped ? this._t("rangeCapped").replace("{n}", String(MAX_ALL_YEARS)) : "";
 
     // overview table
     const total = series.reduce((a, s) => a + s.kwh, 0);
@@ -2749,7 +2776,7 @@ class PVAssistantPanel extends HTMLElement {
       <div id="bcov"><h3 class="ch">${esc(this._t("balCover"))}</h3><div class="chart" id="bcovc"></div></div>
       <div id="brat"><h3 class="ch">${esc(this._t("balRates"))}</h3><div class="chart" id="bratc"></div></div>
       <p class="note">${esc(this._t("balNote"))}</p>`;
-    this._rangeButtons(box.querySelector("#branges"), [["today", "today"], ["d7", "d7"], ["d30", "d30"], ["month", "month"], ["ytd", "dYear"], ["y12", "d365"]], this._brange, (r) => { this._brange = r; this._loadBalance(); });
+    this._rangeButtons(box.querySelector("#branges"), RANGES, this._brange, (r) => { this._brange = r; this._loadBalance(); });
   }
 
   async _loadBalance() {
@@ -2856,10 +2883,10 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._moneyOn) { box.replaceChildren(); return; }
     if (!this._mrange) this._mrange = "y12";
     box.innerHTML = `<div class="filters" id="mranges"></div><div class="tiles" id="mtiles"></div><p class="note" id="mnote"></p>
-      <div id="mben"><h3 class="ch">${esc(this._t("monBenefit"))}</h3><div class="chart" id="mbenc"></div></div>
+      <div id="mben"><h3 class="ch" id="mbenh">${esc(this._t("monBenefit"))}</h3><div class="chart" id="mbenc"></div></div>
       <div id="mcum"><h3 class="ch">${esc(this._t("monCum"))}</h3><div class="chart" id="mcumc"></div></div>
-      <div id="msto"><h3 class="ch">${esc(this._t("monSto"))}</h3><div class="chart" id="mstoc"></div></div>`;
-    this._rangeButtons(box.querySelector("#mranges"), [["month", "month"], ["ytd", "dYear"], ["y12", "d365"], ["all", "all"]], this._mrange, (r) => { this._mrange = r; this._drawMoney(); });
+      <div id="msto"><h3 class="ch" id="mstoh">${esc(this._t("monSto"))}</h3><div class="chart" id="mstoc"></div></div>`;
+    this._rangeButtons(box.querySelector("#mranges"), RANGES, this._mrange, (r) => { this._mrange = r; this._drawMoney(); });
   }
 
   async _loadMoney() {
@@ -2869,10 +2896,16 @@ class PVAssistantPanel extends HTMLElement {
     const filt = this._cfg.filtered || {};
     const ids = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb];
     this._root.querySelectorAll("#mon .chart").forEach((c) => c.classList.add("loading"));
-    let res = {};
-    try { res = await this._ltMonthly("money", ids.concat(ids.map((i) => filt[i]).filter(Boolean)), "change", { energy: "kWh" }); } catch (e) { res = {}; }
+    const all = ids.concat(ids.map((i) => filt[i]).filter(Boolean));
+    const since = new Date(); since.setHours(0, 0, 0, 0); since.setDate(since.getDate() - 95); // daily values for the short ranges (today ... 90 days)
+    let res = {}, dres = {};
+    [res, dres] = await Promise.all([
+      this._ltMonthly("money", all, "change", { energy: "kWh" }).catch(() => ({})),
+      this._hass.callWS({ type: "recorder/statistics_during_period", start_time: since.toISOString(), end_time: new Date().toISOString(),
+        statistic_ids: [...new Set(all)], period: "day", types: ["change"], units: { energy: "kWh" } }).catch(() => ({})),
+    ]);
     if (token !== this._mtoken) return;
-    this._mdata = { res, filt };
+    this._mdata = { res, dres, filt };
     this._drawMoney();
   }
 
@@ -2880,7 +2913,7 @@ class PVAssistantPanel extends HTMLElement {
     const d = this._mdata;
     const root = this._root;
     if (!d || !this._moneyOn || !root.getElementById("mranges")) return;
-    const { res, filt } = d;
+    const { res, dres, filt } = d;
     const { E } = this._keys();
     const lang = this._hass.locale?.language || this._hass.language;
     const tz = this._hass.config?.time_zone;
@@ -2900,51 +2933,70 @@ class PVAssistantPanel extends HTMLElement {
       return;
     }
     root.getElementById("mnote").textContent = this._t("monNote");
-    // month -> kWh summed over the sensors; the filtered copy wins per month
+    // energy per period summed over the sensors (the filtered copy wins); the long ranges use the monthly statistics, the short
+    // ones (today ... 90 days) the daily ones
     const ym = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "numeric", timeZone: tz });
     const monthKey = (ts) => { const p = Object.fromEntries(ym.formatToParts(ts).map((x) => [x.type, x.value])); return `${p.year}-${String(p.month).padStart(2, "0")}`; };
-    const sumMap = (ids, fn = (v) => v) => {
-      const m = new Map();
-      for (const id of ids) {
-        const own = mergedChange(res, id, filt);
-        for (const [ts, v] of own) { const k = monthKey(ts); m.set(k, (m.get(k) || 0) + fn(v)); }
-      }
-      return m;
-    };
+    const dayFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: tz });
+    const dayKey = (ts) => dayFmt.format(ts); // YYYY-MM-DD
     const flip = (inv) => (v) => (inv ? -v : v), nz = (v) => Math.max(v, 0);
-    const prod = sumMap(E.prod), feed = sumMap(E.feed);
     const merge = (a, b) => { const m = new Map(a); for (const [k, v] of b) m.set(k, (m.get(k) || 0) + v); return m; };
-    const sIn = merge(sumMap(E.sin), sumMap(E.comb, (v) => nz(-flip(E.inv)(v))));
-    const sOut = merge(sumMap(E.sout), sumMap(E.comb, (v) => nz(flip(E.inv)(v))));
-    const all = [...prod.keys()].filter((k) => feed.has(k)).sort();
-    const saving = (k) => nz(prod.get(k) - feed.get(k)) * (pImp || 0);
-    const revenue = (k) => feed.get(k) * (pFeed || 0);
-    const nowKey = monthKey(Date.now());
+    const dataset = (src, keyOf) => {
+      const sumMap = (ids, fn = (v) => v) => {
+        const m = new Map();
+        for (const id of ids) for (const [ts, v] of mergedChange(src || {}, id, filt)) { const k = keyOf(ts); m.set(k, (m.get(k) || 0) + fn(v)); }
+        return m;
+      };
+      const set = { prod: sumMap(E.prod), feed: sumMap(E.feed) };
+      set.sIn = merge(sumMap(E.sin), sumMap(E.comb, (v) => nz(-flip(E.inv)(v))));
+      set.sOut = merge(sumMap(E.sout), sumMap(E.comb, (v) => nz(flip(E.inv)(v))));
+      set.keys = [...set.prod.keys()].filter((k) => set.feed.has(k)).sort();
+      set.saving = (k) => nz(set.prod.get(k) - set.feed.get(k)) * (pImp || 0);
+      set.revenue = (k) => set.feed.get(k) * (pFeed || 0);
+      set.sto = (k) => (set.sOut.get(k) || 0) * pImp - (set.sIn.get(k) || 0) * (pFeed || 0);
+      return set;
+    };
+    const M = dataset(res, monthKey), D = dataset(dres, dayKey);
+    const range = this._mrange;
+    const daily = ["today", "yesterday", "d7", "d30", "d90"].includes(range);
+    const cur = daily ? D : M; // the data of the chosen range
+    const all = M.keys; // months, for the cumulative curve
+    const nowKey = monthKey(Date.now()), todayKey = dayKey(Date.now());
     const monthLabel = (k, withYear) => new Intl.DateTimeFormat(lang, withYear ? { month: "short", year: "2-digit" } : { month: "short" }).format(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 15));
-    // months of the chosen range
-    const year = nowKey.slice(0, 4);
-    const nowIdx = Number(nowKey.slice(5, 7));
-    const cutoff12 = (() => { const t = new Date(Number(year), nowIdx - 12, 1); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`; })();
-    const sel = this._monthSel(), selKey = `${sel.y}-${String(sel.m + 1).padStart(2, "0")}`;
-    const months = all.filter((k) => (this._mrange === "month" ? k === selKey : this._mrange === "ytd" ? k.slice(0, 4) === year : this._mrange === "y12" ? k >= cutoff12 : true));
-    const withYear = months.length && months[0].slice(0, 4) !== months.at(-1).slice(0, 4);
-    const cats = months.map((k) => `${monthLabel(k, withYear)}${k === nowKey ? "*" : ""}`);
+    // periods of the chosen range
+    let keys;
+    if (daily) {
+      const back = (n) => { const t = new Date(); t.setDate(t.getDate() - n); return dayKey(t.getTime()); };
+      const from = { today: todayKey, yesterday: back(1), d7: back(6), d30: back(29), d90: back(89) }[range];
+      keys = D.keys.filter((k) => k >= from && (range === "yesterday" ? k < todayKey : true));
+    } else {
+      const year = nowKey.slice(0, 4);
+      const cutoff12 = (() => { const t = new Date(Number(year), Number(nowKey.slice(5, 7)) - 12, 1); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`; })();
+      const sel = this._monthSel(), selKey = `${sel.y}-${String(sel.m + 1).padStart(2, "0")}`;
+      keys = M.keys.filter((k) => (range === "month" ? k === selKey : range === "ytd" ? k.slice(0, 4) === year : range === "y12" ? k >= cutoff12 : true));
+    }
+    const withYear = keys.length && keys[0].slice(0, 4) !== keys.at(-1).slice(0, 4);
+    const dayLabel = (k) => new Intl.DateTimeFormat(lang, { day: "numeric", month: "numeric" }).format(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, Number(k.slice(8, 10))));
+    const cats = keys.map((k) => (daily ? `${dayLabel(k)}${k === todayKey ? "*" : ""}` : `${monthLabel(k, withYear)}${k === nowKey ? "*" : ""}`));
+    root.getElementById("mbenh").textContent = this._t(daily ? "monBenefitDay" : "monBenefit");
+    root.getElementById("mstoh").textContent = this._t(daily ? "monStoDay" : "monSto");
+    const axisEur = (v) => num(v, Math.abs(v) < 1 ? 2 : Math.abs(v) < 10 ? 1 : 0); // small ranges (a single day) need decimals on the axis
     const tl = { summary: this._t("table"), time: this._t("time") };
     hide(false);
     categoryBarChart(root.getElementById("mbenc"), {
       categories: cats, stacked: true,
-      series: [...(pImp ? [{ name: this._t("monSaving"), color: "--pva-direct", values: months.map(saving) }] : []), ...(pFeed ? [{ name: this._t("monRevenue"), color: "--pva-feed", values: months.map(revenue) }] : [])],
-      fmtValue: (v, axis) => `${num(v, axis ? 0 : 2)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("monBenefit"),
+      series: [...(pImp ? [{ name: this._t("monSaving"), color: "--pva-direct", values: keys.map(cur.saving) }] : []), ...(pFeed ? [{ name: this._t("monRevenue"), color: "--pva-feed", values: keys.map(cur.revenue) }] : [])],
+      fmtValue: (v, axis) => (axis ? axisEur(v) : `${num(v, 2)} €`), empty: this._t("noData"), tableLabels: tl, label: this._t("monBenefit"),
     });
 
     // cumulative benefit since the first recorded month against the plant cost, with the extrapolation to the payback
     const cost = gen.system_cost_eur > 0 ? gen.system_cost_eur : 0;
     const monthTs = (k) => new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1).getTime();
     let run = 0;
-    const cumPts = all.map((k) => { run += saving(k) + revenue(k); return [monthTs(k) + 31 * 86400e3, run]; }); // value at the end of the month
+    const cumPts = all.map((k) => { run += M.saving(k) + M.revenue(k); return [monthTs(k) + 31 * 86400e3, run]; }); // value at the end of the month
     const done = all.filter((k) => k !== nowKey);
     const last12 = done.slice(-12);
-    const avg12 = last12.length >= 6 ? last12.reduce((a, k) => a + saving(k) + revenue(k), 0) / last12.length : 0;
+    const avg12 = last12.length >= 6 ? last12.reduce((a, k) => a + M.saving(k) + M.revenue(k), 0) / last12.length : 0;
     let payTs = null;
     if (cost > 0 && cumPts.length && avg12 > 0 && run < cost) {
       const monthsLeft = (cost - run) / avg12;
@@ -2964,23 +3016,22 @@ class PVAssistantPanel extends HTMLElement {
       });
     } else cumBox.innerHTML = `<p class="empty">${esc(this._t("noData"))}</p>`;
 
-    // storage benefit per month: discharged energy replaces bought energy, charged energy would otherwise have been fed in
+    // storage benefit per period: discharged energy replaces bought energy, charged energy would otherwise have been fed in
     const stoBox = root.getElementById("msto");
-    const hasSto = !!(pImp && (sIn.size || sOut.size));
+    const hasSto = !!(pImp && (cur.sIn.size || cur.sOut.size));
     stoBox.hidden = !hasSto;
-    const stoVal = (k) => (sOut.get(k) || 0) * pImp - (sIn.get(k) || 0) * (pFeed || 0);
     if (hasSto) categoryBarChart(root.getElementById("mstoc"), {
       categories: cats,
-      series: [{ name: this._t("stoBenefit"), color: "--pva-bout", colorOf: (v) => (v >= 0 ? "--pva-bout" : "--pva-neg"), values: months.map(stoVal) }],
-      fmtValue: (v, axis) => `${num(v, axis ? 0 : 2)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("monSto"),
+      series: [{ name: this._t("stoBenefit"), color: "--pva-bout", colorOf: (v) => (v >= 0 ? "--pva-bout" : "--pva-neg"), values: keys.map(cur.sto) }],
+      fmtValue: (v, axis) => (axis ? axisEur(v) : `${num(v, 2)} €`), empty: this._t("noData"), tableLabels: tl, label: this._t("monSto"),
     });
 
     // tiles
     const tiles = [];
-    const total = months.reduce((a, k) => a + saving(k) + revenue(k), 0);
-    if (months.length) {
-      tiles.push([eur(total), this._t("monTotal")]);
-      tiles.push([eur(total / months.length), this._t("monAvg")]);
+    const total = keys.reduce((a, k) => a + cur.saving(k) + cur.revenue(k), 0);
+    if (keys.length) {
+      tiles.push([eur(total, daily ? 2 : 0), this._t("monTotal")]);
+      if (keys.length > 1) tiles.push([eur(total / keys.length, daily ? 2 : 0), this._t(daily ? "monAvgDay" : "monAvg")]);
     }
     if (cost > 0 && run > 0) {
       tiles.push([`${num((run / cost) * 100)} %`, this._t("monPaid")]);
@@ -2988,7 +3039,7 @@ class PVAssistantPanel extends HTMLElement {
         tiles.push([new Intl.DateTimeFormat(lang, { month: "long", year: "numeric", timeZone: tz }).format(payTs), this._t("monPayDate")]);
       }
     }
-    if (hasSto && months.length) tiles.push([eur(months.reduce((a, k) => a + stoVal(k), 0)), this._t("stoBenefit")]);
+    if (hasSto && keys.length) tiles.push([eur(keys.reduce((a, k) => a + cur.sto(k), 0), daily ? 2 : 0), this._t("stoBenefit")]);
     root.getElementById("mtiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
   }
 
@@ -3006,7 +3057,7 @@ class PVAssistantPanel extends HTMLElement {
       <h3 class="ch" id="aheath">${esc(this._t("anaHeat"))}</h3><div class="chart" id="aheat"></div>
       <h3 class="ch">${esc(this._t("anaDays"))}</h3><div class="two" id="adays"></div>`;
     const ranges = box.querySelector("#aranges");
-    this._rangeButtons(ranges, [[7, "d7"], [30, "d30"], ["month", "month"], [90, "d90"], ["ytd", "dYear"], [365, "d365"]], this._adays, (d) => { this._adays = d; this._loadAnalysis(); });
+    this._rangeButtons(ranges, [["today", "today"], ["yesterday", "yesterday"], [7, "d7"], [30, "d30"], ["month", "month"], [90, "d90"], ["ytd", "dYear"], [365, "d365"], ["all", "total"]], this._adays, (d) => { this._adays = d; this._loadAnalysis(); });
   }
 
   async _loadAnalysis() {
@@ -3014,7 +3065,7 @@ class PVAssistantPanel extends HTMLElement {
     const token = (this._atoken = (this._atoken || 0) + 1);
     const { P, E, G } = this._keys();
     const filt = this._cfg.filtered || {};
-    const { start, end } = this._window(this._adays);
+    const { start, end, capped } = this._window(this._adays);
     const call = async (ids, from, period, type, units) => {
       ids = [...new Set(ids)];
       if (!ids.length) return {};
@@ -3029,7 +3080,7 @@ class PVAssistantPanel extends HTMLElement {
       call(eids, start, "day", "change", { energy: "kWh" }),
     ]);
     if (token !== this._atoken) return;
-    this._adata = { pres, eres, start };
+    this._adata = { pres, eres, start, capped };
     this._drawAnalysis();
   }
 
@@ -3374,7 +3425,7 @@ class PVAssistantPanel extends HTMLElement {
     }
 
     // yield per plant and month (chart on the Plants tab): a hint if a plant is clearly below the others in some months
-    const longRange = this._adays !== 7 && this._adays !== 30 && this._adays !== "month";
+    const longRange = !["today", "yesterday", 7, 30, "month"].includes(this._adays);
     const my = this._monthlyYield(series, start, key, todayKey);
     if (longRange && my.plants.length >= 2) {
       const sameYear = my.months.length && my.months[0].slice(0, 4) === my.months.at(-1).slice(0, 4);
@@ -3392,6 +3443,8 @@ class PVAssistantPanel extends HTMLElement {
         if (w.months.length) hints.push(this._t("anaMonthWeak").replace("{name}", my.plants[i].name).replace("{months}", w.months.slice(0, 4).join(", ")).replace("{pct}", num(w.worst, 0)));
       });
     }
+
+    if (d.capped) { const text = this._t("rangeCapped").replace("{n}", String(MAX_ALL_YEARS)); hints.push(text); infoSet.add(text); }
 
     // tiles: production, plant yield (kWh/kWp), best day, performance ratio
     const tiles = [];
