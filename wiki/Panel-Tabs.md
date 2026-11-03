@@ -4,6 +4,8 @@
 
 All key figures of a tab are shown together in one card. Tabs without matching sensors are hidden.
 
+The top bar with the tabs stays visible while scrolling and is a single row (it scrolls sideways on narrow screens). **Now** starts with a strip of key figures: solar, home, grid, storage and autarky.
+
 **Range picker:** every tab with data you can select (Power, Plants, Analysis, History, Balance, Storage, Forecast, Economics) has the same compact picker: the unit **Day · Week · Month · Year · Total**, arrows to page through the periods, the date in the middle (click it for a small calendar: days with week numbers, months or years; the first month with data and today limit it) and a **quick ranges** list (Today, Yesterday, Last 7 / 30 / 90 days, Last 12 months). Click the active unit again to jump to the current period. Total covers everything recorded (the first start reads the long-term statistics once); the tabs that load hourly values (Plants, Analysis) load at most the last 5 years for Total and say so. In the Economics tab day, week, month and the last n days use daily values, year, 12 months and Total monthly values. The yearly overview has its own year selection.
 
 ### Now
@@ -100,6 +102,8 @@ See [[Settings]].
 ## Deutsch
 
 Alle Kennzahlen eines Tabs stehen gemeinsam in einer Karte. Tabs ohne passende Sensoren werden ausgeblendet.
+
+Die Kopfleiste mit den Tabs bleibt beim Scrollen sichtbar und ist einzeilig (auf schmalen Bildschirmen seitlich scrollbar). **Aktuell** beginnt mit einer Kennzahlen-Leiste: PV, Haus, Netz, Speicher und Autarkie.
 
 **Zeitraum-Wähler:** Jeder Tab mit auswählbaren Daten (Leistung, Anlagen, Analyse, Verlauf, Energiebilanz, Speicher, Prognose, Wirtschaft) hat denselben kompakten Wähler: die Einheit **Tag · Woche · Monat · Jahr · Gesamt**, Pfeile zum Blättern durch die Zeiträume, in der Mitte das Datum (ein Klick darauf öffnet einen kleinen Kalender: Tage mit Kalenderwochen, Monate oder Jahre; der erste Monat mit Daten und heute begrenzen ihn) und eine **Schnellwahl** (Heute, Gestern, Letzte 7 / 30 / 90 Tage, Letzte 12 Monate). Ein Klick auf die aktive Einheit springt zum aktuellen Zeitraum. Gesamt umfasst alles Aufgezeichnete (beim ersten Mal werden einmalig die Langzeitstatistiken gelesen); die Tabs, die Stundenwerte laden (Anlagen, Analyse), laden bei Gesamt höchstens die letzten 5 Jahre und weisen darauf hin. In der Wirtschaft nutzen Tag, Woche, Monat und die letzten n Tage Tageswerte, Jahr, 12 Monate und Gesamt Monatswerte. Die Jahresübersicht hat ihre eigene Jahresauswahl.
 

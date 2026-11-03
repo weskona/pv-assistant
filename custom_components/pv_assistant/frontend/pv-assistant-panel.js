@@ -382,22 +382,24 @@ class PVAssistantPanel extends HTMLElement {
                   --g-text:#f3f5f9; --g-muted:#8b91a1; --g-dim:#5d6373; --g-accent:#f7b733;
                   --card-background-color:#14171e; --divider-color:rgba(255,255,255,.065);
                   --secondary-background-color:rgba(255,255,255,.05); --primary-text-color:#f3f5f9; --secondary-text-color:#8b91a1; }
-          header { display:flex; align-items:center; gap:8px; height:56px; padding:0 12px; background:var(--g-bg); color:var(--g-text);
-                   font-size:20px; font-weight:600; }
-          nav { display:flex; flex-wrap:wrap; gap:8px; background:var(--g-bg); padding:0 16px 4px; max-width:1100px; margin:0 auto; box-sizing:border-box; }
-          nav button { font:inherit; font-size:14px; font-weight:600; letter-spacing:.04em; color:var(--g-muted); background:var(--g-tile);
-                border:1px solid var(--g-tileb); border-radius:16px; padding:8px 16px; cursor:pointer; white-space:nowrap; }
+          .top { position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--g-bg) 86%, transparent);
+                 backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--g-line); }
+          header { display:flex; align-items:center; gap:8px; height:52px; padding:0 12px; max-width:1100px; margin:0 auto; box-sizing:border-box;
+                   color:var(--g-text); font-size:19px; font-weight:700; letter-spacing:-.01em; }
+          nav { display:flex; gap:2px; padding:0 10px; max-width:1100px; margin:0 auto; box-sizing:border-box; overflow-x:auto; scrollbar-width:none; }
+          nav::-webkit-scrollbar { display:none; }
+          nav button { font:inherit; font-size:14px; font-weight:600; color:var(--g-muted); background:transparent; border:0;
+                border-bottom:2px solid transparent; border-radius:0; padding:10px 11px 11px; cursor:pointer; white-space:nowrap; flex:none; }
           nav button:hover { color:var(--g-text); }
-          nav button[aria-selected="true"] { color:var(--g-accent); background:color-mix(in srgb, var(--g-accent) 14%, transparent);
-                border-color:color-mix(in srgb, var(--g-accent) 38%, transparent); }
-          nav button:focus-visible, .filters button:focus-visible, .setbtn:focus-visible { outline:2px solid var(--g-accent); outline-offset:2px; }
+          nav button[aria-selected="true"] { color:var(--g-accent); border-bottom-color:var(--g-accent); }
+          nav button:focus-visible, .filters button:focus-visible, .setbtn:focus-visible { outline:2px solid var(--g-accent); outline-offset:-2px; }
           [role="tabpanel"][hidden] { display:none; }
-          main { padding:16px; max-width:1100px; margin:0 auto; }
-          h2 { font-weight:600; font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted); margin:28px 0 10px; }
-          .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
-          .card { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; padding:20px 22px;
+          main { padding:20px 16px 40px; max-width:1100px; margin:0 auto; }
+          h2 { font-weight:600; font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--g-muted); margin:26px 0 10px 4px; }
+          .grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); align-items:start; }
+          .card { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:22px; padding:16px 20px;
                   box-shadow:var(--ha-card-box-shadow,none); }
-          .card h3 { margin:0 0 10px; font-size:15px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted);
+          .card h3 { margin:0 0 8px; font-size:13px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--g-muted);
                      display:flex; justify-content:space-between; gap:8px; }
           .card h3 small { color:var(--g-text); font-weight:500; letter-spacing:0; text-transform:none; font-size:15px; }
           .row { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--g-line); }
@@ -456,15 +458,15 @@ class PVAssistantPanel extends HTMLElement {
           .filters button[aria-pressed="true"] { border-color:color-mix(in srgb, var(--g-accent) 40%, transparent); color:var(--g-accent); background:color-mix(in srgb, var(--g-accent) 14%, transparent); }
           /* all key figures of a tab sit together in one card */
           .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:16px 20px; margin:0 0 16px; padding:18px 22px;
-                   background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; }
+                   background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:22px; }
           .tiles:empty { display:none; }
           .tile { display:flex; flex-direction:column; gap:3px; min-width:0; }
           .tile b { display:block; font-size:1.35em; font-weight:700; font-variant-numeric:tabular-nums; }
           .tile span { color:var(--g-muted); font-size:.75em; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
-          .chart { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; padding:16px 18px 10px;
+          .chart { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:22px; padding:16px 18px 10px;
                    margin-bottom:16px; transition:opacity .15s; }
           .chart.loading { opacity:.5; }
-          h3.ch { font-weight:600; font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted); margin:22px 0 10px; }
+          h3.ch { font-weight:600; font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--g-muted); margin:22px 0 10px; }
           .legend { display:flex; gap:16px; flex-wrap:wrap; margin:0 0 6px; font-size:.85em; color:var(--secondary-text-color); }
           .legend-item { display:inline-flex; align-items:center; gap:6px; }
           .key { display:inline-block; }
@@ -506,6 +508,12 @@ class PVAssistantPanel extends HTMLElement {
           .note.warn { color:var(--primary-text-color); border-left:3px solid var(--pva-neg); padding-left:8px; margin:8px 0 0; }
           .grid + .note { margin-top:16px; }
           /* energy flow */
+          .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:0 0 6px; }
+          .kpi { position:relative; overflow:hidden; background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:20px; padding:14px 16px 14px 20px; }
+          .kpi::before { content:""; position:absolute; left:0; top:12px; bottom:12px; width:4px; border-radius:0 4px 4px 0; background:var(--kc, var(--g-accent)); }
+          .kpi span { display:block; color:var(--g-muted); font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; }
+          .kpi b { display:block; font-size:1.7em; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin-top:2px; }
+          .kpi small { color:var(--g-muted); font-size:.85em; }
           .flowcard { padding:8px 12px; }
           svg.flow { display:block; width:100%; max-width:640px; margin:0 auto; color:var(--g-text); }
           svg.flow .track { fill:none; stroke:currentColor; stroke-width:3; opacity:.12; }
@@ -522,8 +530,8 @@ class PVAssistantPanel extends HTMLElement {
           .gauge i { display:block; height:100%; border-radius:6px; background:var(--pva-prod); box-shadow:0 0 12px color-mix(in srgb, var(--pva-prod) 55%, transparent); }
           .pw-val { font-size:2.4em; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
           .pw-sub { color:var(--secondary-text-color); font-size:.9em; display:flex; justify-content:space-between; gap:8px; }
-          .setcard { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:30px; padding:20px 22px; margin-bottom:16px; }
-          .setcard h3 { margin:0 0 2px; font-size:15px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--g-muted); }
+          .setcard { background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:22px; padding:20px 22px; margin-bottom:16px; }
+          .setcard h3 { margin:0 0 2px; font-size:13px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--g-muted); }
           .setcard .eid { color:var(--secondary-text-color); font-size:.85em; margin-bottom:10px; word-break:break-all; }
           .setrow { display:grid; grid-template-columns:minmax(120px,200px) 1fr; gap:8px 12px; align-items:center; margin:6px 0; }
           .setrow label { color:var(--secondary-text-color); }
@@ -591,8 +599,8 @@ class PVAssistantPanel extends HTMLElement {
           @media (max-width:560px) { .strow { grid-template-columns:1fr; } }
           p.empty { color:var(--secondary-text-color); margin:16px 0; }
         </style>
-        <header><span id="menu"></span><span id="title"></span></header>
-        <nav id="tabs" role="tablist"></nav>
+        <div class="top"><header><span id="menu"></span><span id="title"></span></header>
+        <nav id="tabs" role="tablist"></nav></div>
         <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="plt" role="tabpanel"></div><div id="ana" role="tabpanel"></div><div id="bal" role="tabpanel"></div><div id="sto" role="tabpanel"></div><div id="mon" role="tabpanel"></div><div id="fcs" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
       const menu = document.createElement("ha-menu-button");
       this._root.getElementById("menu").appendChild(menu);
@@ -714,7 +722,7 @@ class PVAssistantPanel extends HTMLElement {
     if (fc) html += `<h2>${esc(this._t("fcGroup"))}</h2><div class="grid">${fc}</div>`;
     if (!html) html = `<p class="muted">${esc(this._t("none"))}</p>`;
     const now = this._root.getElementById("now");
-    if (!now.querySelector("#nowcards")) now.innerHTML = '<div id="flow"></div><div id="nowcards"></div>';
+    if (!now.querySelector("#nowcards")) now.innerHTML = '<div class="kpis" id="kpis"></div><div id="flow"></div><div id="nowcards"></div>';
     if (html !== this._last) { this._last = html; now.querySelector("#nowcards").innerHTML = html; }
     this._renderFlow();
     this._renderPower();
@@ -789,6 +797,7 @@ class PVAssistantPanel extends HTMLElement {
       box.append(card);
     }
     const v = this._flowValues();
+    this._renderKpis(v);
     const fmt = (x) => (x >= 1000 ? `${(x / 1000).toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 2 })} kW` : `${Math.round(x)} W`);
     const direct = Math.max(0, Math.min(v.prod, v.prod - v.feed - v.inn));
     const toBat = Math.min(v.inn, Math.max(0, v.prod - v.feed));
@@ -808,6 +817,19 @@ class PVAssistantPanel extends HTMLElement {
     this._flow.bat.g.style.display = v.hasBat ? "" : "none";
     if (v.hasGrid) set("grid", fmt(Math.max(v.imp, v.feed)), v.feed > v.imp ? `↑ ${this._t("feed")}` : v.imp > 0 ? `↓ ${this._t("gridImp")}` : "");
     if (v.hasBat) set("bat", fmt(Math.max(v.out, v.inn)), [v.inn > v.out ? `↓ ${this._t("sin")}` : v.out > 0 ? `↑ ${this._t("sout")}` : "", v.soc != null ? `${Math.round(v.soc)} %` : ""].filter(Boolean).join(" · "));
+  }
+
+  _renderKpis(v) {
+    const box = this._root.getElementById("kpis");
+    if (!box) return;
+    const loc = this._hass.locale?.language || this._hass.language;
+    const fmt = (x) => (x >= 1000 ? `${(x / 1000).toLocaleString(loc, { maximumFractionDigits: 2 })} kW` : `${Math.round(x)} W`);
+    const k = [[this._t("flowSolar"), fmt(v.prod), "--pva-prod", ""], [this._t("flowHome"), fmt(v.house), "--pva-house", ""]];
+    if (v.hasGrid) k.push([this._t("flowGrid"), fmt(Math.max(v.imp, v.feed)), v.feed > v.imp ? "--pva-feed" : "--pva-grid", v.feed > v.imp ? `↑ ${this._t("feed")}` : v.imp > 0 ? `↓ ${this._t("gridImp")}` : ""]);
+    if (v.hasBat) k.push([this._t("flowBattery"), fmt(Math.max(v.out, v.inn)), v.inn > v.out ? "--pva-bin" : "--pva-bout", v.soc != null ? `${Math.round(v.soc)} %` : ""]);
+    if (v.house > 0 && v.hasGrid) k.push([this._t("autarky"), `${Math.round((1 - Math.min(v.imp, v.house) / v.house) * 100)} %`, "--pva-pos", ""]);
+    const html = k.map(([n, val, c, sub]) => `<div class="kpi" style="--kc:var(${c})"><span>${esc(n)}</span><b>${esc(val)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`).join("");
+    if (html !== this._kpiHtml) { this._kpiHtml = html; box.innerHTML = html; }
   }
 
   // ---------------------------------------------------------------- history
