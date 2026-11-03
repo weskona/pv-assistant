@@ -39,6 +39,9 @@ In the panel as CSS variables `--pva-*`; new series use this mapping.
 ### Checks
 Workflow `validate`: hassfest, HACS, syntax check, JSON and translation key check, beta suffix and version bump.
 
+### Screenshots
+The images in `docs/screenshots/{en,de}` show every tab with sample data (README and wiki use them). `tools/screenshots/make.cjs` creates them: it loads the real panel files in a browser (Playwright) with a fake Home Assistant behind them (`mock.js`: a simulated system with three and a half years of made-up data). Run it again after visible changes of the panel; the options are in the header of the script.
+
 ### Wiki
 The pages are Markdown files in the folder `wiki/` of the repository. The workflow `wiki` publishes them to the GitHub wiki when they change on `main`. The wiki has to be initialised once in the UI (create a first page); after that a change in the folder `wiki/` or a manual run of the workflow is enough.
 
@@ -82,6 +85,9 @@ Im Panel als CSS-Variablen `--pva-*`; neue Reihen nutzen diese Zuordnung.
 
 ### Prüfungen
 Workflow `validate`: hassfest, HACS, Syntaxprüfung, JSON- und Übersetzungsschlüssel-Prüfung, Beta-Suffix und Versionserhöhung.
+
+### Screenshots
+Die Bilder in `docs/screenshots/{en,de}` zeigen jeden Tab mit Beispieldaten (README und Wiki verwenden sie). `tools/screenshots/make.cjs` erzeugt sie: Das Skript lädt die echten Panel-Dateien in einem Browser (Playwright) mit einem nachgebildeten Home Assistant dahinter (`mock.js`: ein simuliertes System mit dreieinhalb Jahren erfundener Daten). Nach sichtbaren Änderungen am Panel erneut ausführen; die Optionen stehen im Kopf des Skripts.
 
 ### Wiki
 Die Seiten liegen als Markdown im Ordner `wiki/` des Repositories. Der Workflow `wiki` überträgt sie bei Änderungen auf `main` in das GitHub-Wiki. Das Wiki muss einmalig in der Oberfläche initialisiert werden (eine erste Seite anlegen), danach genügt eine Änderung im Ordner `wiki/` oder ein manueller Lauf des Workflows.

@@ -344,7 +344,7 @@ class PVAssistantPanel extends HTMLElement {
                   --secondary-background-color:rgba(255,255,255,.05); --primary-text-color:#f3f5f9; --secondary-text-color:#8b91a1; }
           header { display:flex; align-items:center; gap:8px; height:56px; padding:0 12px; background:var(--g-bg); color:var(--g-text);
                    font-size:20px; font-weight:600; }
-          nav { display:flex; gap:8px; overflow-x:auto; background:var(--g-bg); padding:0 16px 4px; max-width:1100px; margin:0 auto; box-sizing:border-box; }
+          nav { display:flex; flex-wrap:wrap; gap:8px; background:var(--g-bg); padding:0 16px 4px; max-width:1100px; margin:0 auto; box-sizing:border-box; }
           nav button { font:inherit; font-size:14px; font-weight:600; letter-spacing:.04em; color:var(--g-muted); background:var(--g-tile);
                 border:1px solid var(--g-tileb); border-radius:16px; padding:8px 16px; cursor:pointer; white-space:nowrap; }
           nav button:hover { color:var(--g-text); }
@@ -1616,7 +1616,7 @@ class PVAssistantPanel extends HTMLElement {
     const tl = { summary: this._t("table"), time: this._t("time") };
     const fv = (v, axis) => `${num(v, axis ? 1 : 2)}${axis ? "" : " kWh"}`;
     const fcBox = root.getElementById("fcchart"), fdBox = root.getElementById("fcdev");
-    fcBox.classList.remove("loading"); fdBox.classList.remove("loading");
+    root.querySelectorAll("#fcs .chart").forEach((c) => c.classList.remove("loading")); // all of them: the hour chart and the quality chart are hidden or drawn conditionally
     if (!fcDays.length) {
       root.getElementById("fcbbox").hidden = true;
       for (const b of [fcBox, fdBox]) b.innerHTML = `<p class="empty">${esc(this._t(list(this._cfg.forecast_today_energy_sensors).length ? "anaNoForecastYet" : "anaNoForecast"))}</p>`;
@@ -2639,7 +2639,7 @@ class PVAssistantPanel extends HTMLElement {
     // overview table
     const total = series.reduce((a, s) => a + s.kwh, 0);
     root.getElementById("pltiles").innerHTML = total > 0
-      ? `<div class="tile"><b>${esc(num(total))} kWh</b><span>${esc(this._t("anaTotal"))}</span></div><div class="tile"><b>${esc(String(series.length))}</b><span>${esc(this._t("pltPlant"))}</span></div>` : "";
+      ? `<div class="tile"><b>${esc(num(total))} kWh</b><span>${esc(this._t("anaTotal"))}</span></div><div class="tile"><b>${esc(String(series.length))}</b><span>${esc(this._t("plantsTab"))}</span></div>` : "";
     const sorted = [...series].sort((a, b) => b.kwh - a.kwh);
     root.getElementById("plttable").innerHTML = series.length
       ? `<table class="dtable"><thead><tr><th>${esc(this._t("pltName"))}</th><th>${esc(this._t("pltStrings"))}</th><th>${esc(this._t("pltPeak"))}</th><th>${esc(this._t("pltInv"))}</th><th>${esc(this._t("pltKwh"))}</th><th>${esc(this._t("pltSpec"))}</th><th>${esc(this._t("pltShare"))}</th></tr></thead><tbody>${

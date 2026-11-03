@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+tools/screenshots/node_modules/
+tools/screenshots/package.json
+tools/screenshots/package-lock.json
