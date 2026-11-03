@@ -29,7 +29,7 @@
 - **Storage:** daily high, daily average and daily low of the level, and the daily power peaks from the highest and lowest values of the statistics.
 
 ### Energy counters and power sensors
-Totals (for example production in the analysis) come from the **energy counters** because they match the Energy dashboard. The string comparison and the heat map use the **power sensors** (hourly means). A filtered copy of a sensor and the original are merged per period (the copy wins where it has data).
+Totals (for example production in the analysis) come from the **energy counters** because they match the Energy dashboard. The string comparison and the heat map use the **power sensors** (hourly means). A filtered copy of a sensor and the original are merged per period (the copy wins where it has data; in the monthly statistics the first month of a copy is skipped, because the copy starts mid-month and that month is only partial).
 
 ### String comparison
 Per string: kWh per installed kWp over the hours in which all strings have values. With orientation and tilt it is divided by the **expected yield**:
@@ -78,7 +78,7 @@ The monthly average only counts completed months of the last N years up to the l
 - **Speicher:** Tageshöchstwert, Tagesdurchschnitt und Tagestiefstwert des Ladestands sowie die Tagesspitzen der Leistung aus den Höchst- und Tiefstwerten der Statistik.
 
 ### Energiezähler und Leistungssensoren
-Gesamtwerte (z. B. Erzeugung in der Analyse) kommen aus den **Energiezählern**, weil sie mit dem Energy-Dashboard übereinstimmen. Der String-Vergleich und die Heatmap nutzen die **Leistungssensoren** (Stundenmittel). Eine bereinigte Kopie eines Sensors und das Original werden je Zeitabschnitt zusammengeführt (die Kopie gewinnt, wo sie Daten hat).
+Gesamtwerte (z. B. Erzeugung in der Analyse) kommen aus den **Energiezählern**, weil sie mit dem Energy-Dashboard übereinstimmen. Der String-Vergleich und die Heatmap nutzen die **Leistungssensoren** (Stundenmittel). Eine bereinigte Kopie eines Sensors und das Original werden je Zeitabschnitt zusammengeführt (die Kopie gewinnt, wo sie Daten hat; in den Monatsstatistiken wird der erste Monat einer Kopie übersprungen, weil die Kopie mitten im Monat beginnt und dieser Monat nur teilweise vorliegt).
 
 ### String-Vergleich
 Pro String: kWh pro installiertem kWp über die Stunden, in denen alle Strings Werte haben. Mit Ausrichtung und Neigung wird durch den **erwarteten Ertrag** geteilt:
