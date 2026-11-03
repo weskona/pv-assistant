@@ -63,7 +63,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><style>
       const settled = (section) => { const r = window.__el._root; return !r.querySelector(`#${section} .chart.loading`) && !r.getElementById(section).hidden; };
       await page.waitForFunction(settled, section, { timeout: 60000 });
       if (LONG_RANGE.has(id)) { // these tabs show more with a year of data than with their default range
-        await page.getByRole("button", { name: /^12 (months|Monate)$/ }).click();
+        await page.evaluate((section) => { const q = window.__el._root.querySelector(`#${section} .pk-quick`); q.value = "y12"; q.dispatchEvent(new Event("change")); }, section);
         await page.waitForTimeout(300);
         await page.waitForFunction(settled, section, { timeout: 60000 });
       }
