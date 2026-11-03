@@ -515,17 +515,17 @@ class PVAssistantPanel extends HTMLElement {
           .kpi b { display:block; font-size:1.7em; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin-top:2px; }
           .kpi small { color:var(--g-muted); font-size:.85em; }
           .flowcard { padding:8px 12px; }
-          svg.flow { display:block; width:100%; max-width:640px; margin:0 auto; color:var(--g-text); }
-          svg.flow .track { fill:none; stroke:currentColor; stroke-width:3; opacity:.12; }
+          svg.flow { display:block; width:100%; max-width:720px; margin:0 auto; color:var(--g-text); }
+          svg.flow .track { fill:none; stroke:currentColor; stroke-width:3; opacity:.12; stroke-linecap:round; }
           svg.flow .run { fill:none; stroke-linecap:round; stroke-dasharray:1 14; animation:pvaflow 1.1s linear infinite; }
           @keyframes pvaflow { to { stroke-dashoffset:-15; } }
           @media (prefers-reduced-motion: reduce) { svg.flow .run { animation:none; stroke-dasharray:none; opacity:.8; } }
-          svg.flow .flowring { fill:var(--g-tile); stroke-width:3; }
+          svg.flow .hub { fill:var(--g-tile); stroke:currentColor; stroke-width:2; opacity:.5; }
+          svg.flow .flowbox { fill:var(--g-tile); stroke-width:2; }
           svg.flow text { fill:var(--g-text); font-family:inherit; }
-          svg.flow .flowname { fill:var(--g-muted); font-size:13px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
-          svg.flow .flowval { font-size:19px; font-weight:700; }
+          svg.flow .flowname { fill:var(--g-muted); font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; }
+          svg.flow .flowval { font-size:22px; font-weight:700; }
           svg.flow .flowsub { fill:var(--g-muted); font-size:12px; }
-          svg.flow .flowlbl { font-size:13px; font-weight:600; }
           .gauge { height:10px; border-radius:6px; background:rgba(127,127,127,.18); overflow:hidden; margin:10px 0 6px; }
           .gauge i { display:block; height:100%; border-radius:6px; background:var(--pva-prod); box-shadow:0 0 12px color-mix(in srgb, var(--pva-prod) 55%, transparent); }
           .pw-val { font-size:2.4em; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
@@ -755,43 +755,38 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._keys().P.prod.length) { box.replaceChildren(); this._flowBuilt = false; return; }
     const NS = "http://www.w3.org/2000/svg";
     const el = (tag, attrs = {}, text) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text !== undefined) n.textContent = text; return n; };
+    // four boxes around a central hub; every spoke runs from its source to the hub or from the hub to its destination
+    const HUB = [360, 150];
+    const NODES = {
+      solar: { x: 360, y: 40, name: this._t("flowSolar"), color: "--pva-prod", edge: [360, 76] },
+      grid: { x: 90, y: 150, name: this._t("flowGrid"), color: "--pva-grid", edge: [170, 150] },
+      home: { x: 630, y: 150, name: this._t("flowHome"), color: "--pva-house", edge: [550, 150] },
+      bat: { x: 360, y: 260, name: this._t("flowBattery"), color: "--pva-bout", edge: [360, 224] },
+    };
     if (!this._flowBuilt) {
       this._flowBuilt = true;
       this._flow = {};
       box.innerHTML = `<h2>${esc(this._t("flowTitle"))}</h2>`;
       const card = document.createElement("div");
       card.className = "card flowcard";
-      const svg = el("svg", { viewBox: "0 0 640 425", class: "flow", role: "img", "aria-label": this._t("flowTitle") });
-      // flows: [key, path, color, label position]; every path runs from source to destination
-      const flows = [
-        ["sh", "M320,96 L320,154", "--pva-direct", [330, 130, "start"]],
-        ["gh", "M156,200 L274,200", "--pva-grid", [215, 190, "middle"]],
-        ["bh", "M320,298 L320,246", "--pva-bout", [330, 278, "start"]],
-        ["sg", "M284,66 C170,86 110,116 110,154", "--pva-feed", [172, 94, "middle"]],
-        ["sb", "M360,56 C620,56 620,342 364,342", "--pva-bin", [572, 205, "start"]],
-      ];
-      for (const [key, d, color, [x, y, anchor]] of flows) {
-        svg.append(el("path", { d, class: "track" }));
-        const run = el("path", { d, class: "run", stroke: `var(${color})`, visibility: "hidden" });
-        const label = el("text", { x, y, "text-anchor": anchor, class: "flowlbl" });
-        svg.append(run, label);
-        this._flow[key] = { run, label };
+      const svg = el("svg", { viewBox: "0 0 720 300", class: "flow", role: "img", "aria-label": this._t("flowTitle") });
+      for (const [key, n] of Object.entries(NODES)) {
+        const d = `M${n.edge[0]},${n.edge[1]} L${HUB[0]},${HUB[1]}`;
+        const track = el("path", { d, class: "track" });
+        const run = el("path", { d, class: "run", visibility: "hidden" });
+        svg.append(track, run);
+        this._flow[key] = { track, run };
       }
-      const nodes = [
-        ["solar", 320, 48, "--pva-prod", this._t("flowSolar")],
-        ["home", 320, 200, "--pva-house", this._t("flowHome")],
-        ["grid", 110, 200, "--pva-grid", this._t("flowGrid")],
-        ["bat", 320, 342, "--pva-bout", this._t("flowBattery")],
-      ];
-      for (const [key, x, y, color, name] of nodes) {
+      svg.append(el("circle", { cx: HUB[0], cy: HUB[1], r: 7, class: "hub" }));
+      for (const [key, n] of Object.entries(NODES)) {
         const g = el("g", { class: "flownode" });
-        g.append(el("circle", { cx: x, cy: y, r: 44, stroke: `var(${color})`, class: "flowring" }));
-        g.append(el("text", { x, y: y - 8, "text-anchor": "middle", class: "flowname" }, name));
-        const val = el("text", { x, y: y + 14, "text-anchor": "middle", class: "flowval" });
-        const sub = el("text", { x, y: y + 66, "text-anchor": "middle", class: "flowsub" }); // below the circle: it is longer than the circle is wide
-        g.append(val, sub);
+        const rect = el("rect", { x: n.x - 80, y: n.y - 38, width: 160, height: 78, rx: 20, class: "flowbox", stroke: `var(${n.color})` });
+        const name = el("text", { x: n.x, y: n.y - 14, "text-anchor": "middle", class: "flowname" }, n.name);
+        const val = el("text", { x: n.x, y: n.y + 12, "text-anchor": "middle", class: "flowval" });
+        const sub = el("text", { x: n.x, y: n.y + 28, "text-anchor": "middle", class: "flowsub" });
+        g.append(rect, name, val, sub);
         svg.append(g);
-        this._flow[key] = { g, val, sub };
+        Object.assign(this._flow[key], { g, rect, val, sub });
       }
       card.append(svg);
       box.append(card);
@@ -799,24 +794,34 @@ class PVAssistantPanel extends HTMLElement {
     const v = this._flowValues();
     this._renderKpis(v);
     const fmt = (x) => (x >= 1000 ? `${(x / 1000).toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 2 })} kW` : `${Math.round(x)} W`);
-    const direct = Math.max(0, Math.min(v.prod, v.prod - v.feed - v.inn));
-    const toBat = Math.min(v.inn, Math.max(0, v.prod - v.feed));
-    const f = { sh: direct, gh: v.imp, bh: v.out, sg: v.feed, sb: toBat };
-    const max = Math.max(1, ...Object.values(f));
-    for (const [key, value] of Object.entries(f)) {
-      const { run, label } = this._flow[key];
-      const on = value >= 5 && (key === "sg" || key === "gh" ? v.hasGrid : key === "sb" || key === "bh" ? v.hasBat : true);
-      run.setAttribute("visibility", on ? "visible" : "hidden");
-      run.setAttribute("stroke-width", (3 + 7 * Math.min(1, value / max)).toFixed(1));
-      label.textContent = on ? fmt(value) : "";
+    const grid = Math.max(v.imp, v.feed), bat = Math.max(v.out, v.inn);
+    const feeding = v.feed > v.imp, charging = v.inn > v.out;
+    // [value, flows into the hub, color]
+    const spokes = {
+      solar: [v.prod, true, "--pva-prod"],
+      grid: [grid, !feeding, feeding ? "--pva-feed" : "--pva-grid"],
+      home: [v.house, false, "--pva-house"],
+      bat: [bat, !charging, charging ? "--pva-bin" : "--pva-bout"],
+    };
+    const max = Math.max(1, ...Object.values(spokes).map((s) => s[0]));
+    for (const [key, [value, intoHub, color]] of Object.entries(spokes)) {
+      const f = this._flow[key], n = NODES[key];
+      const shown = key === "grid" ? v.hasGrid : key === "bat" ? v.hasBat : true;
+      f.g.style.display = shown ? "" : "none";
+      f.track.style.display = shown ? "" : "none";
+      const on = shown && value >= 5;
+      const [ex, ey] = n.edge;
+      f.run.setAttribute("d", intoHub ? `M${ex},${ey} L${HUB[0]},${HUB[1]}` : `M${HUB[0]},${HUB[1]} L${ex},${ey}`);
+      f.run.setAttribute("stroke", `var(${color})`);
+      f.run.setAttribute("stroke-width", (3 + 6 * Math.min(1, value / max)).toFixed(1));
+      f.run.setAttribute("visibility", on ? "visible" : "hidden");
+      f.rect.setAttribute("stroke", `var(${color})`);
     }
     const set = (key, val, sub = "") => { this._flow[key].val.textContent = val; this._flow[key].sub.textContent = sub; };
     set("solar", fmt(v.prod));
     set("home", fmt(v.house));
-    this._flow.grid.g.style.display = v.hasGrid ? "" : "none";
-    this._flow.bat.g.style.display = v.hasBat ? "" : "none";
-    if (v.hasGrid) set("grid", fmt(Math.max(v.imp, v.feed)), v.feed > v.imp ? `↑ ${this._t("feed")}` : v.imp > 0 ? `↓ ${this._t("gridImp")}` : "");
-    if (v.hasBat) set("bat", fmt(Math.max(v.out, v.inn)), [v.inn > v.out ? `↓ ${this._t("sin")}` : v.out > 0 ? `↑ ${this._t("sout")}` : "", v.soc != null ? `${Math.round(v.soc)} %` : ""].filter(Boolean).join(" · "));
+    if (v.hasGrid) set("grid", fmt(grid), feeding ? `↑ ${this._t("feed")}` : v.imp > 0 ? `↓ ${this._t("gridImp")}` : "");
+    if (v.hasBat) set("bat", fmt(bat), [charging ? `↓ ${this._t("sin")}` : v.out > 0 ? `↑ ${this._t("sout")}` : "", v.soc != null ? `${Math.round(v.soc)} %` : ""].filter(Boolean).join(" · "));
   }
 
   _renderKpis(v) {
