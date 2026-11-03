@@ -379,3 +379,72 @@ export function categoryBarChart(container, opts) {
     categories.map((c, i) => [c, ...series.map((s) => (s.values[i] == null ? "–" : fmtValue(s.values[i])))])));
   restoreTable(container, tableOpen);
 }
+
+/**
+ * Stacked areas over categories (e.g. the hours of a day) with optional lines on top.
+ * opts: { categories:[str], series:[{name,color,values:[v>=0|null]}] (bottom to top), lines?:[{name,color,values,dash?}],
+ *         fmtValue, label, empty, tableLabels, height }
+ */
+export function areaChart(container, opts) {
+  const { categories, series, lines = [], height = 260, fmtValue } = opts;
+  const tableOpen = wasTableOpen(container);
+  container.replaceChildren();
+  const n = categories.length;
+  const vals = (s, i) => Math.max(s.values[i] || 0, 0);
+  const totals = categories.map((_, i) => series.reduce((a, s) => a + vals(s, i), 0));
+  const lineMax = lines.flatMap((l) => l.values.filter((v) => v != null));
+  if (!n || (!Math.max(0, ...totals) && !lineMax.length)) { container.append(html("p", "empty", opts.empty)); return; }
+  const W = Math.max(280, container.clientWidth || 600), H = height;
+  const pw = W - M.l - M.r, ph = H - M.t - M.b;
+  const ticks = niceTicks(0, Math.max(...totals, ...lineMax, 0));
+  const hi = ticks.at(-1);
+  const x = (i) => M.l + (n === 1 ? pw / 2 : (pw * i) / (n - 1));
+  const y = (v) => M.t + (1 - v / hi) * ph;
+  const wrap = html("div", "chartwrap");
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img", "aria-label": opts.label });
+  for (const v of ticks) {
+    svg.append(el("line", { x1: M.l, x2: M.l + pw, y1: y(v), y2: y(v), class: v === 0 ? "axis" : "grid" }));
+    svg.append(el("text", { x: M.l - 6, y: y(v) + 4, class: "tick", "text-anchor": "end" }, fmtValue(v, true)));
+  }
+  const every = Math.max(1, Math.ceil(40 / (pw / Math.max(n - 1, 1))));
+  categories.forEach((c, i) => { if (i % every === 0) svg.append(el("text", { x: x(i), y: H - 6, class: "tick", "text-anchor": i === 0 ? "start" : "middle" }, c)); });
+  // layers: the bottom of every series is the top of the one below
+  const base = categories.map(() => 0);
+  for (const s of series) {
+    const top = base.map((b, i) => b + vals(s, i));
+    if (top.some((t, i) => t > base[i])) {
+      const up = top.map((t, i) => `${x(i).toFixed(1)},${y(t).toFixed(1)}`).join("L");
+      const down = base.map((b, i) => `${x(i).toFixed(1)},${y(b).toFixed(1)}`).reverse().join("L");
+      svg.append(el("path", { d: `M${up}L${down}Z`, fill: `var(${s.color})`, opacity: 0.85 }));
+    }
+    top.forEach((t, i) => { base[i] = t; });
+  }
+  for (const l of lines) {
+    const pts = l.values.map((v, i) => (v == null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`)).filter(Boolean);
+    if (pts.length > 1) svg.append(el("path", { d: `M${pts.join("L")}`, fill: "none", stroke: `var(${l.color})`, "stroke-width": 2.5, "stroke-dasharray": l.dash || "", "stroke-linejoin": "round" }));
+  }
+  const hair = el("line", { y1: M.t, y2: M.t + ph, class: "hair", visibility: "hidden" });
+  svg.append(hair);
+  const tip = tooltipShell();
+  const hit = el("rect", { x: M.l, y: M.t, width: pw, height: ph, fill: "transparent" });
+  const at = (ev) => {
+    const r = svg.getBoundingClientRect();
+    const px = ((ev.clientX - r.left) / r.width) * W;
+    return Math.max(0, Math.min(n - 1, Math.round(((px - M.l) / pw) * (n - 1))));
+  };
+  hit.addEventListener("pointermove", (ev) => {
+    const i = at(ev);
+    hair.setAttribute("x1", x(i)); hair.setAttribute("x2", x(i)); hair.setAttribute("visibility", "visible");
+    const rows = [...lines.map((l) => ({ name: l.name, color: l.color, value: l.values[i] })), ...[...series].reverse().map((s) => ({ name: s.name, color: s.color, value: s.values[i] })).filter((r) => r.value)];
+    fillTip(tip, categories[i], rows, fmtValue);
+    placeTip(tip, wrap, (x(i) / W) * svg.getBoundingClientRect().width, ph / 2);
+  });
+  hit.addEventListener("pointerleave", () => { tip.hidden = true; hair.setAttribute("visibility", "hidden"); });
+  svg.append(hit);
+  wrap.append(svg, tip);
+  const items = [...series, ...lines.map((l) => ({ name: l.name, color: l.color }))];
+  container.append(legend(items, "bar"), wrap);
+  container.append(table({ summary: opts.tableLabels.summary, cols: [opts.tableLabels.time, ...series.map((s) => s.name), ...lines.map((l) => l.name)] },
+    categories.map((c, i) => [c, ...series.map((s) => (s.values[i] == null ? "–" : fmtValue(s.values[i]))), ...lines.map((l) => (l.values[i] == null ? "–" : fmtValue(l.values[i])))])));
+  restoreTable(container, tableOpen);
+}

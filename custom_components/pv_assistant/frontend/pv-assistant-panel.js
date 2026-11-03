@@ -5,12 +5,12 @@ const version = new URL(import.meta.url).search;
 // HTMLElement, hass and panel would end up as own properties and shadow the setters of the class once it is defined: the
 // panel never gets hass and stays empty. So the element is defined synchronously, the helper modules load in parallel in
 // the background (one round trip instead of two in a row) and _load() waits for them.
-let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile;
+let lineChart, barChart, categoryBarChart, areaChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile;
 const modulesReady = Promise.all([
   import(`./pv-assistant-charts.js${version}`),
   import(`./pv-assistant-analysis.js${version}`),
 ]).then(([charts, analysis]) => {
-  ({ lineChart, barChart, categoryBarChart } = charts);
+  ({ lineChart, barChart, categoryBarChart, areaChart } = charts);
   ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile } = analysis);
 });
 // timing log for the browser console: localStorage.setItem("pv_assistant_debug", "1") and reload
@@ -121,6 +121,7 @@ const T = {
     balUse: "Verwendung der PV-Erzeugung (kWh)", balCover: "Deckung des Verbrauchs (kWh)", balRates: "Autarkie und Eigenverbrauch (%)",
     balToStorage: "In Speicher", balFromGrid: "Aus dem Netz",
     balNote: "Direkt verbraucht = Erzeugung − Einspeisung − Ladung des Speichers (Annahme: der Speicher wird aus PV geladen). Die Deckung des Verbrauchs setzt sich aus direkt genutzter PV, Speicher-Entladung und Netzbezug zusammen.",
+    balProfDay: "Tagesverlauf (kWh je Stunde)", balProfAvg: "Typischer Tag (Ø kWh je Stunde, letzte {n} Tage)", balProfHouse: "Hausverbrauch", balProfNote: "Flächen: wohin der Strom geht und woher der Verbrauch gedeckt wird; die gestrichelte Linie ist der Hausverbrauch.",
     monBenefit: "Nutzen je Monat (€)", monSaving: "Ersparnis durch Eigenverbrauch", monRevenue: "Einspeisevergütung", monCum: "Kumulierter Nutzen gegen Anlagenkosten (€)", monCost: "Anlagenkosten", monCumLabel: "Kumulierter Nutzen",
     monSto: "Speicher-Nutzen je Monat (€)", monPayDate: "Amortisation voraussichtlich", monTotal: "Nutzen im Zeitraum", monAvg: "Ø Nutzen je Monat", monPaid: "Amortisiert",
     monNoPrice: "Trage in den Einstellungen den Strompreis und die Einspeisevergütung ein (oder wähle Preis-Sensoren im Config Flow), dann erscheint hier die Auswertung.",
@@ -235,6 +236,7 @@ const T = {
     balUse: "Use of the PV production (kWh)", balCover: "Coverage of the consumption (kWh)", balRates: "Self-sufficiency and self-consumption (%)",
     balToStorage: "Into storage", balFromGrid: "From the grid",
     balNote: "Used directly = production − feed-in − charging of the storage (assumes the storage is charged from PV). The coverage of the consumption is made up of PV used directly, storage discharge and grid import.",
+    balProfDay: "Day profile (kWh per hour)", balProfAvg: "Typical day (avg. kWh per hour, last {n} days)", balProfHouse: "House consumption", balProfNote: "Areas: where the power goes and what covers the consumption; the dashed line is the house consumption.",
     monBenefit: "Benefit per month (€)", monSaving: "Savings from self-consumption", monRevenue: "Feed-in revenue", monCum: "Cumulative benefit against plant cost (€)", monCost: "Plant cost", monCumLabel: "Cumulative benefit",
     monSto: "Storage benefit per month (€)", monPayDate: "Payback expected", monTotal: "Benefit in the range", monAvg: "Avg. benefit per month", monPaid: "Paid back",
     monNoPrice: "Enter the electricity price and the feed-in tariff in the settings (or choose price sensors in the config flow) and the evaluation appears here.",
@@ -2969,6 +2971,7 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._balanceOn) { box.replaceChildren(); return; }
     if (!this._brange) this._brange = "d30";
     box.innerHTML = `<div class="filters" id="branges"></div><div class="tiles" id="btiles"></div>
+      <div id="bprof"><h3 class="ch" id="bproft"></h3><div class="chart" id="bprofc"></div><p class="note">${esc(this._t("balProfNote"))}</p></div>
       <div id="buse"><h3 class="ch">${esc(this._t("balUse"))}</h3><div class="chart" id="busec"></div></div>
       <div id="bcov"><h3 class="ch">${esc(this._t("balCover"))}</h3><div class="chart" id="bcovc"></div></div>
       <div id="brat"><h3 class="ch">${esc(this._t("balRates"))}</h3><div class="chart" id="bratc"></div></div>
@@ -2988,6 +2991,61 @@ class PVAssistantPanel extends HTMLElement {
     if (token !== this._btoken) return;
     this._bdata = { rd, eres, filt };
     this._drawBalance();
+    this._loadProfile(rd, token);
+  }
+
+  // hourly profile: the chosen day, otherwise the average day of the (at most last 31) days of the range
+  async _loadProfile(rd, token) {
+    const { E, G } = this._keys();
+    const box = this._root.getElementById("bprof");
+    if (!box) return;
+    box.hidden = !E.prod.length;
+    if (!E.prod.length) return;
+    const day = 24 * 3600e3;
+    const end = rd.end;
+    const t1 = rd.days === 1 && !rd.long ? rd.t1 : end;
+    const t0 = rd.days === 1 && !rd.long ? rd.t0 : Math.max(rd.t0, addDays(new Date(new Date(end).setHours(0, 0, 0, 0)), -30).getTime());
+    const filt = this._cfg.filtered || {};
+    const ids = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb, ...G.impE, ...G.houseE];
+    const pres = await this._stats(ids.concat(ids.map((i) => filt[i]).filter(Boolean)), "hour", "change", { energy: "kWh" }, { t0, end: t1 });
+    if (token !== this._btoken) return;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const hf = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: tz });
+    const hourOf = (ts) => Number(hf.format(ts));
+    const flip = (inv) => (v) => (inv ? -v : v), nz = (v) => Math.max(v, 0);
+    const bins = (ids2, fn = (v) => v) => {
+      const sum = Array(24).fill(0), cnt = Array(24).fill(0);
+      const per = new Map();
+      for (const id of ids2) for (const r of mergedRows(pres, id, filt, "change")) per.set(r.start, (per.get(r.start) || 0) + fn(r.change));
+      for (const [ts, v] of per) { const h = hourOf(ts); sum[h] += v; cnt[h] += 1; }
+      return { sum, cnt };
+    };
+    const prod = bins(E.prod), feed = bins(E.feed), imp = bins(G.impE), house = bins(G.houseE);
+    const sIn = bins([...E.sin]), sOut = bins([...E.sout]);
+    const cIn = bins(E.comb, (v) => nz(-flip(E.inv)(v))), cOut = bins(E.comb, (v) => nz(flip(E.inv)(v)));
+    const days = Math.max(1, ...prod.cnt);
+    const avg = (b, h) => (b.sum[h] || 0) / Math.max(1, days);
+    const hours = [...Array(24).keys()];
+    const g = (b, h) => avg(b, h), sI = (h) => g(sIn, h) + g(cIn, h), sO = (h) => g(sOut, h) + g(cOut, h);
+    const toSt = hours.map((h) => Math.min(sI(h), nz(g(prod, h) - g(feed, h))));
+    const direct = hours.map((h) => nz(g(prod, h) - g(feed, h) - toSt[h]));
+    const outV = hours.map(sO), impV = hours.map((h) => g(imp, h));
+    const houseV = hours.map((h, i) => (G.houseE.length ? g(house, h) : direct[i] + outV[i] + impV[i]));
+    const num = (v, dec = 2) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const asDay = rd.days === 1 && !rd.long;
+    this._root.getElementById("bproft").textContent = asDay ? this._t("balProfDay") : this._t("balProfAvg").replace("{n}", String(days));
+    const series = [{ name: this._t("direct"), color: "--pva-direct", values: direct }];
+    if (E.sout.length || E.comb.length) series.push({ name: this._t("sout"), color: "--pva-bout", values: outV });
+    if (G.impE.length) series.push({ name: this._t("balFromGrid"), color: "--pva-grid", values: impV });
+    if (E.sin.length || E.comb.length) series.push({ name: this._t("balToStorage"), color: "--pva-bin", values: toSt });
+    if (E.feed.length) series.push({ name: this._t("feed"), color: "--pva-feed", values: hours.map((h) => g(feed, h)) });
+    areaChart(this._root.getElementById("bprofc"), {
+      categories: hours.map((h) => String(h).padStart(2, "0")), series,
+      lines: [{ name: this._t("production"), color: "--pva-prod", values: hours.map((h) => g(prod, h)) }, { name: this._t("balProfHouse"), color: "--pva-house", dash: "6 4", values: houseV }],
+      fmtValue: (v, axis) => (axis ? num(v, 1) : `${num(v)} kWh`), empty: this._t("noData"), label: this._t("balProfDay"),
+      tableLabels: { summary: this._t("table"), time: this._t("time") },
+    });
   }
 
   _drawBalance() {

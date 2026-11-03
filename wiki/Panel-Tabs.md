@@ -55,6 +55,7 @@ In the year ranges the power charts show daily means and the energy chart shows 
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/06-balance.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/06-balance.png" alt="Balance" width="720"></a>
 
 Needs production energy sensors and at least one of feed-in, grid import or storage.
+- Day profile as stacked areas per hour (kWh): used directly, from storage, from the grid, into the storage, fed in, with the production and the house consumption (dashed) as lines. For a single day it shows that day, for longer ranges the average day of the last 30 days of the range
 - Use of the PV production as stacked bars: used directly, into the storage, fed in
 - Coverage of the consumption as stacked bars: PV used directly, from the storage, from the grid
 - Self-sufficiency and self-consumption rate per day or month
@@ -154,6 +155,7 @@ Bei den Jahreszeiträumen zeigen Leistungsdiagramme Tagesmittel und das Energied
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/06-balance.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/06-balance.png" alt="Energiebilanz" width="720"></a>
 
 Braucht Erzeugungs-Energiesensoren und mindestens einen von Einspeisung, Netzbezug oder Speicher.
+- Tagesprofil als gestapelte Flächen je Stunde (kWh): direkt verbraucht, aus Speicher, aus dem Netz, in den Speicher, eingespeist, dazu Erzeugung und Hausverbrauch (gestrichelt) als Linien. Für einen Tag wird dieser Tag gezeigt, für längere Zeiträume der Durchschnittstag der letzten 30 Tage des Zeitraums
 - Verwendung der PV-Erzeugung als gestapelte Balken: direkt verbraucht, in den Speicher, eingespeist
 - Deckung des Verbrauchs als gestapelte Balken: direkt genutzte PV, aus dem Speicher, aus dem Netz
 - Autarkie und Eigenverbrauchsquote je Tag oder Monat
