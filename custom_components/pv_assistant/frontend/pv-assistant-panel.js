@@ -5,12 +5,12 @@ const version = new URL(import.meta.url).search;
 // HTMLElement, hass and panel would end up as own properties and shadow the setters of the class once it is defined: the
 // panel never gets hass and stays empty. So the element is defined synchronously, the helper modules load in parallel in
 // the background (one round trip instead of two in a row) and _load() waits for them.
-let lineChart, barChart, categoryBarChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile;
+let lineChart, barChart, categoryBarChart, areaChart, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile;
 const modulesReady = Promise.all([
   import(`./pv-assistant-charts.js${version}`),
   import(`./pv-assistant-analysis.js${version}`),
 ]).then(([charts, analysis]) => {
-  ({ lineChart, barChart, categoryBarChart } = charts);
+  ({ lineChart, barChart, categoryBarChart, areaChart } = charts);
   ({ localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips, shadingProfile } = analysis);
 });
 // timing log for the browser console: localStorage.setItem("pv_assistant_debug", "1") and reload
@@ -121,6 +121,7 @@ const T = {
     balUse: "Verwendung der PV-Erzeugung (kWh)", balCover: "Deckung des Verbrauchs (kWh)", balRates: "Autarkie und Eigenverbrauch (%)",
     balToStorage: "In Speicher", balFromGrid: "Aus dem Netz",
     balNote: "Direkt verbraucht = Erzeugung − Einspeisung − Ladung des Speichers (Annahme: der Speicher wird aus PV geladen). Die Deckung des Verbrauchs setzt sich aus direkt genutzter PV, Speicher-Entladung und Netzbezug zusammen.",
+    balProfDay: "Tagesverlauf (kWh je Stunde)", balProfAvg: "Typischer Tag (Ø kWh je Stunde, letzte {n} Tage)", balProfHouse: "Hausverbrauch", balProfNote: "Flächen: wohin der Strom geht und woher der Verbrauch gedeckt wird; die gestrichelte Linie ist der Hausverbrauch.",
     monBenefit: "Nutzen je Monat (€)", monSaving: "Ersparnis durch Eigenverbrauch", monRevenue: "Einspeisevergütung", monCum: "Kumulierter Nutzen gegen Anlagenkosten (€)", monCost: "Anlagenkosten", monCumLabel: "Kumulierter Nutzen",
     monSto: "Speicher-Nutzen je Monat (€)", monPayDate: "Amortisation voraussichtlich", monTotal: "Nutzen im Zeitraum", monAvg: "Ø Nutzen je Monat", monPaid: "Amortisiert",
     monNoPrice: "Trage in den Einstellungen den Strompreis und die Einspeisevergütung ein (oder wähle Preis-Sensoren im Config Flow), dann erscheint hier die Auswertung.",
@@ -235,6 +236,7 @@ const T = {
     balUse: "Use of the PV production (kWh)", balCover: "Coverage of the consumption (kWh)", balRates: "Self-sufficiency and self-consumption (%)",
     balToStorage: "Into storage", balFromGrid: "From the grid",
     balNote: "Used directly = production − feed-in − charging of the storage (assumes the storage is charged from PV). The coverage of the consumption is made up of PV used directly, storage discharge and grid import.",
+    balProfDay: "Day profile (kWh per hour)", balProfAvg: "Typical day (avg. kWh per hour, last {n} days)", balProfHouse: "House consumption", balProfNote: "Areas: where the power goes and what covers the consumption; the dashed line is the house consumption.",
     monBenefit: "Benefit per month (€)", monSaving: "Savings from self-consumption", monRevenue: "Feed-in revenue", monCum: "Cumulative benefit against plant cost (€)", monCost: "Plant cost", monCumLabel: "Cumulative benefit",
     monSto: "Storage benefit per month (€)", monPayDate: "Payback expected", monTotal: "Benefit in the range", monAvg: "Avg. benefit per month", monPaid: "Paid back",
     monNoPrice: "Enter the electricity price and the feed-in tariff in the settings (or choose price sensors in the config flow) and the evaluation appears here.",
@@ -514,18 +516,26 @@ class PVAssistantPanel extends HTMLElement {
           .kpi span { display:block; color:var(--g-muted); font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; }
           .kpi b { display:block; font-size:1.7em; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin-top:2px; }
           .kpi small { color:var(--g-muted); font-size:.85em; }
+          .nowtop { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:0 16px; align-items:start; }
+          .nowtop:has(#nowside:empty) { grid-template-columns:minmax(0,640px); }
+          .grid.side { grid-template-columns:1fr; }
+          @media (max-width:820px) { .nowtop { grid-template-columns:1fr; } }
           .flowcard { padding:8px 12px; }
           svg.flow { display:block; width:100%; max-width:640px; margin:0 auto; color:var(--g-text); }
-          svg.flow .track { fill:none; stroke:currentColor; stroke-width:3; opacity:.12; }
+          svg.flow .track { fill:none; stroke:currentColor; stroke-width:3; opacity:.12; stroke-linecap:round; }
           svg.flow .run { fill:none; stroke-linecap:round; stroke-dasharray:1 14; animation:pvaflow 1.1s linear infinite; }
           @keyframes pvaflow { to { stroke-dashoffset:-15; } }
           @media (prefers-reduced-motion: reduce) { svg.flow .run { animation:none; stroke-dasharray:none; opacity:.8; } }
-          svg.flow .flowring { fill:var(--g-tile); stroke-width:3; }
+          svg.flow .flowlbl { font-size:12px; font-weight:600; }
+          svg.flow .flowpv { font-size:15px; font-weight:700; }
+          svg.flow .flowpv.hub { font-size:17px; }
+          svg.flow .flowtotal { fill:var(--pva-prod); font-size:13px; font-weight:700; }
+          svg.flow .pvframe { fill:none; stroke:var(--pva-prod); stroke-opacity:.35; stroke-width:1.5; }
+          svg.flow .flowbox { fill:var(--g-tile); stroke-width:2; }
           svg.flow text { fill:var(--g-text); font-family:inherit; }
-          svg.flow .flowname { fill:var(--g-muted); font-size:13px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
-          svg.flow .flowval { font-size:19px; font-weight:700; }
+          svg.flow .flowname { fill:var(--g-muted); font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; }
+          svg.flow .flowval { font-size:22px; font-weight:700; }
           svg.flow .flowsub { fill:var(--g-muted); font-size:12px; }
-          svg.flow .flowlbl { font-size:13px; font-weight:600; }
           .gauge { height:10px; border-radius:6px; background:rgba(127,127,127,.18); overflow:hidden; margin:10px 0 6px; }
           .gauge i { display:block; height:100%; border-radius:6px; background:var(--pva-prod); box-shadow:0 0 12px color-mix(in srgb, var(--pva-prod) 55%, transparent); }
           .pw-val { font-size:2.4em; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
@@ -719,11 +729,12 @@ class PVAssistantPanel extends HTMLElement {
     }
     const fc = [["fcToday", "forecast_today_energy_sensors"], ["fcTomorrow", "forecast_tomorrow_energy_sensors"], ["fcRemaining", "forecast_remaining_energy_sensors"]]
       .map(([label, key]) => this._card(this._t(label), list(c[key]), "kWh")).join("");
-    if (fc) html += `<h2>${esc(this._t("fcGroup"))}</h2><div class="grid">${fc}</div>`;
-    if (!html) html = `<p class="muted">${esc(this._t("none"))}</p>`;
+    const side = fc ? `<h2>${esc(this._t("fcGroup"))}</h2><div class="grid side">${fc}</div>` : "";
+    if (!html && !side) html = `<p class="muted">${esc(this._t("none"))}</p>`;
     const now = this._root.getElementById("now");
-    if (!now.querySelector("#nowcards")) now.innerHTML = '<div class="kpis" id="kpis"></div><div id="flow"></div><div id="nowcards"></div>';
+    if (!now.querySelector("#nowcards")) now.innerHTML = '<div class="kpis" id="kpis"></div><div class="nowtop"><div id="flow"></div><div id="nowside"></div></div><div id="nowcards"></div>';
     if (html !== this._last) { this._last = html; now.querySelector("#nowcards").innerHTML = html; }
+    if (side !== this._lastSide) { this._lastSide = side; now.querySelector("#nowside").innerHTML = side; }
     this._renderFlow();
     this._renderPower();
   }
@@ -752,71 +763,110 @@ class PVAssistantPanel extends HTMLElement {
   _renderFlow() {
     const box = this._root.getElementById("flow");
     if (!box || !this._cfg) return;
-    if (!this._keys().P.prod.length) { box.replaceChildren(); this._flowBuilt = false; return; }
+    const P = this._keys().P;
+    if (!P.prod.length) { box.replaceChildren(); this._flowBuilt = false; return; }
     const NS = "http://www.w3.org/2000/svg";
     const el = (tag, attrs = {}, text) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text !== undefined) n.textContent = text; return n; };
+    const cut = (t, n) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+    // the plants (inverters) in a row on top, the home in the middle, grid left and storage right
+    const plants = plantsOf(this._cfg.settings, P.prod).map((p) => ({
+      sensors: p.sensors,
+      name: p.name || p.sensors.map((id) => this._read(id).name).join(" + "),
+    }));
+    const layoutKey = plants.map((p) => p.sensors.join("+") + p.name).join("|");
+    if (this._flowBuilt && this._flowKey !== layoutKey) this._flowBuilt = false;
+    const HUB = [320, 190];
     if (!this._flowBuilt) {
       this._flowBuilt = true;
-      this._flow = {};
+      this._flowKey = layoutKey;
+      this._flow = { plants: [] };
       box.innerHTML = `<h2>${esc(this._t("flowTitle"))}</h2>`;
       const card = document.createElement("div");
       card.className = "card flowcard";
-      const svg = el("svg", { viewBox: "0 0 640 425", class: "flow", role: "img", "aria-label": this._t("flowTitle") });
-      // flows: [key, path, color, label position]; every path runs from source to destination
-      const flows = [
-        ["sh", "M320,96 L320,154", "--pva-direct", [330, 130, "start"]],
-        ["gh", "M156,200 L274,200", "--pva-grid", [215, 190, "middle"]],
-        ["bh", "M320,298 L320,246", "--pva-bout", [330, 278, "start"]],
-        ["sg", "M284,66 C170,86 110,116 110,154", "--pva-feed", [172, 94, "middle"]],
-        ["sb", "M360,56 C620,56 620,342 364,342", "--pva-bin", [572, 205, "start"]],
-      ];
-      for (const [key, d, color, [x, y, anchor]] of flows) {
+      const svg = el("svg", { viewBox: "0 0 640 290", class: "flow", role: "img", "aria-label": this._t("flowTitle") });
+      const n = plants.length;
+      const slot = 600 / n, bw = Math.min(132, slot - 8);
+      svg.append(el("rect", { x: 8, y: 24, width: 624, height: 74, rx: 18, class: "pvframe" }));
+      this._flow.total = el("text", { x: 22, y: 18, class: "flowtotal" });
+      svg.append(this._flow.total);
+      plants.forEach((p, i) => {
+        const cx = 20 + slot * (i + 0.5);
+        const d = `M${cx},98 C${cx},140 ${HUB[0]},115 ${HUB[0]},${HUB[1] - 40}`;
         svg.append(el("path", { d, class: "track" }));
-        const run = el("path", { d, class: "run", stroke: `var(${color})`, visibility: "hidden" });
-        const label = el("text", { x, y, "text-anchor": anchor, class: "flowlbl" });
-        svg.append(run, label);
-        this._flow[key] = { run, label };
-      }
-      const nodes = [
-        ["solar", 320, 48, "--pva-prod", this._t("flowSolar")],
-        ["home", 320, 200, "--pva-house", this._t("flowHome")],
-        ["grid", 110, 200, "--pva-grid", this._t("flowGrid")],
-        ["bat", 320, 342, "--pva-bout", this._t("flowBattery")],
-      ];
-      for (const [key, x, y, color, name] of nodes) {
+        const run = el("path", { d, class: "run", stroke: "var(--pva-prod)", visibility: "hidden" });
+        svg.append(run);
         const g = el("g", { class: "flownode" });
-        g.append(el("circle", { cx: x, cy: y, r: 44, stroke: `var(${color})`, class: "flowring" }));
-        g.append(el("text", { x, y: y - 8, "text-anchor": "middle", class: "flowname" }, name));
-        const val = el("text", { x, y: y + 14, "text-anchor": "middle", class: "flowval" });
-        const sub = el("text", { x, y: y + 66, "text-anchor": "middle", class: "flowsub" }); // below the circle: it is longer than the circle is wide
-        g.append(val, sub);
+        g.append(el("rect", { x: cx - bw / 2, y: 32, width: bw, height: 58, rx: 14, class: "flowbox", stroke: "var(--pva-prod)" }));
+        const val = el("text", { x: cx, y: 58, "text-anchor": "middle", class: "flowpv" });
+        g.append(val, el("text", { x: cx, y: 78, "text-anchor": "middle", class: "flowsub" }, cut(p.name, Math.max(6, Math.floor(bw / 7)))));
         svg.append(g);
-        this._flow[key] = { g, val, sub };
-      }
+        this._flow.plants.push({ run, val, sensors: p.sensors });
+      });
+      // hub: the home
+      svg.append(el("circle", { cx: HUB[0], cy: HUB[1], r: 42, class: "flowbox", stroke: "var(--pva-house)" }));
+      svg.append(el("text", { x: HUB[0], y: HUB[1] - 8, "text-anchor": "middle", class: "flowname" }, this._t("flowHome")));
+      this._flow.home = el("text", { x: HUB[0], y: HUB[1] + 14, "text-anchor": "middle", class: "flowpv hub" });
+      svg.append(this._flow.home);
+      const side = (key, x, name, color) => {
+        const g = el("g", { class: "flownode" });
+        g.append(el("rect", { x: x - 62, y: HUB[1] - 36, width: 124, height: 72, rx: 18, class: "flowbox", stroke: `var(${color})` }));
+        g.append(el("text", { x, y: HUB[1] - 14, "text-anchor": "middle", class: "flowname" }, name));
+        const val = el("text", { x, y: HUB[1] + 10, "text-anchor": "middle", class: "flowval" });
+        const sub = el("text", { x, y: HUB[1] + 27, "text-anchor": "middle", class: "flowsub" });
+        g.append(val, sub);
+        const track = el("path", { d: `M${x < HUB[0] ? x + 62 : x - 62},${HUB[1]} L${HUB[0]},${HUB[1]}`, class: "track" });
+        const run = el("path", { class: "run", visibility: "hidden" });
+        const label = el("text", { x: (x + HUB[0]) / 2 + (x < HUB[0] ? -8 : 8), y: HUB[1] - 10, "text-anchor": "middle", class: "flowlbl" });
+        svg.append(track, run, g, label);
+        this._flow[key] = { g, val, sub, run, label, track, x };
+      };
+      side("grid", 72, this._t("flowGrid"), "--pva-grid");
+      side("bat", 568, this._t("flowBattery"), "--pva-bout");
+      this._flow.split = el("text", { x: HUB[0], y: 272, "text-anchor": "middle", class: "flowsub" });
+      svg.append(this._flow.split);
       card.append(svg);
       box.append(card);
     }
     const v = this._flowValues();
     this._renderKpis(v);
     const fmt = (x) => (x >= 1000 ? `${(x / 1000).toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 2 })} kW` : `${Math.round(x)} W`);
+    const watts = (id) => { const b = this._read(id).base; return Number.isNaN(b) ? 0 : Math.max(b, 0); };
+    const pw = this._flow.plants.map((p) => p.sensors.reduce((a, id) => a + watts(id), 0));
+    const pmax = Math.max(1, ...pw);
+    this._flow.plants.forEach((p, i) => {
+      p.val.textContent = fmt(pw[i]);
+      p.run.setAttribute("visibility", pw[i] >= 5 ? "visible" : "hidden");
+      p.run.setAttribute("stroke-width", (2 + 4 * Math.min(1, pw[i] / pmax)).toFixed(1));
+    });
+    this._flow.total.textContent = `${this._t("flowSolar")} ${fmt(v.prod)}`;
+    this._flow.home.textContent = fmt(v.house);
+    const feeding = v.feed > v.imp, charging = v.inn > v.out;
+    const line = (key, value, intoHub, color, show) => {
+      const f = this._flow[key];
+      f.g.style.display = show ? "" : "none";
+      f.track.style.display = show ? "" : "none";
+      const on = show && value >= 5;
+      const edge = f.x < HUB[0] ? f.x + 62 : f.x - 62;
+      f.run.setAttribute("d", intoHub ? `M${edge},${HUB[1]} L${HUB[0] + (f.x < HUB[0] ? -42 : 42)},${HUB[1]}` : `M${HUB[0] + (f.x < HUB[0] ? -42 : 42)},${HUB[1]} L${edge},${HUB[1]}`);
+      f.run.setAttribute("stroke", `var(${color})`);
+      f.run.setAttribute("stroke-width", (3 + 5 * Math.min(1, value / Math.max(pmax, 1))).toFixed(1));
+      f.run.setAttribute("visibility", on ? "visible" : "hidden");
+      f.label.textContent = on ? fmt(value) : "";
+      f.g.querySelector("rect").setAttribute("stroke", `var(${color})`);
+    };
+    const grid = Math.max(v.imp, v.feed), bat = Math.max(v.out, v.inn);
+    line("grid", grid, !feeding, feeding ? "--pva-feed" : "--pva-grid", v.hasGrid);
+    line("bat", bat, !charging, charging ? "--pva-bin" : "--pva-bout", v.hasBat);
+    if (v.hasGrid) { this._flow.grid.val.textContent = fmt(grid); this._flow.grid.sub.textContent = feeding ? `↑ ${this._t("feed")}` : v.imp > 0 ? `↓ ${this._t("gridImp")}` : ""; }
+    if (v.hasBat) {
+      this._flow.bat.val.textContent = fmt(bat);
+      this._flow.bat.sub.textContent = [charging ? `↓ ${this._t("sin")}` : v.out > 0 ? `↑ ${this._t("sout")}` : "", v.soc != null ? `${Math.round(v.soc)} %` : ""].filter(Boolean).join(" · ");
+    }
+    // where the solar power goes
     const direct = Math.max(0, Math.min(v.prod, v.prod - v.feed - v.inn));
     const toBat = Math.min(v.inn, Math.max(0, v.prod - v.feed));
-    const f = { sh: direct, gh: v.imp, bh: v.out, sg: v.feed, sb: toBat };
-    const max = Math.max(1, ...Object.values(f));
-    for (const [key, value] of Object.entries(f)) {
-      const { run, label } = this._flow[key];
-      const on = value >= 5 && (key === "sg" || key === "gh" ? v.hasGrid : key === "sb" || key === "bh" ? v.hasBat : true);
-      run.setAttribute("visibility", on ? "visible" : "hidden");
-      run.setAttribute("stroke-width", (3 + 7 * Math.min(1, value / max)).toFixed(1));
-      label.textContent = on ? fmt(value) : "";
-    }
-    const set = (key, val, sub = "") => { this._flow[key].val.textContent = val; this._flow[key].sub.textContent = sub; };
-    set("solar", fmt(v.prod));
-    set("home", fmt(v.house));
-    this._flow.grid.g.style.display = v.hasGrid ? "" : "none";
-    this._flow.bat.g.style.display = v.hasBat ? "" : "none";
-    if (v.hasGrid) set("grid", fmt(Math.max(v.imp, v.feed)), v.feed > v.imp ? `↑ ${this._t("feed")}` : v.imp > 0 ? `↓ ${this._t("gridImp")}` : "");
-    if (v.hasBat) set("bat", fmt(Math.max(v.out, v.inn)), [v.inn > v.out ? `↓ ${this._t("sin")}` : v.out > 0 ? `↑ ${this._t("sout")}` : "", v.soc != null ? `${Math.round(v.soc)} %` : ""].filter(Boolean).join(" · "));
+    this._flow.split.textContent = [`${this._t("flowSolar")} → ${this._t("flowHome")} ${fmt(direct)}`,
+      v.hasGrid ? `${this._t("feed")} ${fmt(v.feed)}` : "", v.hasBat ? `${this._t("sin")} ${fmt(toBat)}` : ""].filter(Boolean).join(" · ");
   }
 
   _renderKpis(v) {
@@ -2921,6 +2971,7 @@ class PVAssistantPanel extends HTMLElement {
     if (!this._balanceOn) { box.replaceChildren(); return; }
     if (!this._brange) this._brange = "d30";
     box.innerHTML = `<div class="filters" id="branges"></div><div class="tiles" id="btiles"></div>
+      <div id="bprof"><h3 class="ch" id="bproft"></h3><div class="chart" id="bprofc"></div><p class="note">${esc(this._t("balProfNote"))}</p></div>
       <div id="buse"><h3 class="ch">${esc(this._t("balUse"))}</h3><div class="chart" id="busec"></div></div>
       <div id="bcov"><h3 class="ch">${esc(this._t("balCover"))}</h3><div class="chart" id="bcovc"></div></div>
       <div id="brat"><h3 class="ch">${esc(this._t("balRates"))}</h3><div class="chart" id="bratc"></div></div>
@@ -2940,6 +2991,61 @@ class PVAssistantPanel extends HTMLElement {
     if (token !== this._btoken) return;
     this._bdata = { rd, eres, filt };
     this._drawBalance();
+    this._loadProfile(rd, token);
+  }
+
+  // hourly profile: the chosen day, otherwise the average day of the (at most last 31) days of the range
+  async _loadProfile(rd, token) {
+    const { E, G } = this._keys();
+    const box = this._root.getElementById("bprof");
+    if (!box) return;
+    box.hidden = !E.prod.length;
+    if (!E.prod.length) return;
+    const day = 24 * 3600e3;
+    const end = rd.end;
+    const t1 = rd.days === 1 && !rd.long ? rd.t1 : end;
+    const t0 = rd.days === 1 && !rd.long ? rd.t0 : Math.max(rd.t0, addDays(new Date(new Date(end).setHours(0, 0, 0, 0)), -30).getTime());
+    const filt = this._cfg.filtered || {};
+    const ids = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb, ...G.impE, ...G.houseE];
+    const pres = await this._stats(ids.concat(ids.map((i) => filt[i]).filter(Boolean)), "hour", "change", { energy: "kWh" }, { t0, end: t1 });
+    if (token !== this._btoken) return;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const hf = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: tz });
+    const hourOf = (ts) => Number(hf.format(ts));
+    const flip = (inv) => (v) => (inv ? -v : v), nz = (v) => Math.max(v, 0);
+    const bins = (ids2, fn = (v) => v) => {
+      const sum = Array(24).fill(0), cnt = Array(24).fill(0);
+      const per = new Map();
+      for (const id of ids2) for (const r of mergedRows(pres, id, filt, "change")) per.set(r.start, (per.get(r.start) || 0) + fn(r.change));
+      for (const [ts, v] of per) { const h = hourOf(ts); sum[h] += v; cnt[h] += 1; }
+      return { sum, cnt };
+    };
+    const prod = bins(E.prod), feed = bins(E.feed), imp = bins(G.impE), house = bins(G.houseE);
+    const sIn = bins([...E.sin]), sOut = bins([...E.sout]);
+    const cIn = bins(E.comb, (v) => nz(-flip(E.inv)(v))), cOut = bins(E.comb, (v) => nz(flip(E.inv)(v)));
+    const days = Math.max(1, ...prod.cnt);
+    const avg = (b, h) => (b.sum[h] || 0) / Math.max(1, days);
+    const hours = [...Array(24).keys()];
+    const g = (b, h) => avg(b, h), sI = (h) => g(sIn, h) + g(cIn, h), sO = (h) => g(sOut, h) + g(cOut, h);
+    const toSt = hours.map((h) => Math.min(sI(h), nz(g(prod, h) - g(feed, h))));
+    const direct = hours.map((h) => nz(g(prod, h) - g(feed, h) - toSt[h]));
+    const outV = hours.map(sO), impV = hours.map((h) => g(imp, h));
+    const houseV = hours.map((h, i) => (G.houseE.length ? g(house, h) : direct[i] + outV[i] + impV[i]));
+    const num = (v, dec = 2) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const asDay = rd.days === 1 && !rd.long;
+    this._root.getElementById("bproft").textContent = asDay ? this._t("balProfDay") : this._t("balProfAvg").replace("{n}", String(days));
+    const series = [{ name: this._t("direct"), color: "--pva-direct", values: direct }];
+    if (E.sout.length || E.comb.length) series.push({ name: this._t("sout"), color: "--pva-bout", values: outV });
+    if (G.impE.length) series.push({ name: this._t("balFromGrid"), color: "--pva-grid", values: impV });
+    if (E.sin.length || E.comb.length) series.push({ name: this._t("balToStorage"), color: "--pva-bin", values: toSt });
+    if (E.feed.length) series.push({ name: this._t("feed"), color: "--pva-feed", values: hours.map((h) => g(feed, h)) });
+    areaChart(this._root.getElementById("bprofc"), {
+      categories: hours.map((h) => String(h).padStart(2, "0")), series,
+      lines: [{ name: this._t("production"), color: "--pva-prod", values: hours.map((h) => g(prod, h)) }, { name: this._t("balProfHouse"), color: "--pva-house", dash: "6 4", values: houseV }],
+      fmtValue: (v, axis) => (axis ? num(v, 1) : `${num(v)} kWh`), empty: this._t("noData"), label: this._t("balProfDay"),
+      tableLabels: { summary: this._t("table"), time: this._t("time") },
+    });
   }
 
   _drawBalance() {
