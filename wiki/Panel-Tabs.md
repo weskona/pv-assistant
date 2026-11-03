@@ -69,7 +69,7 @@ Only visible with storage sensors or a battery level. Same ranges as History.
 
 Only visible with forecast sensors. Ranges 7, 30 days, **Month** (arrows), 90 days, This year, 12 months.
 - Forecast today, tomorrow, rest of today, produced so far, share of forecast reached
-- Forecast vs actual and deviation per day (per month from 90 days on), average deviation, hit rate (±20 %)
+- Forecast vs actual and deviation per day (per month from 90 days on), average deviation, hit rate (±20 %). The forecast of past days comes from three sources, the newest wins: the log of the integration (the last forecast of every day since the forecast sensors were set up, up to 800 days), the recorder history of the sensor (as far back as Home Assistant keeps states, see `purge_keep_days`) and the long-term statistics of the sensor (only if it has a state class; many forecast sensors have none). The tab says where the history starts when the chosen range asks for more.
 - **Best 3-hour window** for tomorrow and for the rest of today (typical daily curve of the last 14 days combined with the forecast) as a guide for large consumers
 - Forecast quality by forecast size: weak, medium and strong forecast days with their average deviation, as a chart and a table (from 9 days on)
 - Chart of the expected production tomorrow per hour with the best window highlighted
@@ -165,7 +165,7 @@ Nur sichtbar mit Speichersensoren oder Ladestand. Gleiche Zeiträume wie der Ver
 
 Nur sichtbar mit Prognose-Sensoren. Zeiträume 7, 30 Tage, **Monat** (Pfeile), 90 Tage, Dieses Jahr, 12 Monate.
 - Prognose heute, morgen, Rest heute, bisher erzeugt, von Prognose erreicht
-- Prognose gegen Ist und Abweichung je Tag (ab 90 Tagen je Monat), Ø Abweichung, Trefferquote (±20 %)
+- Prognose gegen Ist und Abweichung je Tag (ab 90 Tagen je Monat), Ø Abweichung, Trefferquote (±20 %). Die Prognose vergangener Tage kommt aus drei Quellen, die neueste gewinnt: dem Protokoll der Integration (die letzte Prognose jedes Tages, seit die Prognose-Sensoren eingerichtet sind, bis zu 800 Tage), dem Recorder-Verlauf des Sensors (so weit zurück, wie Home Assistant Zustände behält, siehe `purge_keep_days`) und den Langzeitstatistiken des Sensors (nur mit State Class; viele Prognose-Sensoren haben keine). Der Tab nennt den Beginn des Verlaufs, wenn der gewählte Zeitraum mehr verlangt.
 - **Bestes 3-Stunden-Fenster** für morgen und für den Rest von heute (typischer Tagesverlauf der letzten 14 Tage zusammen mit der Prognose) als Richtwert für Großverbraucher
 - Prognose-Güte nach Größe der Prognose: schwache, mittlere und starke Prognosetage mit ihrer durchschnittlichen Abweichung, als Diagramm und Tabelle (ab 9 Tagen)
 - Diagramm der erwarteten Erzeugung morgen je Stunde, das beste Fenster hervorgehoben
