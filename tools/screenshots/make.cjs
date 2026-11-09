@@ -1,6 +1,8 @@
 // Creates the screenshots of all tabs in English and German with sample data (see mock.js).
 //
 //   cd tools/screenshots && npm install playwright && node make.cjs      (needs a Chromium: npx playwright install chromium)
+//   MOBILE=1 node make.cjs                                  (phone width, images land in docs/screenshots/mobile)
+//   TABS=now,balance node make.cjs                         (only these tabs, the file numbers stay the same)
 //   PLAYWRIGHT_PATH=/path/to/playwright CHROMIUM=/path/to/chromium node make.cjs     (use an installed copy instead)
 //
 // The real panel files are loaded in a browser with a fake Home Assistant behind them, the images land in docs/screenshots/{en,de}.
@@ -11,12 +13,15 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || "playwright");
 
 const root = path.resolve(__dirname, "../..");
 const frontend = path.join(root, "custom_components/pv_assistant/frontend");
-const outDir = path.join(root, "docs/screenshots");
+// MOBILE=1: a phone viewport (390 px wide) into docs/screenshots/mobile; OUT_DIR=<dir> writes somewhere else (to look at the result first)
+const MOBILE = !!process.env.MOBILE;
+const ONLY = process.env.TABS ? process.env.TABS.split(",") : null; // e.g. TABS=now,balance: only these tabs
+const outDir = process.env.OUT_DIR || path.join(root, "docs/screenshots", MOBILE ? "mobile" : "");
 const NOW = new Date("2026-06-18T14:30:00+02:00"); // a sunny afternoon, the images always show the same moment
 const LONG_RANGE = new Set(["plants", "storage"]);
 const FILE_NAMES = { now: "now", power: "power", plants: "plants", analysis: "analysis", history: "history", balance: "balance", storage: "storage", forecast: "forecast", money: "economics", years: "yearly", settings: "settings" };
 
-const PAGE = `<!doctype html><html><head><meta charset="utf-8"><style>
+const PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
   :root { --primary-text-color:#e1e1e1; --secondary-text-color:#9b9b9b; --primary-color:#03a9f4; --text-primary-color:#fff;
           --card-background-color:#1c1c1c; --secondary-background-color:#202020; --primary-background-color:#111111;
           --divider-color:rgba(225,225,225,.12); --ha-card-border-radius:12px; color-scheme:dark; }
@@ -27,7 +32,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><style>
 (async () => {
   const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
   for (const lang of ["en", "de"]) {
-    const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: lang === "de" ? "de-DE" : "en-GB", timezoneId: "Europe/Berlin" });
+    const context = await browser.newContext({ viewport: MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 900 }, deviceScaleFactor: MOBILE ? 2 : 1, isMobile: MOBILE, hasTouch: MOBILE, locale: lang === "de" ? "de-DE" : "en-GB", timezoneId: "Europe/Berlin" });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -56,6 +61,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><style>
     let n = 0;
     for (const [section, id] of tabs) {
       n++;
+      if (ONLY && !ONLY.includes(id)) continue;
       await page.evaluate((id) => window.__el._showTab(id, false), id);
       if (id === "settings") { // open the first plant and its sensors so that the module strings and the compass show
         await page.evaluate(() => { const r = window.__el._root; const plant = r.querySelector("#setsec details.plant"); if (plant) { plant.open = true; plant.querySelectorAll("details").forEach((d) => { d.open = true; }); } });
