@@ -143,8 +143,10 @@ export function lineChart(container, opts) {
     svg.append(el("line", { x1: M.l, x2: M.l + pw, y1: y(v), y2: y(v), class: v === 0 ? "axis" : "grid" }));
     svg.append(el("text", { x: M.l - 6, y: y(v) + 4, class: "tick", "text-anchor": "end" }, fmtValue(v, true)));
   }
-  for (let t = t0; t <= t1 + 1; t += tickStep) {
-    svg.append(el("text", { x: x(t), y: H - 6, class: "tick", "text-anchor": t === t0 ? "start" : t + tickStep > t1 + 1 && t1 - t < 1 ? "end" : "middle" }, fmtTick(t)));
+  // on a narrow chart only every n-th tick is labeled, otherwise the labels run into each other
+  const labelStep = tickStep * Math.max(1, Math.ceil(54 / ((tickStep / (t1 - t0)) * pw)));
+  for (let t = t0; t <= t1 + 1; t += labelStep) {
+    svg.append(el("text", { x: x(t), y: H - 6, class: "tick", "text-anchor": t === t0 ? "start" : t + labelStep > t1 + 1 && t1 - t < 1 ? "end" : "middle" }, fmtTick(t)));
   }
   live.forEach((s, i) => {
     // break the line where data is missing for more than 1.5 buckets

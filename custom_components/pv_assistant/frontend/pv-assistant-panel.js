@@ -460,6 +460,7 @@ class PVAssistantPanel extends HTMLElement {
           .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:16px 20px; margin:0 0 16px; padding:18px 22px;
                    background:var(--g-panel-bg); border:1px solid var(--g-line); border-radius:22px; }
           .tiles:empty { display:none; }
+          .chart { overflow-x:auto; }
           .tile { display:flex; flex-direction:column; gap:3px; min-width:0; }
           .tile b { display:block; font-size:1.35em; font-weight:700; font-variant-numeric:tabular-nums; }
           .tile span { color:var(--g-muted); font-size:.75em; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
@@ -514,12 +515,14 @@ class PVAssistantPanel extends HTMLElement {
           .kpi span { display:block; color:var(--g-muted); font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; }
           .kpi b { display:block; font-size:1.7em; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin-top:2px; }
           .kpi small { color:var(--g-muted); font-size:.85em; }
+          @media (max-width:520px) { .tiles { grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:14px 16px; } .tile b { font-size:1.2em; } }
+          @media (max-width:520px) { .kpis { grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:8px; } .kpi { padding:10px 10px 10px 14px; border-radius:16px; } .kpi b { font-size:1.3em; } .kpi span { font-size:11px; letter-spacing:.06em; } }
           .nowtop { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:0 16px; align-items:start; }
           .nowtop:has(#nowside:empty) { grid-template-columns:minmax(0,640px); }
           .grid.side { grid-template-columns:1fr; }
           @media (max-width:820px) { .nowtop { grid-template-columns:1fr; } }
           .flowcard { padding:8px 12px; }
-          svg.flow { display:block; width:100%; max-width:640px; margin:0 auto; color:var(--g-text); }
+          svg.flow { display:block; width:100%; margin:0 auto; color:var(--g-text); }
           svg.flow .track { fill:none; stroke:currentColor; stroke-width:3; opacity:.12; stroke-linecap:round; }
           svg.flow .run { fill:none; stroke-linecap:round; stroke-dasharray:1 14; animation:pvaflow 1.1s linear infinite; }
           @keyframes pvaflow { to { stroke-dashoffset:-15; } }
@@ -766,14 +769,17 @@ class PVAssistantPanel extends HTMLElement {
     const NS = "http://www.w3.org/2000/svg";
     const el = (tag, attrs = {}, text) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text !== undefined) n.textContent = text; return n; };
     const cut = (t, n) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
-    // the plants (inverters) in a row on top, the home in the middle, grid left and storage right
+    // the plants (inverters) in rows on top, the home in the middle, grid left and storage right; the drawing is as wide as its
+    // box (at most 640), so the text keeps its size on a phone and the plants wrap into more rows
     const plants = plantsOf(this._cfg.settings, P.prod).map((p) => ({
       sensors: p.sensors,
       name: p.name || p.sensors.map((id) => this._read(id).name).join(" + "),
     }));
-    const layoutKey = plants.map((p) => p.sensors.join("+") + p.name).join("|");
+    const avail = box.clientWidth ? box.clientWidth - 26 : 640; // the card has 12 px padding and a border
+    const W = Math.max(250, Math.min(640, Math.round(avail / 20) * 20));
+    const layoutKey = `${W}|${plants.map((p) => p.sensors.join("+") + p.name).join("|")}`;
     if (this._flowBuilt && this._flowKey !== layoutKey) this._flowBuilt = false;
-    const HUB = [320, 190];
+    const wide = W >= 500;
     if (!this._flowBuilt) {
       this._flowBuilt = true;
       this._flowKey = layoutKey;
@@ -781,50 +787,66 @@ class PVAssistantPanel extends HTMLElement {
       box.innerHTML = `<h2>${esc(this._t("flowTitle"))}</h2>`;
       const card = document.createElement("div");
       card.className = "card flowcard";
-      const svg = el("svg", { viewBox: "0 0 640 290", class: "flow", role: "img", "aria-label": this._t("flowTitle") });
       const n = plants.length;
-      const slot = 600 / n, bw = Math.min(132, slot - 8);
-      svg.append(el("rect", { x: 8, y: 24, width: 624, height: 74, rx: 18, class: "pvframe" }));
-      this._flow.total = el("text", { x: 22, y: 18, class: "flowtotal" });
+      const want = wide ? 132 : 92;
+      const cols = Math.max(1, Math.min(n, Math.floor((W - 16) / want)));
+      const rows = Math.ceil(n / cols);
+      const slot = (W - 16) / cols, bw = Math.min(132, slot - 8);
+      const frameH = rows * 66 + 8, frameBottom = 24 + frameH;
+      const HUB = [W / 2, frameBottom + 92], R = wide ? 42 : 36;
+      const H = HUB[1] + 56 + (wide ? 28 : 44);
+      const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "flow", role: "img", "aria-label": this._t("flowTitle"), style: `max-width:${W}px` });
+      svg.append(el("rect", { x: 4, y: 24, width: W - 8, height: frameH, rx: 18, class: "pvframe" }));
+      this._flow.total = el("text", { x: 18, y: 18, class: "flowtotal" });
       svg.append(this._flow.total);
       plants.forEach((p, i) => {
-        const cx = 20 + slot * (i + 0.5);
-        const d = `M${cx},98 C${cx},140 ${HUB[0]},115 ${HUB[0]},${HUB[1] - 40}`;
+        const r = Math.floor(i / cols), c = i % cols;
+        const inRow = Math.min(cols, n - r * cols); // the last row is centered
+        const cx = 8 + (W - 16 - inRow * slot) / 2 + slot * (c + 0.5);
+        const top = 32 + r * 66;
+        const d = `M${cx},${top + 58} C${cx},${frameBottom + 40} ${HUB[0]},${frameBottom + 10} ${HUB[0]},${HUB[1] - R}`;
         svg.append(el("path", { d, class: "track" }));
         const run = el("path", { d, class: "run", stroke: "var(--pva-prod)", visibility: "hidden" });
         svg.append(run);
         const g = el("g", { class: "flownode" });
-        g.append(el("rect", { x: cx - bw / 2, y: 32, width: bw, height: 58, rx: 14, class: "flowbox", stroke: "var(--pva-prod)" }));
-        const val = el("text", { x: cx, y: 58, "text-anchor": "middle", class: "flowpv" });
-        g.append(val, el("text", { x: cx, y: 78, "text-anchor": "middle", class: "flowsub" }, cut(p.name, Math.max(6, Math.floor(bw / 7)))));
+        g.append(el("rect", { x: cx - bw / 2, y: top, width: bw, height: 58, rx: 14, class: "flowbox", stroke: "var(--pva-prod)" }));
+        const val = el("text", { x: cx, y: top + 26, "text-anchor": "middle", class: "flowpv" });
+        g.append(val, el("text", { x: cx, y: top + 46, "text-anchor": "middle", class: "flowsub" }, cut(p.name, Math.max(6, Math.floor(bw / 7)))));
         svg.append(g);
         this._flow.plants.push({ run, val, sensors: p.sensors });
       });
-      // hub: the home
-      svg.append(el("circle", { cx: HUB[0], cy: HUB[1], r: 42, class: "flowbox", stroke: "var(--pva-house)" }));
+      svg.append(el("circle", { cx: HUB[0], cy: HUB[1], r: R, class: "flowbox", stroke: "var(--pva-house)" }));
       svg.append(el("text", { x: HUB[0], y: HUB[1] - 8, "text-anchor": "middle", class: "flowname" }, this._t("flowHome")));
       this._flow.home = el("text", { x: HUB[0], y: HUB[1] + 14, "text-anchor": "middle", class: "flowpv hub" });
       svg.append(this._flow.home);
+      const sw = wide ? 124 : 92;
       const side = (key, x, name, color) => {
         const g = el("g", { class: "flownode" });
-        g.append(el("rect", { x: x - 62, y: HUB[1] - 36, width: 124, height: 72, rx: 18, class: "flowbox", stroke: `var(${color})` }));
+        g.append(el("rect", { x: x - sw / 2, y: HUB[1] - 36, width: sw, height: 72, rx: 18, class: "flowbox", stroke: `var(${color})` }));
         g.append(el("text", { x, y: HUB[1] - 14, "text-anchor": "middle", class: "flowname" }, name));
-        const val = el("text", { x, y: HUB[1] + 10, "text-anchor": "middle", class: "flowval" });
+        const val = el("text", { x, y: HUB[1] + 10, "text-anchor": "middle", class: wide ? "flowval" : "flowpv" });
         const sub = el("text", { x, y: HUB[1] + 27, "text-anchor": "middle", class: "flowsub" });
         g.append(val, sub);
-        const track = el("path", { d: `M${x < HUB[0] ? x + 62 : x - 62},${HUB[1]} L${HUB[0]},${HUB[1]}`, class: "track" });
+        const edge = x < HUB[0] ? x + sw / 2 : x - sw / 2;
+        const track = el("path", { d: `M${edge},${HUB[1]} L${HUB[0]},${HUB[1]}`, class: "track" });
         const run = el("path", { class: "run", visibility: "hidden" });
         const label = el("text", { x: (x + HUB[0]) / 2 + (x < HUB[0] ? -8 : 8), y: HUB[1] - 10, "text-anchor": "middle", class: "flowlbl" });
         svg.append(track, run, g, label);
-        this._flow[key] = { g, val, sub, run, label, track, x };
+        this._flow[key] = { g, val, sub, run, label, track, x, edge };
       };
-      side("grid", 72, this._t("flowGrid"), "--pva-grid");
-      side("bat", 568, this._t("flowBattery"), "--pva-bout");
-      this._flow.split = el("text", { x: HUB[0], y: 272, "text-anchor": "middle", class: "flowsub" });
-      svg.append(this._flow.split);
+      side("grid", sw / 2 + 4, this._t("flowGrid"), "--pva-grid");
+      side("bat", W - sw / 2 - 4, this._t("flowBattery"), "--pva-bout");
+      this._flow.R = R;
+      this._flow.HUB = HUB;
+      this._flow.sw = sw;
+      this._flow.wide = wide;
+      this._flow.split = [el("text", { x: HUB[0], y: H - (wide ? 12 : 30), "text-anchor": "middle", class: "flowsub" })];
+      if (!wide) this._flow.split.push(el("text", { x: HUB[0], y: H - 12, "text-anchor": "middle", class: "flowsub" }));
+      svg.append(...this._flow.split);
       card.append(svg);
       box.append(card);
     }
+    const { HUB, R } = this._flow;
     const v = this._flowValues();
     this._renderKpis(v);
     const fmt = (x) => (x >= 1000 ? `${(x / 1000).toLocaleString(this._hass.locale?.language || this._hass.language, { maximumFractionDigits: 2 })} kW` : `${Math.round(x)} W`);
@@ -844,12 +866,12 @@ class PVAssistantPanel extends HTMLElement {
       f.g.style.display = show ? "" : "none";
       f.track.style.display = show ? "" : "none";
       const on = show && value >= 5;
-      const edge = f.x < HUB[0] ? f.x + 62 : f.x - 62;
-      f.run.setAttribute("d", intoHub ? `M${edge},${HUB[1]} L${HUB[0] + (f.x < HUB[0] ? -42 : 42)},${HUB[1]}` : `M${HUB[0] + (f.x < HUB[0] ? -42 : 42)},${HUB[1]} L${edge},${HUB[1]}`);
+      const inner = HUB[0] + (f.x < HUB[0] ? -R : R);
+      f.run.setAttribute("d", intoHub ? `M${f.edge},${HUB[1]} L${inner},${HUB[1]}` : `M${inner},${HUB[1]} L${f.edge},${HUB[1]}`);
       f.run.setAttribute("stroke", `var(${color})`);
       f.run.setAttribute("stroke-width", (3 + 5 * Math.min(1, value / Math.max(pmax, 1))).toFixed(1));
       f.run.setAttribute("visibility", on ? "visible" : "hidden");
-      f.label.textContent = on ? fmt(value) : "";
+      f.label.textContent = on && this._flow.wide ? fmt(value) : ""; // on a phone the boxes show the values, there is no room between them
       f.g.querySelector("rect").setAttribute("stroke", `var(${color})`);
     };
     const grid = Math.max(v.imp, v.feed), bat = Math.max(v.out, v.inn);
@@ -863,8 +885,9 @@ class PVAssistantPanel extends HTMLElement {
     // where the solar power goes
     const direct = Math.max(0, Math.min(v.prod, v.prod - v.feed - v.inn));
     const toBat = Math.min(v.inn, Math.max(0, v.prod - v.feed));
-    this._flow.split.textContent = [`${this._t("flowSolar")} → ${this._t("flowHome")} ${fmt(direct)}`,
-      v.hasGrid ? `${this._t("feed")} ${fmt(v.feed)}` : "", v.hasBat ? `${this._t("sin")} ${fmt(toBat)}` : ""].filter(Boolean).join(" · ");
+    const parts = [`${this._t("flowSolar")} → ${this._t("flowHome")} ${fmt(direct)}`, v.hasGrid ? `${this._t("feed")} ${fmt(v.feed)}` : "", v.hasBat ? `${this._t("sin")} ${fmt(toBat)}` : ""].filter(Boolean);
+    if (this._flow.wide) this._flow.split[0].textContent = parts.join(" · ");
+    else { this._flow.split[0].textContent = parts[0]; this._flow.split[1].textContent = parts.slice(1).join(" · "); }
   }
 
   _renderKpis(v) {
