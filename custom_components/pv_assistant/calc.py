@@ -9,6 +9,7 @@ counted from the value of the counters at midnight (kept over restarts).
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -66,6 +67,8 @@ class DayCounters:
         self._store = Store(hass, 1, DAILY_STORE_KEY)
         self._date: str | None = None
         self._base: dict[str, float] = {}
+        self._rolling = False
+        self.on_day_end = None  # called with the date of a finished day before the counters start the new one
 
     def resolve(self, source: str) -> State | None:
         """The filtered copy of a source sensor when it exists and has a value, otherwise the source itself."""
@@ -86,8 +89,14 @@ class DayCounters:
 
     def _roll_if_needed(self) -> bool:
         today = dt_util.now().date().isoformat()
-        if self._date == today:
+        if self._date == today or self._rolling:
             return False
+        if self._date == (dt_util.now().date() - timedelta(days=1)).isoformat() and self.on_day_end:
+            self._rolling = True  # the hook reads the day values, which must not roll again
+            try:
+                self.on_day_end(self._date)  # the values of the finished day, while the counters still hold its start values
+            finally:
+                self._rolling = False
         self._date = today
         for source in list(self._base):
             current = kwh(self.resolve(source))

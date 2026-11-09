@@ -46,6 +46,8 @@ MAX_PEAK_W = 10_000_000
 SIGNAL_SETTINGS = f"{DOMAIN}_settings_updated"
 SIGNAL_DAILY = f"{DOMAIN}_daily_rollover"
 DAILY_STORE_KEY = "pv_assistant.daily"
+HISTORY_STORE_KEY = "pv_assistant.history"
+SIGNAL_HISTORY = f"{DOMAIN}_history_updated"
 
 PANEL_URL = "pv-assistant"
 PANEL_ELEMENT = "pv-assistant-panel"
