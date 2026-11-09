@@ -113,6 +113,9 @@ export const T = {
     pkDay: "Tag", pkWeek: "Woche", pkYear: "Jahr", pkUnit: "Zeiteinheit", pkPrev: "Vorheriger Zeitraum", pkNext: "Nächster Zeitraum", pkQuick: "Schnellwahl",
     pkLast7: "Letzte 7 Tage", pkLast30: "Letzte 30 Tage", pkLast90: "Letzte 90 Tage", pkLast12m: "Letzte 12 Monate", pkLast: "Letzte {n} Tage", pkSince: "seit",
     pkNow: "Zum aktuellen Zeitraum springen", pkDate: "Datum wählen", pkThisWeek: "Diese Woche", pkThisMonth: "Dieser Monat", pkThisYear: "Dieses Jahr",
+    stoHeat: "Ladestand nach Uhrzeit (Ø in %)", stoHeatDays: "Ladestand nach Uhrzeit (Ø in %, letzte {n} Tage)", stoCycChart: "Speicher-Zyklen je Monat",
+    stoSimAut: "Autarkie mit anderer Speichergröße (%)", stoSimBen: "Zusätzlicher Nutzen gegenüber ohne Speicher (€ pro Jahr)",
+    stoSimNote: "Simulation mit den Stundenwerten der letzten {n} Tage (auf 12 Monate hochgerechnet); ★ = die aktuelle nutzbare Größe. Annahmen: Wirkungsgrad {eff} %, keine Leistungsgrenze, der Speicher startet leer, Stundenwerte statt Minuten. Ein Richtwert, kein Angebot.",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -227,5 +230,8 @@ export const T = {
     pkDay: "Day", pkWeek: "Week", pkYear: "Year", pkUnit: "Unit", pkPrev: "Previous period", pkNext: "Next period", pkQuick: "Quick ranges",
     pkLast7: "Last 7 days", pkLast30: "Last 30 days", pkLast90: "Last 90 days", pkLast12m: "Last 12 months", pkLast: "Last {n} days", pkSince: "since",
     pkNow: "Jump to the current period", pkDate: "Choose a date", pkThisWeek: "This week", pkThisMonth: "This month", pkThisYear: "This year",
+    stoHeat: "Level by time of day (avg. in %)", stoHeatDays: "Level by time of day (avg. in %, last {n} days)", stoCycChart: "Storage cycles per month",
+    stoSimAut: "Self-sufficiency with another storage size (%)", stoSimBen: "Extra benefit compared with no storage (€ per year)",
+    stoSimNote: "Simulation with the hourly values of the last {n} days (scaled to 12 months); ★ = the current usable size. Assumptions: efficiency {eff} %, no power limit, the storage starts empty, hours instead of minutes. A guide value, not an offer.",
   },
 };
