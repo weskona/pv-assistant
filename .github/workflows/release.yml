@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   release:
@@ -29,14 +30,23 @@ jobs:
           fi
           # Previous release tag (highest v* tag below the current one), for the changelog.
           prev=$(git tag --list 'v*' --sort=-v:refname | grep -vx "$tag" | head -n1 || true)
+          # one line per pull request (its title from GitHub) for the merge commits on the main line; direct commits and squash
+          # merges show their subject
+          range="${GITHUB_SHA}"
+          [ -n "$prev" ] && range="${prev}..${GITHUB_SHA}"
           {
             echo "## Changes"
             echo
-            if [ -n "$prev" ]; then
-              git log "${prev}..${GITHUB_SHA}" --no-merges --pretty='- %s'
-            else
-              git log "${GITHUB_SHA}" --no-merges --pretty='- %s'
-            fi
+            git log "$range" --first-parent --pretty='%H' | while read -r h; do
+              if [ "$(git rev-list --parents -n1 "$h" | wc -w)" -gt 2 ]; then
+                num=$(git log -1 --pretty=%s "$h" | sed -n 's/^Merge pull request #\([0-9]*\) .*/\1/p')
+                # the merge commit has no title: ask GitHub, fall back to the last commit of the branch
+                title=$(gh pr view "$num" --json title --jq .title 2>/dev/null || true)
+                echo "- ${title:-$(git log -1 --pretty=%s "${h}^2")}${num:+ (#$num)}"
+              else
+                echo "- $(git log -1 --pretty=%s "$h")"
+              fi
+            done
             if [ -n "$prev" ]; then
               echo
               echo "**Full changelog:** https://github.com/${GITHUB_REPOSITORY}/compare/${prev}...${tag}"
