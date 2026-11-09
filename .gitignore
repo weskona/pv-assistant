@@ -3,3 +3,4 @@ __pycache__/
 tools/screenshots/node_modules/
 tools/screenshots/package.json
 tools/screenshots/package-lock.json
+.pytest_cache/

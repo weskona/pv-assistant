@@ -37,7 +37,9 @@ custom_components/pv_assistant/
 In the panel as CSS variables `--pva-*`; new series use this mapping.
 
 ### Checks
-Workflow `validate`: hassfest, HACS, syntax check, JSON and translation key check, beta suffix and version bump.
+Workflow `validate`: hassfest, HACS, syntax check of Python and all frontend files, `ruff`, JSON and translation key check, panel text check (`tools/check_texts.py`: German and English match, no text missing or unused), beta suffix and version bump, and the tests.
+
+Tests: `pip install -r requirements-test.txt && pytest` (Home Assistant test framework; `tests/test_calc.py` covers the calculated sensors, the daily counters and the midnight rollover). The release notes list one line per pull request (its title).
 
 ### Screenshots
 The images in `docs/screenshots/{en,de}` show every tab with sample data (README and wiki use them). `tools/screenshots/make.cjs` creates them: it loads the real panel files in a browser (Playwright) with a fake Home Assistant behind them (`mock.js`: a simulated system with three and a half years of made-up data). Run it again after visible changes of the panel; the options are in the header of the script.
@@ -84,7 +86,9 @@ custom_components/pv_assistant/
 Im Panel als CSS-Variablen `--pva-*`; neue Reihen nutzen diese Zuordnung.
 
 ### Prüfungen
-Workflow `validate`: hassfest, HACS, Syntaxprüfung, JSON- und Übersetzungsschlüssel-Prüfung, Beta-Suffix und Versionserhöhung.
+Workflow `validate`: hassfest, HACS, Syntaxprüfung von Python und allen Frontend-Dateien, `ruff`, JSON- und Übersetzungsschlüssel-Prüfung, Prüfung der Panel-Texte (`tools/check_texts.py`: Deutsch und Englisch stimmen überein, kein Text fehlt oder ist ungenutzt), Beta-Suffix und Versionserhöhung sowie die Tests.
+
+Tests: `pip install -r requirements-test.txt && pytest` (Test-Framework von Home Assistant; `tests/test_calc.py` deckt die berechneten Sensoren, die Tageszähler und den Mitternachts-Wechsel ab). Die Release-Notizen führen eine Zeile je Pull Request auf (dessen Titel).
 
 ### Screenshots
 Die Bilder in `docs/screenshots/{en,de}` zeigen jeden Tab mit Beispieldaten (README und Wiki verwenden sie). `tools/screenshots/make.cjs` erzeugt sie: Das Skript lädt die echten Panel-Dateien in einem Browser (Playwright) mit einem nachgebildeten Home Assistant dahinter (`mock.js`: ein simuliertes System mit dreieinhalb Jahren erfundener Daten). Nach sichtbaren Änderungen am Panel erneut ausführen; die Optionen stehen im Kopf des Skripts.
