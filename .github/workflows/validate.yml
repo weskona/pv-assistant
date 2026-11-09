@@ -37,6 +37,8 @@ jobs:
           for f in custom_components/pv_assistant/frontend/*.js tools/screenshots/*.js tools/screenshots/*.cjs; do
             node --check "$f" || exit 1
           done
+      - name: Frontend undefined names (the panel modules get their helpers through init)
+        run: npx --yes eslint@9 -c tools/eslint.config.mjs custom_components/pv_assistant/frontend
       - name: Panel texts (German and English match, none missing or unused)
         run: python3 tools/check_texts.py
       - name: Python lint (ruff)
