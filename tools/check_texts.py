@@ -5,13 +5,15 @@ import re
 import sys
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parent.parent / "custom_components/pv_assistant/frontend/pv-assistant-panel.js"
-text = SRC.read_text(encoding="utf-8")
+FRONTEND = Path(__file__).resolve().parent.parent / "custom_components/pv_assistant/frontend"
+texts = (FRONTEND / "pv-assistant-texts.js").read_text(encoding="utf-8")
+# all modules together: a text may be used in any of them
+text = "\n".join(f.read_text(encoding="utf-8") for f in sorted(FRONTEND.glob("*.js")))
 
-start = text.index("const T = {")
-de = text.index("  de: {", start)
-en = text.index("  en: {", de)
-end = text.index("\n};", en)
+start = texts.index("const T = {")
+de = texts.index("  de: {", start)
+en = texts.index("  en: {", de)
+end = texts.index("\n};", en)
 
 
 def keys_of(block: str) -> set[str]:
@@ -39,7 +41,7 @@ def keys_of(block: str) -> set[str]:
     return found
 
 
-keys = {"de": keys_of(text[de + 6 : en]), "en": keys_of(text[en + 6 : end])}
+keys = {"de": keys_of(texts[de + 6 : en]), "en": keys_of(texts[en + 6 : end])}
 
 errors = []
 for a, b in (("de", "en"), ("en", "de")):
