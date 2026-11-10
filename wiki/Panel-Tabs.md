@@ -40,6 +40,7 @@ A plant is an inverter with all its strings (see [[Settings]]).
 
 - Plant comparison in kWh/kWp (sum per inverter), corrected for orientation and tilt, with a hint and a **suggestion** for weak plants; a plant with several sensors lists its strings indented below it, each with its yield and compared with the best string of the plant
 - A hint if a plant is clearly below the others in some months (the monthly chart is on the Plants tab)
+- **Sudden drop**: a hint when a plant has delivered clearly less than usual compared with the others over the last 3 days (snow, leaves, dirt, new shading, a failed string; needs peaks and at least 10 days) and the **orientation potential**: how much more a plant with a poor orientation would yield in the best case
 - Estimated energy lost at the inverter limit (kWh and share, needs the plant location) and **possible shading**: hours of the day in which a plant stays clearly below its own clear-sky curve on many days, with the direction of the sun
 - Heat map hour × day (weekly from 90 days on)
 - Best and weakest days (with year; days below 0.1 kWh are ignored)
@@ -92,6 +93,7 @@ Only visible with forecast sensors.
 - **Best 3-hour window** for tomorrow and for the rest of today (typical daily curve of the last 14 days combined with the forecast) as a guide for large consumers
 - Forecast quality by forecast size: weak, medium and strong forecast days with their average deviation, as a chart and a table (from 9 days on)
 - Chart of the expected production tomorrow per hour with the best window highlighted
+- **Correction factor** of the last 30 days (produced energy per forecast kWh) and the **corrected forecast for tomorrow** (with the factor of the matching size group when there are enough days)
 
 ### Economics
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/10-economics.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/10-economics.png" alt="Economics" width="720"></a>
@@ -102,6 +104,7 @@ Only visible with production and feed-in energy sensors and prices (settings or 
 - Storage benefit per month with storage sensors
 - Key figures: benefit in the range, average per month, share paid back, expected payback month, storage benefit
 - All months are calculated with the current prices
+- A hint whether self-consumption is worth more than feeding in (value per kWh, what half of the fed-in energy would bring per year), the **average price by time of day** of the last 90 days with the cheapest and the most expensive three hours (with price sensors that have statistics, for a dynamic tariff) and a button for the **monthly report as CSV** (all recorded months: production, feed-in, grid import, consumption, storage, direct use, rates, savings, revenue, benefit; `;` as separator, dot as decimal separator, opens in a spreadsheet)
 
 ### Yearly overview
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/11-yearly.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/11-yearly.png" alt="Yearly overview" width="720"></a>
@@ -155,6 +158,7 @@ Eine Anlage ist ein Wechselrichter mit allen seinen Strings (siehe [[Einstellung
 
 - Anlagen-Vergleich in kWh/kWp (Summe je Wechselrichter), bereinigt um Ausrichtung und Neigung, mit Hinweis und **Vorschlag** bei schwachen Anlagen; eine Anlage mit mehreren Sensoren zeigt ihre Strings eingerückt darunter, je mit Ertrag und im Vergleich zum besten String der Anlage
 - Hinweis, wenn eine Anlage in einzelnen Monaten deutlich unter den anderen liegt (das Monatsdiagramm steht im Tab „Anlagen“)
+- **Plötzlicher Einbruch**: ein Hinweis, wenn eine Anlage in den letzten 3 Tagen deutlich weniger geliefert hat als sonst im Vergleich zu den anderen (Schnee, Laub, Schmutz, neue Verschattung, ausgefallener String; braucht Peaks und mindestens 10 Tage) und das **Ausrichtungs-Potenzial**: wie viel mehr eine Anlage mit schlechter Ausrichtung im besten Fall bringen würde
 - Geschätzte Energie, die an der Wechselrichter-Grenze verloren ging (kWh und Anteil, braucht den Anlagenstandort) und **mögliche Verschattung**: Tagesstunden, in denen eine Anlage an vielen Tagen deutlich unter ihrer eigenen Kurve bei klarem Himmel bleibt, mit der Richtung der Sonne
 - Heatmap Stunde × Tag (ab 90 Tagen wochenweise)
 - Beste und schwächste Tage (mit Jahr; Tage unter 0,1 kWh zählen nicht)
@@ -207,6 +211,7 @@ Nur sichtbar mit Prognose-Sensoren.
 - **Bestes 3-Stunden-Fenster** für morgen und für den Rest von heute (typischer Tagesverlauf der letzten 14 Tage zusammen mit der Prognose) als Richtwert für Großverbraucher
 - Prognose-Güte nach Größe der Prognose: schwache, mittlere und starke Prognosetage mit ihrer durchschnittlichen Abweichung, als Diagramm und Tabelle (ab 9 Tagen)
 - Diagramm der erwarteten Erzeugung morgen je Stunde, das beste Fenster hervorgehoben
+- **Korrekturfaktor** der letzten 30 Tage (erzeugte Energie je Prognose-kWh) und die **korrigierte Prognose für morgen** (mit dem Faktor der passenden Größengruppe, wenn genug Tage da sind)
 
 ### Wirtschaft
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/10-economics.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/10-economics.png" alt="Wirtschaft" width="720"></a>
@@ -217,6 +222,7 @@ Nur sichtbar mit Erzeugungs- und Einspeise-Energiesensoren und Preisen (Einstell
 - Speicher-Nutzen je Monat mit Speichersensoren
 - Kennzahlen: Nutzen im Zeitraum, Durchschnitt je Monat, amortisierter Anteil, voraussichtlicher Amortisationsmonat, Speicher-Nutzen
 - Alle Monate werden mit den aktuellen Preisen gerechnet
+- Ein Hinweis, ob Eigenverbrauch mehr wert ist als Einspeisen (Wert je kWh, was die Hälfte der eingespeisten Energie pro Jahr brächte), der **Ø Preis nach Uhrzeit** der letzten 90 Tage mit den günstigsten und teuersten drei Stunden (mit Preis-Sensoren, die Statistiken haben, für einen dynamischen Tarif) und ein Knopf für den **Monatsbericht als CSV** (alle aufgezeichneten Monate: Erzeugung, Einspeisung, Netzbezug, Verbrauch, Speicher, direkter Verbrauch, Quoten, Ersparnis, Erlös, Nutzen; `;` als Trennzeichen, Punkt als Dezimaltrennzeichen, öffnet sich in einer Tabellenkalkulation)
 
 ### Jahresübersicht
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/11-yearly.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/11-yearly.png" alt="Jahresübersicht" width="720"></a>

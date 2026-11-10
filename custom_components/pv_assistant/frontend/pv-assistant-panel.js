@@ -504,6 +504,7 @@ const modulesReady = Promise.all([
   import(`./pv-assistant-tab-consumption.js${version}`),
   import(`./pv-assistant-tab-economics.js${version}`),
   import(`./pv-assistant-tab-analysis.js${version}`),
+  import(`./pv-assistant-report.js${version}`),
 ]).then(([texts, util, charts, analysis, ...parts]) => {
   dbg("modules loaded");
   const ctx = { ...util, ...charts, ...analysis, T: texts.T, dbg, DBG };
