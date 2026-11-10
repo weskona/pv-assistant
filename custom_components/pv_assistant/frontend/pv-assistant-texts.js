@@ -115,7 +115,7 @@ export const T = {
     pkNow: "Zum aktuellen Zeitraum springen", pkDate: "Datum wählen", pkThisWeek: "Diese Woche", pkThisMonth: "Dieser Monat", pkThisYear: "Dieses Jahr",
     stoHeat: "Ladestand nach Uhrzeit (Ø in %)", stoHeatDays: "Ladestand nach Uhrzeit (Ø in %, letzte {n} Tage)", stoCycChart: "Speicher-Zyklen je Monat",
     stoSimAut: "Autarkie mit anderer Speichergröße (%)", stoSimBen: "Zusätzlicher Nutzen gegenüber ohne Speicher (€ pro Jahr)",
-    stoSimNote: "Simulation mit den Stundenwerten der letzten {n} Tage (auf 12 Monate hochgerechnet); ★ = die aktuelle nutzbare Größe. Annahmen: Wirkungsgrad {eff} %, keine Leistungsgrenze, der Speicher startet leer, Stundenwerte statt Minuten. Ein Richtwert, kein Angebot.",
+    stoSimNote: "Simulation mit den Stundenwerten der letzten {n} Tage, auf 12 Monate hochgerechnet. ★ = deine heutige nutzbare Größe, ◆ = die Größe aus dem Rechner. Annahmen: der Speicher startet leer, Stundenwerte statt Minuten, der Hausverbrauch kommt vom Hausverbrauchssensor oder aus der Energiebilanz. Ein Richtwert, kein Angebot.",
     // consumption tab
     consumptionTab: "Verbrauch", conProfile: "Tagesverlauf: Werktag und Wochenende (Ø kWh je Stunde)", conHeat: "Verbrauch nach Uhrzeit (kWh je Stunde)",
     conDays: "Verbrauch je Tag (kWh)", conMonths: "Verbrauch je Monat (kWh)", conGridHour: "Netzbezug nach Uhrzeit (Ø kWh je Stunde)",
@@ -132,6 +132,10 @@ export const T = {
     repButton: "Monatsbericht als CSV herunterladen", repDone: "{n} Monate exportiert.", repNone: "Keine Daten für den Bericht.",
     repMonth: "Monat", repProd: "Erzeugung (kWh)", repFeed: "Einspeisung (kWh)", repImport: "Netzbezug (kWh)", repHouse: "Verbrauch (kWh)", repStoreIn: "In Speicher (kWh)",
     repStoreOut: "Aus Speicher (kWh)", repDirect: "Direkt verbraucht (kWh)", repSelf: "Eigenverbrauchsquote (%)", repAutarky: "Autarkie (%)", repSavings: "Ersparnis", repRevenue: "Einspeiseerlös", repBenefit: "Nutzen",
+    simTitle: "Szenario-Rechner: Speicher", simCap: "Nutzbare Größe (kWh)", simPower: "Max. Lade- und Entladeleistung (kW, 0 = unbegrenzt)", simEff: "Wirkungsgrad (%)", simPrice: "Preis je kWh Speicher (€, für die Amortisation)",
+    simImp: "Netzbezug pro Jahr", simFeed: "Einspeisung pro Jahr", simBen: "Nutzen pro Jahr (gegenüber ohne Speicher)", simMarg: "Zusatznutzen der letzten kWh (€ pro Jahr)", simInvest: "Investition", simPayback: "Amortisation", simYears: "{y} Jahre",
+    stoSimMarg: "Zusatznutzen je weitere kWh Speicher (€ pro Jahr)",
+    simCalib: "Prüfung: gemessener Netzbezug {m} kWh, Simulation mit deiner heutigen Größe {s} kWh ({d} % Abweichung).", simCalibWarn: "Die Abweichung ist größer als 15 %; die Zahlen sind dann nur grobe Richtwerte (Leistungsspitzen, Laden aus dem Netz oder ein anderes Verhalten des Speichers).",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -248,7 +252,7 @@ export const T = {
     pkNow: "Jump to the current period", pkDate: "Choose a date", pkThisWeek: "This week", pkThisMonth: "This month", pkThisYear: "This year",
     stoHeat: "Level by time of day (avg. in %)", stoHeatDays: "Level by time of day (avg. in %, last {n} days)", stoCycChart: "Storage cycles per month",
     stoSimAut: "Self-sufficiency with another storage size (%)", stoSimBen: "Extra benefit compared with no storage (€ per year)",
-    stoSimNote: "Simulation with the hourly values of the last {n} days (scaled to 12 months); ★ = the current usable size. Assumptions: efficiency {eff} %, no power limit, the storage starts empty, hours instead of minutes. A guide value, not an offer.",
+    stoSimNote: "Simulation with the hourly values of the last {n} days, scaled to 12 months. ★ = your current usable size, ◆ = the size from the calculator. Assumptions: the storage starts empty, hours instead of minutes, the consumption comes from the house consumption sensor or the energy balance. A guide value, not an offer.",
     // consumption tab
     consumptionTab: "Consumption", conProfile: "Course of the day: working days and weekends (avg. kWh per hour)", conHeat: "Consumption by time of day (kWh per hour)",
     conDays: "Consumption per day (kWh)", conMonths: "Consumption per month (kWh)", conGridHour: "Grid import by time of day (avg. kWh per hour)",
@@ -265,5 +269,9 @@ export const T = {
     repButton: "Download the monthly report as CSV", repDone: "{n} months exported.", repNone: "No data for the report.",
     repMonth: "Month", repProd: "Production (kWh)", repFeed: "Feed-in (kWh)", repImport: "Grid import (kWh)", repHouse: "Consumption (kWh)", repStoreIn: "Into storage (kWh)",
     repStoreOut: "From storage (kWh)", repDirect: "Used directly (kWh)", repSelf: "Self-consumption rate (%)", repAutarky: "Self-sufficiency (%)", repSavings: "Savings", repRevenue: "Feed-in revenue", repBenefit: "Benefit",
+    simTitle: "Scenario calculator: storage", simCap: "Usable size (kWh)", simPower: "Max. charge and discharge power (kW, 0 = unlimited)", simEff: "Efficiency (%)", simPrice: "Price per kWh of storage (€, for the payback)",
+    simImp: "Grid import per year", simFeed: "Feed-in per year", simBen: "Benefit per year (compared with no storage)", simMarg: "Extra benefit of the last kWh (€ per year)", simInvest: "Investment", simPayback: "Payback", simYears: "{y} years",
+    stoSimMarg: "Extra benefit per further kWh of storage (€ per year)",
+    simCalib: "Check: measured grid import {m} kWh, simulation with your current size {s} kWh ({d} % deviation).", simCalibWarn: "The deviation is larger than 15 %; the numbers are then only rough guide values (power peaks, charging from the grid or a different behavior of the storage).",
   },
 };

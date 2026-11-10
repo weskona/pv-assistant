@@ -57,3 +57,11 @@ test("the CSV uses ; as separator, a dot as decimal separator and quotes where n
   const text = toCsv(["Month", "Name; with", "Value"], [["2026-06", 'a "b"', 12.34567], ["2026-07", null, NaN]]);
   assert.equal(text, 'Month;"Name; with";Value\r\n2026-06;"a ""b""";12.346\r\n2026-07;;');
 });
+
+test("a power limit slows charging and discharging", () => {
+  // 10 kWh surplus in one hour, 10 kWh deficit in the next: with 2 kW only 2 kWh can be stored and 2 kWh drawn
+  const { imp, feed } = simulateStorage([[10, 0], [0, 10]], 100, 1, 2);
+  near(feed, 8); near(imp, 8);
+  const free = simulateStorage([[10, 0], [0, 10]], 100, 1);
+  near(free.feed, 0); near(free.imp, 0);
+});
