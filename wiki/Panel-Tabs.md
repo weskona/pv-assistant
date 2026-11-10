@@ -65,8 +65,18 @@ Needs production energy sensors and at least one of feed-in, grid import or stor
 - Self-sufficiency and self-consumption rate per day or month
 - Key figures of the range (production, direct use, feed-in, charging, discharging, grid import, rates); the direct use assumes that the storage is charged from PV
 
+### Consumption
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/07-consumption.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/07-consumption.png" alt="Consumption" width="480"></a>
+
+Needs a house consumption sensor (energy or power), or production, feed-in and grid import as energy sensors (the consumption is then calculated from the energy balance).
+- Key figures: consumption, average per day, **base load** (the lowest hourly value between 0 and 6 o'clock, median over the days) and its share of the consumption, peak consumption of an hour, **highest grid import**, weekend compared with working days
+- A hint when the base load is more than a quarter of the consumption (standby, pumps, routers, fridges), with the energy per year
+- Course of the day on working days and weekends (average kWh per hour)
+- Heat map of the consumption by time of day (one row per day or month) and the consumption per day or month
+- Grid import by time of day
+
 ### Storage
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/07-storage.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/07-storage.png" alt="Storage" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/08-storage.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/08-storage.png" alt="Storage" width="720"></a>
 
 Only visible with storage sensors or a battery level.
 - Key figures: level now, charged, discharged, efficiency, **storage benefit** and **storage losses** in kWh and € (with prices), cycles (with storage capacity), maximum charge and discharge power, level min–max, average level; a hint appears if the efficiency fell clearly over the months
@@ -74,7 +84,7 @@ Only visible with storage sensors or a battery level.
 - Cycles per month (long ranges), the **level by time of day** as a heat map (when is the storage empty in the evening; one row per day or month) and a **what-if simulation**: self-sufficiency and the extra benefit per year for other usable storage sizes (★ = your size), calculated from the hourly values of the last 30 days to 12 months with the measured efficiency; needs the production, the house consumption (or grid import and feed-in) as energy sensors. A guide value, not an offer
 
 ### Forecast
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/08-forecast.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/08-forecast.png" alt="Forecast" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/09-forecast.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/09-forecast.png" alt="Forecast" width="720"></a>
 
 Only visible with forecast sensors.
 - Forecast today, tomorrow, rest of today, produced so far, share of forecast reached
@@ -84,7 +94,7 @@ Only visible with forecast sensors.
 - Chart of the expected production tomorrow per hour with the best window highlighted
 
 ### Economics
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/09-economics.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/09-economics.png" alt="Economics" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/10-economics.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/10-economics.png" alt="Economics" width="720"></a>
 
 Only visible with production and feed-in energy sensors and prices (settings or price sensors).
 - Benefit per month as stacked bars: savings from self-consumption and feed-in revenue
@@ -94,12 +104,12 @@ Only visible with production and feed-in energy sensors and prices (settings or 
 - All months are calculated with the current prices
 
 ### Yearly overview
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/10-yearly.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/10-yearly.png" alt="Yearly overview" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/11-yearly.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/11-yearly.png" alt="Yearly overview" width="720"></a>
 
 Monthly production of the selected year next to the monthly average, deviation in percent, year forecast, comparison of all years, change against the previous year (same months), benefit, payback and trend of the yearly total; production of the last 12 months as a rolling sum; with a steady loss of more than 0.7 % per year a hint on possible degradation (not weather-corrected).
 
 ### Settings
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/11-settings.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/11-settings.png" alt="Settings" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/12-settings.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/12-settings.png" alt="Settings" width="720"></a>
 
 See [[Settings]].
 
@@ -170,8 +180,18 @@ Braucht Erzeugungs-Energiesensoren und mindestens einen von Einspeisung, Netzbez
 - Autarkie und Eigenverbrauchsquote je Tag oder Monat
 - Kennzahlen des Zeitraums (Erzeugung, Direktverbrauch, Einspeisung, Laden, Entladen, Netzbezug, Quoten); der Direktverbrauch nimmt an, dass der Speicher aus PV geladen wird
 
+### Verbrauch
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/07-consumption.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/07-consumption.png" alt="Verbrauch" width="480"></a>
+
+Braucht einen Hausverbrauchssensor (Energie oder Leistung) oder Erzeugung, Einspeisung und Netzbezug als Energiesensoren (der Verbrauch wird dann aus der Energiebilanz berechnet).
+- Kennzahlen: Verbrauch, Durchschnitt je Tag, **Grundlast** (der niedrigste Stundenwert zwischen 0 und 6 Uhr, Median über die Tage) und ihr Anteil am Verbrauch, Spitzenverbrauch einer Stunde, **höchster Netzbezug**, Wochenende gegenüber Werktagen
+- Ein Hinweis, wenn die Grundlast mehr als ein Viertel des Verbrauchs ausmacht (Standby, Pumpen, Router, Kühlgeräte), mit der Energie pro Jahr
+- Tagesverlauf an Werktagen und am Wochenende (Ø kWh je Stunde)
+- Heatmap des Verbrauchs nach Uhrzeit (eine Zeile je Tag oder Monat) und der Verbrauch je Tag oder Monat
+- Netzbezug nach Uhrzeit
+
 ### Speicher
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/07-storage.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/07-storage.png" alt="Speicher" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/08-storage.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/08-storage.png" alt="Speicher" width="720"></a>
 
 Nur sichtbar mit Speichersensoren oder Ladestand.
 - Kennzahlen: Ladestand jetzt, geladen, entladen, Wirkungsgrad, **Speicher-Nutzen** und **Speicherverluste** in kWh und € (mit Preisen), Zyklen (mit Speicherkapazität), maximale Lade- und Entladeleistung, Ladestand min–max, Ø Ladestand; ein Hinweis erscheint, wenn der Wirkungsgrad über die Monate deutlich gesunken ist
@@ -179,7 +199,7 @@ Nur sichtbar mit Speichersensoren oder Ladestand.
 - Zyklen je Monat (lange Zeiträume), der **Ladestand nach Uhrzeit** als Heatmap (wann ist der Speicher abends leer; eine Zeile je Tag oder Monat) und eine **Was-wäre-wenn-Simulation**: Autarkie und zusätzlicher Nutzen pro Jahr für andere nutzbare Speichergrößen (★ = deine Größe), berechnet aus den Stundenwerten der letzten 30 Tage bis 12 Monate mit dem gemessenen Wirkungsgrad; braucht Erzeugung und Hausverbrauch (oder Netzbezug und Einspeisung) als Energiesensoren. Ein Richtwert, kein Angebot
 
 ### Prognose
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/08-forecast.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/08-forecast.png" alt="Prognose" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/09-forecast.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/09-forecast.png" alt="Prognose" width="720"></a>
 
 Nur sichtbar mit Prognose-Sensoren.
 - Prognose heute, morgen, Rest heute, bisher erzeugt, von Prognose erreicht
@@ -189,7 +209,7 @@ Nur sichtbar mit Prognose-Sensoren.
 - Diagramm der erwarteten Erzeugung morgen je Stunde, das beste Fenster hervorgehoben
 
 ### Wirtschaft
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/09-economics.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/09-economics.png" alt="Wirtschaft" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/10-economics.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/10-economics.png" alt="Wirtschaft" width="720"></a>
 
 Nur sichtbar mit Erzeugungs- und Einspeise-Energiesensoren und Preisen (Einstellungen oder Preis-Sensoren).
 - Nutzen je Monat als gestapelte Balken: Ersparnis durch Eigenverbrauch und Einspeisevergütung
@@ -199,11 +219,11 @@ Nur sichtbar mit Erzeugungs- und Einspeise-Energiesensoren und Preisen (Einstell
 - Alle Monate werden mit den aktuellen Preisen gerechnet
 
 ### Jahresübersicht
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/10-yearly.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/10-yearly.png" alt="Jahresübersicht" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/11-yearly.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/11-yearly.png" alt="Jahresübersicht" width="720"></a>
 
 Monatserzeugung des gewählten Jahres neben dem Monatsschnitt, Abweichung in Prozent, Jahresprognose, Jahresvergleich über alle Jahre, Veränderung gegenüber dem Vorjahr (gleiche Monate), Nutzen, Amortisation und Trend der Jahressumme; Erzeugung der letzten 12 Monate als gleitende Summe; bei einem stetigen Verlust von mehr als 0,7 % pro Jahr ein Hinweis auf mögliche Degradation (nicht wetterbereinigt).
 
 ### Einstellungen
-<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/11-settings.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/11-settings.png" alt="Einstellungen" width="720"></a>
+<a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/12-settings.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/12-settings.png" alt="Einstellungen" width="720"></a>
 
 Siehe [[Einstellungen|Settings]].
