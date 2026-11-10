@@ -71,7 +71,7 @@ export class ScenariosPart {
       <div class="setcard" id="simform">
         ${SIM_ROWS.map(([id, label, hint, attrs]) => `<div class="setrow"><label for="${id}">${esc(this._t(label))}</label><input type="number" id="${id}" ${attrs}>
           <span class="hint">${esc(this._t(hint))}${id === "simpv" ? ' <b id="simpvhint"></b>' : ""}</span></div>`).join("")}
-        <div class="setbar"><button class="setbtn" id="simsave">${esc(this._t("simSave"))}</button></div></div>
+        <div class="setbar"><button class="setbtn" id="simsave">${esc(this._t("simSave"))}</button><button class="setbtn" id="simreset">${esc(this._t("simReset"))}</button></div></div>
       <div class="setcard" id="simrec" hidden></div>
       <div class="tiles" id="simtiles"></div><ul class="hints" id="simhints"></ul>
       <h3 class="ch">${esc(this._t("stoSimAut"))}</h3><div class="chart" id="sosimaut"></div>
@@ -90,6 +90,7 @@ export class ScenariosPart {
       });
     }
     box.querySelector("#simsave")?.addEventListener("click", () => this._simSave());
+    box.querySelector("#simreset")?.addEventListener("click", () => { if (this._scn) this._simSetState(this._simFresh()); });
   }
 
   // hourly values of the range, at most the last 12 months (at least 7 days are needed)
@@ -156,15 +157,28 @@ export class ScenariosPart {
     if (!this._simState) {
       let saved = null;
       try { saved = JSON.parse(localStorage.getItem("pv_assistant_sim") || "null"); } catch (e) { saved = null; }
-      const c = this._scn;
-      const fresh = { cap: Math.round((c.usableNow || 10) * 10) / 10, power: c.powerMeasured, eff: Math.round(c.effMeasured * 100), price: 0 };
-      this._simState = { ...SIM_DEFAULTS, ...(saved && Number.isFinite(saved.cap) ? saved : fresh) };
-      for (const [id, key2] of SIM_FIELDS) {
-        const input = root.getElementById(id);
-        if (input) input.value = Number.isFinite(this._simState[key2]) ? String(this._simState[key2]) : "";
-      }
+      // the first time a storage is suggested when there is none, so that the charts show something
+      const fresh = this._simFresh();
+      this._simSetState(saved && Number.isFinite(saved.cap) ? { ...SIM_DEFAULTS, ...saved } : { ...fresh, cap: fresh.cap || 10 }, false);
     }
     this._drawScenarioSim();
+  }
+
+  // the values of the plant as it is: the usable size of the storage, the measured power and efficiency, no extras, no prices
+  _simFresh() {
+    const c = this._scn;
+    return { ...SIM_DEFAULTS, cap: Math.round(c.usableNow * 10) / 10, power: c.powerMeasured, eff: Math.round(c.effMeasured * 100), price: 0 };
+  }
+
+  // puts the values into the form, remembers them and (unless it is the first drawing) calculates again
+  _simSetState(state, redraw = true) {
+    this._simState = state;
+    for (const [id, key] of SIM_FIELDS) {
+      const input = this._root.getElementById(id);
+      if (input) input.value = Number.isFinite(state[key]) ? String(state[key]) : "";
+    }
+    try { localStorage.setItem("pv_assistant_sim", JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+    if (redraw) this._drawScenarioSim();
   }
 
   _simNum(id) {
@@ -338,9 +352,7 @@ export class ScenariosPart {
           saved.splice(idx, 1);
           try { localStorage.setItem("pv_assistant_sim_saved", JSON.stringify(saved)); } catch (e) { /* storage unavailable */ }
         } else {
-          this._simState = { ...SIM_DEFAULTS, ...saved[idx].st };
-          for (const [id, key2] of SIM_FIELDS) { const input = root.getElementById(id); if (input) input.value = String(this._simState[key2]); }
-          try { localStorage.setItem("pv_assistant_sim", JSON.stringify(this._simState)); } catch (e) { /* storage unavailable */ }
+          this._simSetState({ ...SIM_DEFAULTS, ...saved[idx].st }, false);
         }
         this._drawScenarioSim();
       }));

@@ -134,3 +134,9 @@ test("scenario: the investment and the gain count only what is added to the exis
   const none = part._simMetrics({ ...state, cap: 5, price: 700 });
   near(none.investment, 5 * 700); near(none.gain, none.benefit);
 });
+
+test("the reset values are those of the plant: the storage size from the settings, the measured power and efficiency, nothing else", () => {
+  const part = scenarioPart();
+  Object.assign(part._scn, { usableNow: 7.04, powerMeasured: 3.2, effMeasured: 0.913 });
+  assert.deepEqual(part._simFresh(), { pv: 0, pvprice: 0, load: 0, from: 10, len: 4, cap: 7, power: 3.2, eff: 91, price: 0 });
+});
