@@ -196,3 +196,52 @@ async def test_history_and_tomorrow_sensors(hass):
     start = dt_util.as_local(dt_util.parse_datetime(window.state))
     assert start.hour == 9 and window.attributes["days"] >= 3  # the hours 9, 10 and 11 hold 3 + 5 + 5 units (the peak of the day)
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+# ---------------------------------------------------------------- history from the long-term statistics
+
+
+def test_plausible_hours_and_fold():
+    from custom_components.pv_assistant.insight import fold_history, plausible_hours
+
+    base = dt_util.start_of_local_day() - timedelta(days=3)
+    rows = [(base + timedelta(hours=h), 1.0 if 6 <= h <= 18 else 0.0) for h in range(24)]
+    rows[12] = (rows[12][0], 900.0)  # a meter glitch: a whole counter in one hour
+    rows[13] = (rows[13][0], -4.0)
+    clean = plausible_hours(rows + [(base + timedelta(days=1, hours=h), 1.0) for h in range(24)])
+    assert rows[12][0] not in clean and rows[13][0] not in clean and len(clean) == 24 + 22
+    today = dt_util.now().date().isoformat()
+    hours, days = fold_history([clean], [{t: 0.25 for t in clean}], today, dt_util.DEFAULT_TIME_ZONE)
+    first = dt_util.as_local(base).strftime("%Y-%m-%d")
+    assert hours[first][8] == 1.0 and hours[first][12] is None  # the glitch hour stays unknown
+    assert days[first]["production"] == 11.0  # 22 hours with data: 11 hours of 1 kWh (6 to 18 without 12 and 13)
+    assert days[first]["feed_in"] == 5.5
+
+
+async def test_backfill_makes_the_sensors_work_from_the_first_day(hass):
+    put(hass, "sensor.e_prod", 100, "kWh"); put(hass, "sensor.feed", 40, "kWh"); put(hass, "sensor.fc_tom", 30, "kWh")
+    data = {"production_energy_sensors": ["sensor.e_prod"], "feed_in_energy_sensor": "sensor.feed", "forecast_tomorrow_energy_sensors": ["sensor.fc_tom"]}
+    entry = await setup(hass, data)
+    history = hass.data[DOMAIN]["history"]
+    assert val(hass, "best_window_tomorrow").state == "unknown"
+    shape = [0.0] * 8 + [1, 3, 5, 5, 3, 1] + [0.0] * 10  # the production of a day, the best three hours are 9 to 11
+    stats: dict = {"sensor.pv_assistant_e_prod_filtered": [], "sensor.e_prod": [], "sensor.feed": []}
+    for k in range(1, 6):
+        day = dt_util.start_of_local_day() - timedelta(days=k)
+        stats["sensor.e_prod"] += [(dt_util.as_utc(day + timedelta(hours=h)), v) for h, v in enumerate(shape)]
+        stats["sensor.feed"] += [(dt_util.as_utc(day + timedelta(hours=h)), v * 0.4) for h, v in enumerate(shape)]
+    # a day that is already in the history is not overwritten
+    yesterday = (dt_util.now().date() - timedelta(days=1)).isoformat()
+    history.days[yesterday] = {"production": 99.0, "feed_in": 9.0}
+    with patch("custom_components.pv_assistant.insight._read_statistics", AsyncMock(return_value=stats)):
+        await history.async_backfill()
+    await hass.async_block_till_done()
+    assert history.days[yesterday] == {"production": 99.0, "feed_in": 9.0}
+    older = (dt_util.now().date() - timedelta(days=2)).isoformat()
+    assert history.days[older]["production"] == 18.0 and abs(history.days[older]["feed_in"] - 7.2) < 1e-6
+    window = val(hass, "best_window_tomorrow")
+    assert dt_util.as_local(dt_util.parse_datetime(window.state)).hour == 9 and window.attributes["days"] == 5
+    # the share fed in over the five days: yesterday (kept) 9 of 99 kWh and four filled days with 7.2 of 18 kWh each
+    assert abs(float(val(hass, "expected_feed_in_tomorrow").state) - 30 * (9 + 4 * 7.2) / (99 + 4 * 18)) < 0.01
+    assert await hass.config_entries.async_unload(entry.entry_id)
+

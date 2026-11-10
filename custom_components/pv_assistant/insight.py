@@ -6,6 +6,7 @@ the production and feed-in of the last days and the production of every hour of 
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -13,10 +14,12 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, Sen
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_change
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -44,6 +47,9 @@ KEEP_DAYS = 21  # days of history that are kept
 USE_DAYS = 14  # days that the expected feed-in and the profile are based on
 MIN_PROFILE_DAYS = 3  # fewer days with production do not make a profile
 MIN_DISCHARGE_W = 50.0  # below this the storage is not discharging
+BACKFILL_DAYS = 16  # days that are read from the long-term statistics when the integration starts
+
+_LOGGER = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------- pure calculations (tested without Home Assistant)
@@ -83,6 +89,72 @@ def feed_in_share(days: dict[str, dict[str, float]], today: str) -> tuple[float,
     return min(max(sum(d["feed_in"] for d in recent) / produced, 0.0), 1.0), len(recent)
 
 
+def plausible_hours(rows: list[tuple[datetime, float]]) -> dict[datetime, float]:
+    """Hourly energies of one counter without the glitches of a meter: negative values and values far above the usual peak hour.
+
+    A meter that drops to 0 for a moment and comes back looks like a reset followed by a whole counter of production in one hour.
+    """
+    positive = sorted(v for _, v in rows if v > 0)
+    cap = 3 * positive[int(len(positive) * 0.95) - 1] if len(positive) >= 20 else None
+    return {t: v for t, v in rows if v >= 0 and (cap is None or v <= cap)}
+
+
+def fold_history(
+    production: list[dict[datetime, float]], feed_in: list[dict[datetime, float]], today: str, tz: Any
+) -> tuple[dict[str, list[float | None]], dict[str, dict[str, float]]]:
+    """Per-hour production and per-day production / feed-in of past days from hourly energies of the counters.
+
+    production / feed_in: one {hour start: kWh} per counter. A day counts when production has at least 20 hours of it.
+    """
+    hours: dict[str, list[float | None]] = {}
+    for series in production:
+        for start, value in series.items():
+            local = dt_util.as_local(start) if tz is None else start.astimezone(tz)
+            day = local.strftime("%Y-%m-%d")
+            if day >= today:
+                continue
+            row = hours.setdefault(day, [None] * 24)
+            row[local.hour] = round((row[local.hour] or 0.0) + value, 4)
+    feed_by_day: dict[str, float] = {}
+    for series in feed_in:
+        for start, value in series.items():
+            local = dt_util.as_local(start) if tz is None else start.astimezone(tz)
+            day = local.strftime("%Y-%m-%d")
+            if day < today:
+                feed_by_day[day] = feed_by_day.get(day, 0.0) + value
+    days: dict[str, dict[str, float]] = {}
+    for day, row in hours.items():
+        if sum(v is not None for v in row) >= 20:
+            days[day] = {"production": round(sum(v or 0.0 for v in row), 3)}
+            if day in feed_by_day:
+                days[day]["feed_in"] = round(feed_by_day[day], 3)
+    return hours, days
+
+
+async def _read_statistics(hass: HomeAssistant, ids: list[str], start: datetime, end: datetime) -> dict[str, list[tuple[datetime, float]]]:
+    """Hourly energy (kWh) of the counters from the recorder: {id: [(hour start, kWh)]}. Empty when there is no recorder."""
+    if not ids:
+        return {}
+    try:
+        from homeassistant.components.recorder import get_instance
+        from homeassistant.components.recorder.statistics import statistics_during_period
+
+        raw = await get_instance(hass).async_add_executor_job(
+            statistics_during_period, hass, start, end, set(ids), "hour", {"energy": "kWh"}, {"change"}
+        )
+    except Exception:  # no recorder, or it is not ready: the history then fills up by itself
+        _LOGGER.debug("statistics for the history are not available", exc_info=True)
+        return {}
+    result: dict[str, list[tuple[datetime, float]]] = {}
+    for eid, rows in raw.items():
+        result[eid] = [
+            (dt_util.utc_from_timestamp(r["start"]) if not isinstance(r["start"], datetime) else r["start"], float(r["change"]))
+            for r in rows
+            if r.get("change") is not None
+        ]
+    return result
+
+
 # ---------------------------------------------------------------- the collected history
 
 
@@ -119,6 +191,51 @@ class History:
         self._prune()
         self._save()
         async_dispatcher_send_history(self._hass)
+
+    def _counters(self, conf: str) -> list[tuple[str, str | None]]:
+        """The counters of a config key as (source sensor, its filtered copy or None)."""
+        from .sensor import filtered_unique_id  # imported late: sensor.py imports this module
+
+        registry = er.async_get(self._hass)
+        return [
+            (source, registry.async_get_entity_id("sensor", DOMAIN, filtered_unique_id(self._entry.entry_id, source)))
+            for source in as_list(self._entry.data.get(conf))
+        ]
+
+    async def async_backfill(self) -> None:
+        """Fill the history from the long-term statistics, so the sensors work from the first day (only gaps are filled)."""
+        end = dt_util.now()
+        start = dt_util.start_of_local_day() - timedelta(days=BACKFILL_DAYS)
+        prod, feed = self._counters(CONF_PRODUCTION_ENERGY), self._counters(CONF_FEED_IN_ENERGY)
+        ids = [i for pair in prod + feed for i in pair if i]
+        stats = await _read_statistics(self._hass, ids, start, end)
+
+        def series(pair: tuple[str, str | None]) -> dict[datetime, float]:
+            # the filtered copy has no glitches but is younger: it wins where it has data, the source fills the older hours
+            merged = plausible_hours(stats.get(pair[0], []))
+            if pair[1]:
+                merged.update(plausible_hours(stats.get(pair[1], [])))
+            return merged
+
+        production = [series(p) for p in prod]
+        if not any(production):
+            return
+        hours, days = fold_history(production, [series(f) for f in feed], dt_util.now().date().isoformat(), dt_util.DEFAULT_TIME_ZONE)
+        changed = False
+        for day, row in hours.items():
+            have = self.hours.setdefault(day, [None] * 24)
+            for hour, value in enumerate(row):
+                if have[hour] is None and value is not None:
+                    have[hour] = value
+                    changed = True
+        for day, values in days.items():
+            if day not in self.days:
+                self.days[day] = values
+                changed = True
+        if changed:
+            self._prune()
+            self._save()
+            async_dispatcher_send_history(self._hass)
 
     def record_day_values(self, date: str) -> None:
         """Called by the day counters before they start a new day: store the values of the finished day."""
@@ -340,6 +457,11 @@ async def async_setup_insight(hass: HomeAssistant, entry: ConfigEntry, async_add
         hass.data[DOMAIN]["history"] = history
         hass.data[DOMAIN]["daily"].on_day_end = history.record_day_values
         entry.async_on_unload(async_track_time_change(hass, history.hour_mark, minute=0, second=10))
+
+        async def backfill(_hass: HomeAssistant) -> None:
+            await history.async_backfill()
+
+        entry.async_on_unload(async_at_started(hass, backfill))
         entities.append(BestWindowSensor(entry))
         if data.get(CONF_FEED_IN_ENERGY):
             entities.append(ExpectedFeedInSensor(entry))

@@ -1,6 +1,7 @@
 {
   "domain": "pv_assistant",
   "name": "PV Assistant",
+  "after_dependencies": ["recorder"],
   "codeowners": ["@weskona"],
   "config_flow": true,
   "dependencies": ["http", "frontend", "panel_custom"],
@@ -9,5 +10,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/weskona/pv-assistant/issues",
   "requirements": [],
-  "version": "0.9.53-beta"
+  "version": "0.9.54-beta"
 }
