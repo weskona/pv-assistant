@@ -116,6 +116,13 @@ export const T = {
     stoHeat: "Ladestand nach Uhrzeit (Ø in %)", stoHeatDays: "Ladestand nach Uhrzeit (Ø in %, letzte {n} Tage)", stoCycChart: "Speicher-Zyklen je Monat",
     stoSimAut: "Autarkie mit anderer Speichergröße (%)", stoSimBen: "Zusätzlicher Nutzen gegenüber ohne Speicher (€ pro Jahr)",
     stoSimNote: "Simulation mit den Stundenwerten der letzten {n} Tage (auf 12 Monate hochgerechnet); ★ = die aktuelle nutzbare Größe. Annahmen: Wirkungsgrad {eff} %, keine Leistungsgrenze, der Speicher startet leer, Stundenwerte statt Minuten. Ein Richtwert, kein Angebot.",
+    // consumption tab
+    consumptionTab: "Verbrauch", conProfile: "Tagesverlauf: Werktag und Wochenende (Ø kWh je Stunde)", conHeat: "Verbrauch nach Uhrzeit (kWh je Stunde)",
+    conDays: "Verbrauch je Tag (kWh)", conMonths: "Verbrauch je Monat (kWh)", conGridHour: "Netzbezug nach Uhrzeit (Ø kWh je Stunde)",
+    conTotal: "Verbrauch", conPerDay: "Ø je Tag", conBase: "Grundlast (nachts)", conBaseShare: "Anteil der Grundlast", conPeak: "Spitzenverbrauch (Stunde)",
+    conPeakGrid: "Höchster Netzbezug", conWeekendVs: "Wochenende gegenüber Werktag", conWeekday: "Werktag", conWeekendName: "Wochenende",
+    conBaseHint: "Die Grundlast liegt bei {w} W, das sind {p} % des Verbrauchs (rund {kwh} kWh im Jahr). Dauerläufer wie Standby, Pumpen, Router und Kühlgeräte lohnen den Blick.",
+    conNote: "Der Verbrauch kommt vom Hausverbrauchssensor, sonst aus der Energiebilanz (Erzeugung + Netzbezug + Speicher-Entladung − Einspeisung − Speicher-Ladung). Grundlast = der niedrigste Stundenwert zwischen 0 und 6 Uhr, Median über die Tage; Stundenwerte statt Minuten. Werktag = Montag bis Freitag.",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -233,5 +240,12 @@ export const T = {
     stoHeat: "Level by time of day (avg. in %)", stoHeatDays: "Level by time of day (avg. in %, last {n} days)", stoCycChart: "Storage cycles per month",
     stoSimAut: "Self-sufficiency with another storage size (%)", stoSimBen: "Extra benefit compared with no storage (€ per year)",
     stoSimNote: "Simulation with the hourly values of the last {n} days (scaled to 12 months); ★ = the current usable size. Assumptions: efficiency {eff} %, no power limit, the storage starts empty, hours instead of minutes. A guide value, not an offer.",
+    // consumption tab
+    consumptionTab: "Consumption", conProfile: "Course of the day: working days and weekends (avg. kWh per hour)", conHeat: "Consumption by time of day (kWh per hour)",
+    conDays: "Consumption per day (kWh)", conMonths: "Consumption per month (kWh)", conGridHour: "Grid import by time of day (avg. kWh per hour)",
+    conTotal: "Consumption", conPerDay: "Avg. per day", conBase: "Base load (night)", conBaseShare: "Share of the base load", conPeak: "Peak consumption (hour)",
+    conPeakGrid: "Highest grid import", conWeekendVs: "Weekend compared with working days", conWeekday: "Working days", conWeekendName: "Weekend",
+    conBaseHint: "The base load is {w} W, that is {p} % of the consumption (about {kwh} kWh per year). Always-on devices such as standby, pumps, routers and fridges are worth a look.",
+    conNote: "The consumption comes from the house consumption sensor, otherwise from the energy balance (production + grid import + storage discharge − feed-in − storage charge). Base load = the lowest hourly value between 0 and 6 o'clock, median over the days; hours instead of minutes. Working days = Monday to Friday.",
   },
 };

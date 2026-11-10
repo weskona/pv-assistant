@@ -19,7 +19,7 @@ const ONLY = process.env.TABS ? process.env.TABS.split(",") : null; // e.g. TABS
 const outDir = process.env.OUT_DIR || path.join(root, "docs/screenshots", MOBILE ? "mobile" : "");
 const NOW = new Date("2026-06-18T14:30:00+02:00"); // a sunny afternoon, the images always show the same moment
 const LONG_RANGE = new Set(["plants", "storage"]);
-const FILE_NAMES = { now: "now", power: "power", plants: "plants", analysis: "analysis", history: "history", balance: "balance", storage: "storage", forecast: "forecast", money: "economics", years: "yearly", settings: "settings" };
+const FILE_NAMES = { now: "now", power: "power", plants: "plants", analysis: "analysis", history: "history", balance: "balance", consumption: "consumption", storage: "storage", forecast: "forecast", money: "economics", years: "yearly", settings: "settings" };
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
   :root { --primary-text-color:#e1e1e1; --secondary-text-color:#9b9b9b; --primary-color:#03a9f4; --text-primary-color:#fff;
