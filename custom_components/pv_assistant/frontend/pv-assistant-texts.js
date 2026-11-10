@@ -145,7 +145,7 @@ export const T = {
     // explanation in the scenarios tab
     scnIntroTitle: "So funktioniert der Rechner",
     scnIntro1: "Der Rechner nimmt die gemessenen Stundenwerte deiner Anlage (Erzeugung und Verbrauch der letzten Monate, der Zeitraum ist oben wählbar) und rechnet nach, wie es gewesen wäre, wenn du etwas änderst: einen anderen Speicher, mehr PV oder einen zusätzlichen Verbraucher.",
-    scnIntro2: "Unten stehen die Eingabefelder, vorbelegt mit deinen heutigen Werten. Ändere ein Feld, die Zahlen darunter rechnen sofort neu. Felder, die du nicht brauchst, lässt du auf 0.",
+    scnIntro2: "Unten stehen die Eingabefelder, vorbelegt mit deinen heutigen Werten. Ändere ein Feld, die Zahlen darunter rechnen sofort neu. Felder, die du nicht brauchst, lässt du auf 0. „Auf meine Anlage zurücksetzen“ stellt alle Felder wieder auf die Werte deiner Anlage (Speichergröße aus den Einstellungen, gemessene Leistung und Wirkungsgrad) und löscht Zusatzverbrauch, mehr PV und Preise; gespeicherte Szenarien bleiben.",
     scnIntro3: "Der Nutzen ist die Ersparnis gegenüber deiner heutigen Anlage ohne Speicher; der Zusatznutzen gegenüber heute zeigt, was die Änderung gegenüber deinem jetzigen Speicher bringt (zum Beispiel 12 statt 7 kWh). Beides rechnet pro Jahr: weniger Strom aus dem Netz zu deinem Strompreis, mehr oder weniger Einspeisung zu deiner Vergütung (Preise aus den Einstellungen oder von den Preis-Sensoren).",
     scnIntro4: "Die Diagramme zeigen dasselbe für viele Speichergrößen auf einmal, die Matrix zusätzlich gegen mehr PV. So siehst du, ab welcher Größe es sich kaum noch lohnt. Mit „Szenario speichern“ hältst du bis zu 5 Varianten fest und vergleichst sie nebeneinander.",
     scnIntro5: "Es ist eine Simulation mit Stundenwerten und damit ein Richtwert, kein Angebot. Die Zeile „Prüfung“ zeigt, wie gut sie deine heutige Anlage trifft.",
@@ -185,6 +185,7 @@ export const T = {
     recPvNoPeak: "PV: ohne die Peaks der Strings in den Einstellungen lässt sich die Größe einer Erweiterung nicht in kWp und Kosten umrechnen.",
     recAssumed: "Annahme, weil kein Preis eingetragen ist: {s} je kWh Speicher und {p} je kWp PV. Trage deine Preise oben ein, die Empfehlung rechnet dann damit.",
     recNote: "Verglichen werden Schritte von deiner heutigen Anlage aus, mit deinen Werten für Leistung und Wirkungsgrad und ohne Zusatzverbrauch. Zusammen wirken Speicher und PV anders als einzeln: Mehr PV macht einen größeren Speicher wertvoller, die Matrix weiter unten zeigt das.",
+    simReset: "Auf meine Anlage zurücksetzen",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -331,7 +332,7 @@ export const T = {
     // explanation in the scenarios tab
     scnIntroTitle: "How the calculator works",
     scnIntro1: "The calculator takes the measured hourly values of your plant (production and consumption of the last months, the range is selectable above) and works out what would have happened if you changed something: another storage, more PV or an additional consumer.",
-    scnIntro2: "The input fields are below, filled with your current values. Change a field and the numbers below recalculate at once. Leave the fields you do not need at 0.",
+    scnIntro2: "The input fields are below, filled with your current values. Change a field and the numbers below recalculate at once. Leave the fields you do not need at 0. “Reset to my plant” puts all fields back to the values of your plant (storage size from the settings, measured power and efficiency) and clears extra consumption, more PV and prices; saved scenarios stay.",
     scnIntro3: "The benefit is the saving against your plant as it is today without a storage; the extra benefit against today shows what the change brings compared with your current storage (for example 12 instead of 7 kWh). Both are calculated per year: less power from the grid at your electricity price, more or less feed-in at your tariff (prices from the settings or the price sensors).",
     scnIntro4: "The charts show the same for many storage sizes at once, the matrix also against more PV. That shows from which size it hardly pays off. With “Save the scenario” you keep up to 5 variants and compare them side by side.",
     scnIntro5: "It is a simulation with hourly values and therefore a guide value, not an offer. The line “Check” shows how well it matches your plant today.",
@@ -371,5 +372,6 @@ export const T = {
     recPvNoPeak: "PV: without the peaks of the strings in the settings the size of an extension cannot be converted into kWp and cost.",
     recAssumed: "Assumption because no price is entered: {s} per kWh of storage and {p} per kWp of PV. Enter your prices above and the recommendation uses them.",
     recNote: "Steps are compared from your plant as it is today, with your values for power and efficiency and without the extra consumption. Storage and PV act differently together than alone: more PV makes a bigger storage more valuable, the matrix further down shows that.",
+    simReset: "Reset to my plant",
   },
 };
