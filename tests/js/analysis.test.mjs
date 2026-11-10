@@ -65,3 +65,40 @@ test("a power limit slows charging and discharging", () => {
   const free = simulateStorage([[10, 0], [0, 10]], 100, 1);
   near(free.feed, 0); near(free.imp, 0);
 });
+
+import * as scenariosTab from "../../custom_components/pv_assistant/frontend/pv-assistant-tab-scenarios.js";
+import { simulateStorage as simulate } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
+
+// two identical days: 4 kWh of production per hour from 10 to 13 o'clock, a consumption of 0.5 kWh in every hour
+function scenarioPart() {
+  scenariosTab.init({ esc: (s) => s, mergedRows: () => [], categoryBarChart: () => {}, localKeyFn: () => () => ({}), simulateStorage: simulate });
+  const part = new scenariosTab.ScenariosPart();
+  const hod = [], hours = [];
+  for (let d = 0; d < 2; d++) for (let h = 0; h < 24; h++) { hod.push(h); hours.push([h >= 10 && h <= 13 ? 4 : 0, 0.5]); }
+  part._scn = { hours, hod, nDays: 2, pImp: 0.3, pFeed: 0.1, peakKwp: 5 };
+  return part;
+}
+const state = { cap: 0, power: 0, eff: 100, price: 0, pv: 0, pvprice: 0, load: 0, from: 10, len: 4 };
+
+test("scenario: an extra load at noon is covered by PV, in the evening it comes from the grid", () => {
+  const part = scenarioPart();
+  const noon = part._simMetrics({ ...state, load: 8, from: 10, len: 4 }); // 2 kWh per hour on top of 0.5, the PV makes 4
+  near(noon.extraPv, 100);
+  near(noon.extraCost / noon.extraYear, 0.1); // PV covers it, so it only costs the feed-in tariff that is lost
+  const evening = part._simMetrics({ ...state, load: 8, from: 18, len: 4 });
+  near(evening.extraPv, 0);
+  assert.ok(evening.extraCost / evening.extraYear > noon.extraCost / noon.extraYear); // a kWh in the evening costs more
+  near(evening.extraCost / evening.extraYear, 0.3); // the grid price
+});
+
+test("scenario: more production raises the benefit, a storage covers the evening", () => {
+  const part = scenarioPart();
+  const plain = part._simMetrics(state);
+  near(plain.benefit, 0);
+  const more = part._simMetrics({ ...state, pv: 50 });
+  assert.ok(more.benefit > 0 && more.feed > plain.feed);
+  const stored = part._simMetrics({ ...state, cap: 5 });
+  assert.ok(stored.benefit > 0 && stored.autarky > plain.autarky);
+  // the investment: 5 kWh at 700 plus 50 % of 5 kWp at 900
+  near(part._simMetrics({ ...state, cap: 5, price: 700, pv: 50, pvprice: 900 }).investment, 5 * 700 + 2.5 * 900);
+});
