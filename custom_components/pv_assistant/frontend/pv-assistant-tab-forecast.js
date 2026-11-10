@@ -172,6 +172,24 @@ export class ForecastPart {
       const mean = dev.reduce((a, v) => a + v, 0) / dev.length;
       const hit = (dev.filter((v) => Math.abs(v) <= 20).length / dev.length) * 100;
       tiles.push([`${mean > 0 ? "+" : ""}${num(mean)} %`, this._t("fcAvgDev")], [`${num(hit, 0)} %`, this._t("fcHit")], [String(fcDays.length), this._t("fcDays")]);
+      // correction factor: what was produced per forecast kWh on the last 30 days, and the forecast of tomorrow corrected with it
+      // (with the factor of the matching size group when there are enough days)
+      const from = Math.max(0, fcDays.length - 30);
+      const ratioOf = (idx) => idx.reduce((a, i) => a + ist[i], 0) / idx.reduce((a, i) => a + fc[i], 0);
+      const recent = fcDays.map((_, i) => i).slice(from);
+      const factor = ratioOf(recent);
+      if (Number.isFinite(factor)) {
+        tiles.push([num(factor, 2), this._t("fcFactor")]);
+        if (fTom != null && fTom > 0 && fcDays.length >= 7) {
+          let f = factor;
+          if (recent.length >= 9) {
+            const order = [...recent].sort((a, b) => fc[a] - fc[b]), size = Math.floor(order.length / 3);
+            const group = fTom <= fc[order[size - 1]] ? order.slice(0, size) : fTom >= fc[order[order.length - size]] ? order.slice(order.length - size) : order.slice(size, order.length - size);
+            if (group.length && Number.isFinite(ratioOf(group))) f = ratioOf(group);
+          }
+          tiles.push([`${num(fTom * f)} kWh`, this._t("fcTomCorr")]);
+        }
+      }
       // forecast quality by size of the forecast: weak, medium and strong forecast days in three equal groups
       const bbox = root.getElementById("fcbbox");
       bbox.hidden = fcDays.length < 9;

@@ -14,11 +14,14 @@ export class EconomicsPart {
     this._moneyOn = !!(E.prod.length && E.feed.length);
     if (!this._moneyOn) { box.replaceChildren(); return; }
     if (!this._mrange) this._mrange = "y12";
-    box.innerHTML = `<div class="filters" id="mranges"></div><div class="tiles" id="mtiles"></div><p class="note" id="mnote"></p>
+    box.innerHTML = `<div class="filters" id="mranges"></div><div class="tiles" id="mtiles"></div><p class="note" id="mnote"></p><ul class="hints" id="mhints"></ul>
       <div id="mben"><h3 class="ch" id="mbenh">${esc(this._t("monBenefit"))}</h3><div class="chart" id="mbenc"></div></div>
       <div id="mcum"><h3 class="ch">${esc(this._t("monCum"))}</h3><div class="chart" id="mcumc"></div></div>
-      <div id="msto"><h3 class="ch" id="mstoh">${esc(this._t("monSto"))}</h3><div class="chart" id="mstoc"></div></div>`;
+      <div id="msto"><h3 class="ch" id="mstoh">${esc(this._t("monSto"))}</h3><div class="chart" id="mstoc"></div></div>
+      <p class="setbar"><button class="setbtn" id="mexport">${esc(this._t("repButton"))}</button><span class="note" id="mexportnote"></span></p>
+      <div id="mprice" hidden><h3 class="ch">${esc(this._t("monPriceHour"))}</h3><div class="chart" id="mpricec"></div><ul class="hints" id="mpricehints"></ul></div>`;
     this._picker(box.querySelector("#mranges"), () => this._mrange, (v) => { this._mrange = v; this._loadMoney(); });
+    box.querySelector("#mexport").addEventListener("click", () => this._exportReport());
   }
 
   async _loadMoney() {
@@ -41,6 +44,51 @@ export class EconomicsPart {
     if (token !== this._mtoken) return;
     this._mdata = { res, dres, filt };
     this._drawMoney();
+    this._loadPriceProfile(token);
+  }
+
+  // average price by time of day over the last 90 days (a dynamic tariff: when is the energy cheap)
+  async _loadPriceProfile(token) {
+    const { G } = this._keys();
+    const box = this._root.getElementById("mprice");
+    if (!box) return;
+    const ids = [G.priceImp, G.priceFeed].filter(Boolean);
+    box.hidden = true;
+    if (!ids.length) return;
+    const end = Date.now();
+    const res = await this._stats(ids, "hour", "mean", {}, { t0: end - 90 * 24 * 3600e3, end });
+    if (token !== this._mtoken) return;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const hf = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: tz });
+    const num = (v, dec = 3) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const profile = (id) => {
+      const sum = Array(24).fill(0), n = Array(24).fill(0);
+      for (const r of res[id] || []) if (r.mean != null) { const h = Number(hf.format(r.start)); sum[h] += r.mean; n[h] += 1; }
+      return n.reduce((a, v) => a + v, 0) >= 24 * 7 ? sum.map((v, h) => (n[h] ? v / n[h] : null)) : null;
+    };
+    const series = [];
+    const imp = G.priceImp ? profile(G.priceImp) : null, feed = G.priceFeed ? profile(G.priceFeed) : null;
+    if (imp) series.push({ name: this._t("balFromGrid"), color: "--pva-grid", values: imp });
+    if (feed) series.push({ name: this._t("feed"), color: "--pva-feed", values: feed });
+    if (!series.length) return;
+    box.hidden = false;
+    const unit = this._hass.states[G.priceImp || G.priceFeed]?.attributes?.unit_of_measurement || "€/kWh";
+    categoryBarChart(this._root.getElementById("mpricec"), {
+      categories: [...Array(24).keys()].map((h) => String(h).padStart(2, "0")), series,
+      fmtValue: (v, axis) => `${num(v, axis ? 2 : 3)}${axis ? "" : ` ${unit}`}`, empty: this._t("noData"),
+      tableLabels: { summary: this._t("table"), time: this._t("time") }, label: this._t("monPriceHour"),
+    });
+    // the cheapest and the most expensive three hours of the grid price
+    const hints = [];
+    if (imp && imp.every((v) => v != null)) {
+      const win = (h) => (imp[h] + imp[(h + 1) % 24] + imp[(h + 2) % 24]) / 3;
+      const hs = [...Array(24).keys()];
+      const lo = hs.reduce((a, h) => (win(h) < win(a) ? h : a), 0), hi = hs.reduce((a, h) => (win(h) > win(a) ? h : a), 0);
+      const span = (h) => `${String(h).padStart(2, "0")}–${String((h + 3) % 24).padStart(2, "0")}`;
+      hints.push(this._t("monPriceCheap").replace("{a}", span(lo)).replace("{pa}", `${num(win(lo))} ${unit}`).replace("{b}", span(hi)).replace("{pb}", `${num(win(hi))} ${unit}`));
+    }
+    this._root.getElementById("mpricehints").innerHTML = hints.map((h) => `<li class="info">${esc(h)}</li>`).join("");
   }
 
   _drawMoney() {
@@ -63,6 +111,7 @@ export class EconomicsPart {
     if (!pImp && !pFeed) {
       hide(true);
       root.getElementById("mtiles").replaceChildren();
+      root.getElementById("mhints").replaceChildren();
       root.getElementById("mnote").textContent = this._t("monNoPrice");
       return;
     }
@@ -171,5 +220,16 @@ export class EconomicsPart {
     }
     if (hasSto && keys.length) tiles.push([eur(keys.reduce((a, k) => a + cur.sto(k), 0), daily ? 2 : 0), this._t("stoBenefit")]);
     root.getElementById("mtiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+    // is self-consumption worth more than feeding in? (current prices, the range scaled to a year)
+    const hints = [];
+    const fedKwh = keys.reduce((a, k) => a + (cur.feed.get(k) || 0), 0);
+    if (pImp && pFeed && keys.length && fedKwh > 0) {
+      if (pImp > pFeed) {
+        const perYear = ((fedKwh / 2) * (pImp - pFeed) * (daily ? 365 : 12)) / keys.length;
+        hints.push(this._t("monSelf").replace("{diff}", num(pImp - pFeed, 3)).replace("{imp}", num(pImp, 3)).replace("{feed}", num(pFeed, 3))
+          .replace("{kwh}", num(fedKwh / 2, 0)).replace("{gain}", num(perYear, 0)));
+      } else hints.push(this._t("monFeedBetter").replace("{feed}", num(pFeed, 3)).replace("{imp}", num(pImp, 3)));
+    }
+    root.getElementById("mhints").innerHTML = hints.map((h) => `<li class="info">${esc(h)}</li>`).join("");
   }
 }

@@ -306,3 +306,31 @@ export function simulateStorage(hours, capacity, efficiency = 0.9) {
   }
   return { imp, feed };
 }
+
+/**
+ * Plants that deliver clearly less than usual compared with the others over the last days.
+ * units = [{ name, spec: Map(day -> kWh/kWp) }]; the share of a plant is its yield divided by the median of all plants on that day.
+ * Returns [{ name, n, pct }]: the mean share of the last n days is pct percent below the usual share (at least 10 days of history).
+ */
+export function suddenDrops(units, recent = 3, threshold = 0.85) {
+  if (units.length < 2) return [];
+  const days = [...new Set(units.flatMap((u) => [...u.spec.keys()]))].sort();
+  const shares = units.map(() => []);
+  for (const day of days) {
+    const values = units.map((u) => u.spec.get(day));
+    if (values.some((v) => v == null)) continue;
+    const sorted = [...values].sort((x, y) => x - y), mid = Math.floor(sorted.length / 2);
+    const med = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    if (med >= 0.5) values.forEach((v, i) => shares[i].push(v / med));
+  }
+  const out = [];
+  shares.forEach((r, i) => {
+    if (r.length < 10) return;
+    const before = [...r.slice(0, -recent)].sort((x, y) => x - y), mid = Math.floor(before.length / 2);
+    const base = before.length % 2 ? before[mid] : (before[mid - 1] + before[mid]) / 2;
+    const now = r.slice(-recent).reduce((acc, v) => acc + v, 0) / recent;
+    if (base > 0 && now < base * threshold) out.push({ name: units[i].name, n: recent, pct: (1 - now / base) * 100 });
+  });
+  return out;
+}
+

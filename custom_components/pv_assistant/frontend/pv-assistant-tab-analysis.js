@@ -2,9 +2,9 @@
 // Part of the panel class: the methods are added to the PVAssistantPanel prototype by pv-assistant-panel.js (so `this` is the
 // panel). Shared helpers are handed over by init(ctx) because the modules are loaded with the ?v=<version> of the panel.
 
-let esc, mergedRows, groupsOf, invertersOf, plantsOf, parsePeriod, MAX_ALL_YEARS, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips;
+let esc, mergedRows, groupsOf, invertersOf, plantsOf, parsePeriod, MAX_ALL_YEARS, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, suddenDrops, sunPosition, estimateClipped, shadingDips;
 export function init(ctx) {
-  ({ esc, mergedRows, groupsOf, invertersOf, plantsOf, parsePeriod, MAX_ALL_YEARS, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, sunPosition, estimateClipped, shadingDips } = ctx);
+  ({ esc, mergedRows, groupsOf, invertersOf, plantsOf, parsePeriod, MAX_ALL_YEARS, localKeyFn, median, plateauDays, heatmap, orientationFactor, expectedYield, suddenDrops, sunPosition, estimateClipped, shadingDips } = ctx);
 }
 
 export class AnalysisPart {
@@ -240,6 +240,14 @@ export class AnalysisPart {
     const { peaked, common, weak } = compareUnits(series, true);
     // inside a plant with several sensors the sensors are compared with each other (e.g. the two strings of one inverter)
     for (const p of series) if (p.members.length > 1) compareUnits(p.members, false);
+    // orientation potential: a plant whose module strings face away from the optimum (south, about 35 degrees) expects less than the best case
+    for (const s of peaked) {
+      if (s.factor && s.factor < 0.93) {
+        const text = this._t("anaOrientPotential").replace("{name}", s.name).replace("{pct}", String(Math.round(s.factor * 100))).replace("{gain}", num((1 / s.factor - 1) * 100, 0));
+        hints.push(text);
+        infoSet.add(text);
+      }
+    }
 
     // string cards
     const sorted = [...series].sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1) || b.kwh - a.kwh);
@@ -407,6 +415,16 @@ export class AnalysisPart {
         if (w.months.length) hints.push(this._t("anaMonthWeak").replace("{name}", my.plants[i].name).replace("{months}", w.months.slice(0, 4).join(", ")).replace("{pct}", num(w.worst, 0)));
       });
     }
+
+    // a sudden drop: a plant that delivers clearly less than usual compared with the others over the last days
+    const perDay = series.filter((x) => x.peak).map((x) => {
+      const kwh = new Map(), hours = new Map();
+      for (const [ts, w] of x.m) { const day = key(ts).day; if (day !== todayKey) { kwh.set(day, (kwh.get(day) || 0) + w / 1000); hours.set(day, (hours.get(day) || 0) + 1); } }
+      const spec = new Map();
+      for (const [day, v] of kwh) if (hours.get(day) >= 20) spec.set(day, v / (x.peak / 1000));
+      return { name: x.name, spec };
+    });
+    for (const drop of suddenDrops(perDay)) hints.push(this._t("anaDropHint").replace("{name}", drop.name).replace("{n}", String(drop.n)).replace("{pct}", num(drop.pct, 0)));
 
     if (d.capped) { const text = this._t("rangeCapped").replace("{n}", String(MAX_ALL_YEARS)); hints.push(text); infoSet.add(text); }
 
