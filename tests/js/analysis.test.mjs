@@ -66,16 +66,16 @@ test("a power limit slows charging and discharging", () => {
   near(free.feed, 0); near(free.imp, 0);
 });
 
-import * as storageTab from "../../custom_components/pv_assistant/frontend/pv-assistant-tab-storage.js";
+import * as scenariosTab from "../../custom_components/pv_assistant/frontend/pv-assistant-tab-scenarios.js";
 import { simulateStorage as simulate } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
 
 // two identical days: 4 kWh of production per hour from 10 to 13 o'clock, a consumption of 0.5 kWh in every hour
 function scenarioPart() {
-  storageTab.init({ esc: (s) => s, mergedRows: () => [], categoryBarChart: () => {}, localKeyFn: () => () => ({}), heatmap: () => {}, simulateStorage: simulate });
-  const part = new storageTab.StoragePart();
+  scenariosTab.init({ esc: (s) => s, mergedRows: () => [], categoryBarChart: () => {}, localKeyFn: () => () => ({}), simulateStorage: simulate });
+  const part = new scenariosTab.ScenariosPart();
   const hod = [], hours = [];
   for (let d = 0; d < 2; d++) for (let h = 0; h < 24; h++) { hod.push(h); hours.push([h >= 10 && h <= 13 ? 4 : 0, 0.5]); }
-  part._ssim = { hours, hod, nDays: 2, pImp: 0.3, pFeed: 0.1, peakKwp: 5 };
+  part._scn = { hours, hod, nDays: 2, pImp: 0.3, pFeed: 0.1, peakKwp: 5 };
   return part;
 }
 const state = { cap: 0, power: 0, eff: 100, price: 0, pv: 0, pvprice: 0, load: 0, from: 10, len: 4 };

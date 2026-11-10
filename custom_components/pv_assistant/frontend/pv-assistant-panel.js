@@ -274,7 +274,7 @@ class PVAssistantPanel extends HTMLElement {
         </style>
         <div class="top"><header><span id="menu"></span><span id="title"></span></header>
         <nav id="tabs" role="tablist"></nav></div>
-        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="plt" role="tabpanel"></div><div id="ana" role="tabpanel"></div><div id="bal" role="tabpanel"></div><div id="con" role="tabpanel"></div><div id="sto" role="tabpanel"></div><div id="mon" role="tabpanel"></div><div id="fcs" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
+        <main><div id="now" role="tabpanel"></div><div id="pwr" role="tabpanel"></div><div id="plt" role="tabpanel"></div><div id="ana" role="tabpanel"></div><div id="bal" role="tabpanel"></div><div id="con" role="tabpanel"></div><div id="scn" role="tabpanel"></div><div id="sto" role="tabpanel"></div><div id="mon" role="tabpanel"></div><div id="fcs" role="tabpanel"></div><div id="hist" role="tabpanel"></div><div id="yearsec" role="tabpanel"></div><div id="setsec" role="tabpanel"></div></main>`;
       const menu = document.createElement("ha-menu-button");
       this._root.getElementById("menu").appendChild(menu);
       this._menu = menu;
@@ -285,7 +285,7 @@ class PVAssistantPanel extends HTMLElement {
       if (w === this._lastW) return;
       this._lastW = w;
       cancelAnimationFrame(this._raf);
-      this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); if (this._tab === "consumption") this._drawConsumption(); if (this._tab === "analysis") this._drawAnalysis(); if (this._tab === "storage") this._drawStorage(); if (this._tab === "forecast") this._drawForecast(); if (this._tab === "power") this._drawPowerChart(); });
+      this._raf = requestAnimationFrame(() => { if (this._tab === "history") this._draw(); if (this._tab === "years") this._drawYears(); if (this._tab === "consumption") this._drawConsumption(); if (this._tab === "scenarios") this._drawScenarios(); if (this._tab === "analysis") this._drawAnalysis(); if (this._tab === "storage") this._drawStorage(); if (this._tab === "forecast") this._drawForecast(); if (this._tab === "power") this._drawPowerChart(); });
     });
     this._ro.observe(this);
     this._timer = setInterval(() => { if (this._hist) this._loadHistory(); if (this._yearsOn && this._tab === "years") this._loadYears(); if (this._tab === "storage") this._loadStorage(); if (this._tab === "forecast") this._loadForecast(); if (this._tab === "power") this._loadPowerChart(); if (this._tab === "power" || this._tab === "settings") this._loadPowerMax(); }, 5 * 60 * 1000);
@@ -317,6 +317,7 @@ class PVAssistantPanel extends HTMLElement {
     this._buildPlants();
     this._buildBalance();
     this._buildConsumption();
+    this._buildScenarios();
     this._buildMoney();
     this._buildAnalysis();
     this._buildStorage();
@@ -436,6 +437,7 @@ class PVAssistantPanel extends HTMLElement {
     if (this._forecastOn) list.push(["forecastTab", "fcs", "forecast"]);
     if (this._moneyOn) list.push(["moneyTab", "mon", "money"]);
     if (this._yearsOn) list.push(["years", "yearsec", "years"]);
+    if (this._scenariosOn) list.push(["scenariosTab", "scn", "scenarios"]);
     if (this._keys().P.prod.length || this._keys().E.prod.length) list.push(["settingsTab", "setsec", "settings"]);
     this._tabs = list;
     let saved = null;
@@ -473,6 +475,7 @@ class PVAssistantPanel extends HTMLElement {
     if (id === "plants") this._loadPlants();
     if (id === "balance") this._loadBalance();
     if (id === "consumption") this._loadConsumption();
+    if (id === "scenarios") this._loadScenarios();
     if (id === "money") { if (!this._mdata) this._loadMoney(); else this._drawMoney(); }
     if (id === "analysis") this._loadAnalysis();
     if (id === "history") this._draw();
@@ -502,6 +505,7 @@ const modulesReady = Promise.all([
   import(`./pv-assistant-tab-plants.js${version}`),
   import(`./pv-assistant-tab-balance.js${version}`),
   import(`./pv-assistant-tab-consumption.js${version}`),
+  import(`./pv-assistant-tab-scenarios.js${version}`),
   import(`./pv-assistant-tab-economics.js${version}`),
   import(`./pv-assistant-tab-analysis.js${version}`),
   import(`./pv-assistant-report.js${version}`),

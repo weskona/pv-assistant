@@ -132,7 +132,7 @@ export const T = {
     repButton: "Monatsbericht als CSV herunterladen", repDone: "{n} Monate exportiert.", repNone: "Keine Daten für den Bericht.",
     repMonth: "Monat", repProd: "Erzeugung (kWh)", repFeed: "Einspeisung (kWh)", repImport: "Netzbezug (kWh)", repHouse: "Verbrauch (kWh)", repStoreIn: "In Speicher (kWh)",
     repStoreOut: "Aus Speicher (kWh)", repDirect: "Direkt verbraucht (kWh)", repSelf: "Eigenverbrauchsquote (%)", repAutarky: "Autarkie (%)", repSavings: "Ersparnis", repRevenue: "Einspeiseerlös", repBenefit: "Nutzen",
-    simTitle: "Szenario-Rechner: Speicher", simCap: "Nutzbare Größe (kWh)", simPower: "Max. Lade- und Entladeleistung (kW, 0 = unbegrenzt)", simEff: "Wirkungsgrad (%)", simPrice: "Preis je kWh Speicher (€, für die Amortisation)",
+    simTitle: "Szenario-Rechner", simCap: "Nutzbare Größe (kWh)", simPower: "Max. Lade- und Entladeleistung (kW, 0 = unbegrenzt)", simEff: "Wirkungsgrad (%)", simPrice: "Preis je kWh Speicher (€, für die Amortisation)",
     simImp: "Netzbezug pro Jahr", simFeed: "Einspeisung pro Jahr", simBen: "Nutzen pro Jahr (gegenüber heute ohne Speicher)", simMarg: "Zusatznutzen der letzten kWh (€ pro Jahr)", simInvest: "Investition", simPayback: "Amortisation", simYears: "{y} Jahre",
     stoSimMarg: "Zusatznutzen je weitere kWh Speicher (€ pro Jahr)",
     simCalib: "Prüfung: gemessener Netzbezug {m} kWh, Simulation mit deiner heutigen Größe {s} kWh ({d} % Abweichung).", simCalibWarn: "Die Abweichung ist größer als 15 %; die Zahlen sind dann nur grobe Richtwerte (Leistungsspitzen, Laden aus dem Netz oder ein anderes Verhalten des Speichers).",
@@ -141,6 +141,7 @@ export const T = {
     simExtraYear: "Zusatzverbrauch pro Jahr", simExtraPv: "davon aus PV und Speicher gedeckt", simExtraCost: "Kosten des Zusatzverbrauchs pro Jahr", simExtraKwh: "Kosten je kWh des Zusatzverbrauchs",
     simMatrixAut: "Autarkie: Speichergröße und mehr Erzeugung", simMatrixBen: "Nutzen pro Jahr (€): Speichergröße und mehr Erzeugung", simMatrixRows: "Speicher (kWh) / PV",
     simNote2: "Mehr Erzeugung skaliert die gemessene Erzeugung, ein Zusatzverbrauch (zum Beispiel Wallbox oder Wärmepumpe) wird gleichmäßig über das Zeitfenster jedes Tages verteilt. Der Nutzen rechnet Speicher und mehr Erzeugung ohne den Zusatzverbrauch, dessen Kosten stehen getrennt. Die Matrix zeigt Speichergröße gegen mehr Erzeugung ohne Zusatzverbrauch; der Rahmen markiert den Rechner. Gespeichert werden bis zu 5 Szenarien im Browser.",
+    scenariosTab: "Szenarien",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -274,7 +275,7 @@ export const T = {
     repButton: "Download the monthly report as CSV", repDone: "{n} months exported.", repNone: "No data for the report.",
     repMonth: "Month", repProd: "Production (kWh)", repFeed: "Feed-in (kWh)", repImport: "Grid import (kWh)", repHouse: "Consumption (kWh)", repStoreIn: "Into storage (kWh)",
     repStoreOut: "From storage (kWh)", repDirect: "Used directly (kWh)", repSelf: "Self-consumption rate (%)", repAutarky: "Self-sufficiency (%)", repSavings: "Savings", repRevenue: "Feed-in revenue", repBenefit: "Benefit",
-    simTitle: "Scenario calculator: storage", simCap: "Usable size (kWh)", simPower: "Max. charge and discharge power (kW, 0 = unlimited)", simEff: "Efficiency (%)", simPrice: "Price per kWh of storage (€, for the payback)",
+    simTitle: "Scenario calculator", simCap: "Usable size (kWh)", simPower: "Max. charge and discharge power (kW, 0 = unlimited)", simEff: "Efficiency (%)", simPrice: "Price per kWh of storage (€, for the payback)",
     simImp: "Grid import per year", simFeed: "Feed-in per year", simBen: "Benefit per year (compared with today without a storage)", simMarg: "Extra benefit of the last kWh (€ per year)", simInvest: "Investment", simPayback: "Payback", simYears: "{y} years",
     stoSimMarg: "Extra benefit per further kWh of storage (€ per year)",
     simCalib: "Check: measured grid import {m} kWh, simulation with your current size {s} kWh ({d} % deviation).", simCalibWarn: "The deviation is larger than 15 %; the numbers are then only rough guide values (power peaks, charging from the grid or a different behavior of the storage).",
@@ -283,5 +284,6 @@ export const T = {
     simExtraYear: "Extra consumption per year", simExtraPv: "of it covered by PV and storage", simExtraCost: "Cost of the extra consumption per year", simExtraKwh: "Cost per kWh of the extra consumption",
     simMatrixAut: "Self-sufficiency: storage size and more production", simMatrixBen: "Benefit per year (€): storage size and more production", simMatrixRows: "Storage (kWh) / PV",
     simNote2: "More production scales the measured production, an extra consumption (for example a wallbox or a heat pump) is spread evenly over the time window of every day. The benefit counts storage and more production without the extra consumption, whose cost is shown separately. The matrix shows storage size against more production without the extra consumption; the frame marks the calculator. Up to 5 scenarios are saved in the browser.",
+    scenariosTab: "Scenarios",
   },
 };
