@@ -181,6 +181,18 @@
       },
       "forecast_reached_today": {
         "name": "Forecast reached today"
+      },
+      "pv_surplus_power": {
+        "name": "PV surplus power"
+      },
+      "storage_empty_at": {
+        "name": "Storage empty at"
+      },
+      "expected_feed_in_tomorrow": {
+        "name": "Expected feed-in tomorrow"
+      },
+      "best_window_tomorrow": {
+        "name": "Best window tomorrow"
       }
     }
   }

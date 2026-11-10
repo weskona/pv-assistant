@@ -20,6 +20,10 @@ The integration creates sensors that you can use in automations, templates and d
 | Savings today, Feed-in revenue today, Benefit today | currency | feed-in energy sensor and prices (price sensors or the settings) |
 | Storage usable energy | kWh | battery level sensor, storage capacity and minimum level in the settings |
 | Forecast reached today | % | forecast-today sensors and production energy sensors |
+| PV surplus power | W | feed-in power sensor (and storage charging power if there is one): what the house does not use, for automations (attribute `charging_power`) |
+| Storage empty at | time | battery level sensor, storage capacity in the settings and a storage discharge power sensor: when the storage is empty at the current discharge power (unknown while it does not discharge) |
+| Expected feed-in tomorrow | kWh | production and feed-in energy sensors and forecast-tomorrow sensors: the forecast times the share of the production that was fed in over the last days (attribute `days`) |
+| Best window tomorrow | time | production energy sensors and forecast-tomorrow sensors: the start of the best three hours of tomorrow from the forecast and the typical course of the day of the last days (attributes `end`, `energy`, `days`); needs at least three days of history |
 
 The values of the day are counted from the value of the counters at midnight (stored, so a restart keeps them); the filtered copies are used where they exist. A counter that falls clearly below its start value counts as reset. Plant sensors follow the settings: when you save the plants in the panel, new plants get their sensors and plants that no longer exist become unavailable. The entity id keeps the name it had when it was created; rename it in Home Assistant if you want a different id.
 
@@ -29,6 +33,7 @@ The values of the day are counted from the value of the counters at midnight (st
 ### Stored data
 - `.storage/pv_assistant.settings`: names, peak, orientation, tilt and plant values
 - `.storage/pv_assistant.daily`: the start values of the energy counters of the current day (for the daily sensors)
+- `.storage/pv_assistant.history`: production and feed-in of the last days and the production of every hour (for the expected feed-in and the best window of tomorrow)
 - Forecast log (last forecast per day, up to 800 days) in the same file
 
 ### Websocket commands (panel)
@@ -57,6 +62,10 @@ Die Integration legt Sensoren an, die du in Automationen, Templates und Dashboar
 | Ersparnis heute, Einspeiseerlös heute, Nutzen heute | Währung | Einspeise-Energiesensor und Preise (Preis-Sensoren oder Einstellungen) |
 | Speicher nutzbare Energie | kWh | Ladestand-Sensor, Speicherkapazität und Mindest-Ladestand in den Einstellungen |
 | Prognose erreicht heute | % | Prognose-heute-Sensoren und Erzeugungs-Energiesensoren |
+| PV-Überschuss | W | Einspeise-Leistungssensor (und Lade-Leistung des Speichers, falls vorhanden): was das Haus nicht verbraucht, für Automationen (Attribut `charging_power`) |
+| Speicher leer um | Zeit | Ladestand-Sensor, Speicherkapazität in den Einstellungen und ein Entlade-Leistungssensor: wann der Speicher bei der aktuellen Entladeleistung leer ist (unbekannt, solange er nicht entlädt) |
+| Erwartete Einspeisung morgen | kWh | Erzeugungs- und Einspeise-Energiesensoren und Prognose-morgen-Sensoren: die Prognose mal dem Anteil der Erzeugung, der in den letzten Tagen eingespeist wurde (Attribut `days`) |
+| Bestes Fenster morgen | Zeit | Erzeugungs-Energiesensoren und Prognose-morgen-Sensoren: Beginn der besten drei Stunden von morgen aus der Prognose und dem typischen Tagesverlauf der letzten Tage (Attribute `end`, `energy`, `days`); braucht mindestens drei Tage Verlauf |
 
 Die Tageswerte werden ab dem Wert der Zähler um Mitternacht gezählt (gespeichert, ein Neustart behält sie); wo es bereinigte Kopien gibt, werden diese verwendet. Ein Zähler, der deutlich unter seinen Startwert fällt, gilt als zurückgesetzt. Die Anlagen-Sensoren folgen den Einstellungen: Speicherst du die Anlagen im Panel, bekommen neue Anlagen ihre Sensoren, und nicht mehr vorhandene Anlagen werden nicht verfügbar. Die Entity-ID behält den Namen, den sie bei der Erstellung hatte; benenne sie in Home Assistant um, wenn du eine andere ID möchtest.
 
@@ -66,6 +75,7 @@ Die Tageswerte werden ab dem Wert der Zähler um Mitternacht gezählt (gespeiche
 ### Gespeicherte Daten
 - `.storage/pv_assistant.settings`: Namen, Peak, Ausrichtung, Neigung und Anlagenwerte
 - `.storage/pv_assistant.daily`: die Startwerte der Energiezähler des aktuellen Tages (für die Tages-Sensoren)
+- `.storage/pv_assistant.history`: Erzeugung und Einspeisung der letzten Tage und die Erzeugung jeder Stunde (für die erwartete Einspeisung und das beste Fenster von morgen)
 - Prognose-Protokoll (letzte Prognose je Tag, bis zu 800 Tage) in derselben Datei
 
 ### Websocket-Befehle (Panel)

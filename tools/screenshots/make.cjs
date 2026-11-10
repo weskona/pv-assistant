@@ -30,6 +30,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewp
 </style></head><body></body></html>`;
 
 (async () => {
+  const written = [];
   const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
   for (const lang of ["en", "de"]) {
     const context = await browser.newContext({ viewport: MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 900 }, deviceScaleFactor: MOBILE ? 2 : 1, isMobile: MOBILE, hasTouch: MOBILE, locale: lang === "de" ? "de-DE" : "en-GB", timezoneId: "Europe/Berlin" });
@@ -76,6 +77,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewp
       await page.waitForTimeout(id === "now" ? 1800 : 900); // charts draw, the flow animation runs
       const file = path.join(outDir, lang, `${String(n).padStart(2, "0")}-${FILE_NAMES[id] || id}.png`);
       await page.screenshot({ path: file, fullPage: true });
+      written.push(file);
       console.log(lang, file);
     }
     if (errors.length) console.log(`${lang}: errors\n${[...new Set(errors)].join("\n")}`);
@@ -83,5 +85,5 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewp
   }
   await browser.close();
   // palette images are a fraction of the size and look the same for flat dark UIs
-  try { execFileSync("python3", ["-I", path.join(__dirname, "optimize.py"), outDir], { stdio: "inherit" }); } catch (e) { console.log("optimize.py skipped"); }
+  try { execFileSync("python3", ["-I", path.join(__dirname, "optimize.py"), outDir, ...written], { stdio: "inherit" }); } catch (e) { console.log("optimize.py skipped"); }
 })();

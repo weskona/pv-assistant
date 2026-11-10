@@ -71,6 +71,7 @@ Needs production energy sensors and at least one of feed-in, grid import or stor
 Only visible with storage sensors or a battery level.
 - Key figures: level now, charged, discharged, efficiency, **storage benefit** and **storage losses** in kWh and € (with prices), cycles (with storage capacity), maximum charge and discharge power, level min–max, average level; a hint appears if the efficiency fell clearly over the months
 - Charts: level, storage power (from storage +, into storage −, per device), charged and discharged energy; in long ranges also benefit and losses per month in € and the efficiency per month; the distribution of the level (share of the time per 10 % band)
+- Cycles per month (long ranges), the **level by time of day** as a heat map (when is the storage empty in the evening; one row per day or month) and a **what-if simulation**: self-sufficiency and the extra benefit per year for other usable storage sizes (★ = your size), calculated from the hourly values of the last 30 days to 12 months with the measured efficiency; needs the production, the house consumption (or grid import and feed-in) as energy sensors. A guide value, not an offer
 
 ### Forecast
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/08-forecast.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/en/08-forecast.png" alt="Forecast" width="720"></a>
@@ -175,6 +176,7 @@ Braucht Erzeugungs-Energiesensoren und mindestens einen von Einspeisung, Netzbez
 Nur sichtbar mit Speichersensoren oder Ladestand.
 - Kennzahlen: Ladestand jetzt, geladen, entladen, Wirkungsgrad, **Speicher-Nutzen** und **Speicherverluste** in kWh und € (mit Preisen), Zyklen (mit Speicherkapazität), maximale Lade- und Entladeleistung, Ladestand min–max, Ø Ladestand; ein Hinweis erscheint, wenn der Wirkungsgrad über die Monate deutlich gesunken ist
 - Diagramme: Ladestand, Speicherleistung (aus Speicher +, in Speicher −, je Gerät), geladene und entladene Energie; in langen Zeiträumen außerdem Nutzen und Verluste je Monat in € und der Wirkungsgrad je Monat; die Verteilung des Ladestands (Anteil der Zeit je 10-%-Stufe)
+- Zyklen je Monat (lange Zeiträume), der **Ladestand nach Uhrzeit** als Heatmap (wann ist der Speicher abends leer; eine Zeile je Tag oder Monat) und eine **Was-wäre-wenn-Simulation**: Autarkie und zusätzlicher Nutzen pro Jahr für andere nutzbare Speichergrößen (★ = deine Größe), berechnet aus den Stundenwerten der letzten 30 Tage bis 12 Monate mit dem gemessenen Wirkungsgrad; braucht Erzeugung und Hausverbrauch (oder Netzbezug und Einspeisung) als Energiesensoren. Ein Richtwert, kein Angebot
 
 ### Prognose
 <a href="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/08-forecast.png"><img src="https://raw.githubusercontent.com/weskona/pv-assistant/main/docs/screenshots/de/08-forecast.png" alt="Prognose" width="720"></a>

@@ -181,6 +181,18 @@
       },
       "forecast_reached_today": {
         "name": "Prognose erreicht heute"
+      },
+      "pv_surplus_power": {
+        "name": "PV-Überschuss"
+      },
+      "storage_empty_at": {
+        "name": "Speicher leer um"
+      },
+      "expected_feed_in_tomorrow": {
+        "name": "Erwartete Einspeisung morgen"
+      },
+      "best_window_tomorrow": {
+        "name": "Bestes Fenster morgen"
       }
     }
   }

@@ -2,9 +2,9 @@
 // Part of the panel class: the methods are added to the PVAssistantPanel prototype by pv-assistant-panel.js (so `this` is the
 // panel). Shared helpers are handed over by init(ctx) because the modules are loaded with the ?v=<version> of the panel.
 
-let esc, mergedRows, lineChart, barChart, categoryBarChart;
+let esc, mergedRows, lineChart, barChart, categoryBarChart, localKeyFn, heatmap, simulateStorage;
 export function init(ctx) {
-  ({ esc, mergedRows, lineChart, barChart, categoryBarChart } = ctx);
+  ({ esc, mergedRows, lineChart, barChart, categoryBarChart, localKeyFn, heatmap, simulateStorage } = ctx);
 }
 
 export class StoragePart {
@@ -20,7 +20,12 @@ export class StoragePart {
       <h3 class="ch" id="sopowh">${esc(this._t("stoPower"))} (W)</h3><div class="chart" id="sopow"></div>` : ""}${has(E) ? `
       <h3 class="ch">${esc(this._t("stoEnergy"))} (kWh)</h3><div class="chart" id="soen"></div>` : ""}${has(E) ? `
       <div id="sobenbox"><h3 class="ch">${esc(this._t("stoBenChart"))}</h3><div class="chart" id="soben"></div></div>
-      <div id="soeffbox"><h3 class="ch">${esc(this._t("stoEffChart"))}</h3><div class="chart" id="soeff"></div></div>` : ""}${G.soc.length ? `
+      <div id="soeffbox"><h3 class="ch">${esc(this._t("stoEffChart"))}</h3><div class="chart" id="soeff"></div></div>
+      <div id="socycbox"><h3 class="ch">${esc(this._t("stoCycChart"))}</h3><div class="chart" id="socyc"></div></div>` : ""}${G.soc.length ? `
+      <div id="soheatbox"><h3 class="ch" id="soheath">${esc(this._t("stoHeat"))}</h3><div class="chart" id="soheat"></div></div>` : ""}${has(E) && E.prod.length ? `
+      <div id="sosimbox"><h3 class="ch">${esc(this._t("stoSimAut"))}</h3><div class="chart" id="sosimaut"></div>
+      <div id="sosimbenbox"><h3 class="ch">${esc(this._t("stoSimBen"))}</h3><div class="chart" id="sosimben"></div></div>
+      <p class="note" id="sosimnote"></p></div>` : ""}${G.soc.length ? `
       <h3 class="ch">${esc(this._t("stoSocHist"))}</h3><div class="chart" id="sosochist"></div>` : ""}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
@@ -49,6 +54,99 @@ export class StoragePart {
     if (token !== this._stoken) return;
     this._sdata = { rd, pres, eres, filt, smax, smin, pmax, pmin };
     this._drawStorage();
+    this._loadStorageDeep(rd, token);
+  }
+
+  // hourly values for the level heat map and the what-if simulation: the range, at least 30 days, at most the last 12 months
+  async _loadStorageDeep(rd, token) {
+    if (!this._root.getElementById("soheatbox") && !this._root.getElementById("sosimbox")) return;
+    const { E, G } = this._keys();
+    const day = 24 * 3600e3, end = rd.end;
+    const t0 = Math.max(Math.min(rd.t0, end - 30 * day), end - 365 * day);
+    const filt = this._cfg.filtered || {};
+    const ids = [...E.prod, ...E.feed, ...E.sin, ...E.sout, ...E.comb, ...G.impE, ...G.houseE];
+    const [eres, sres] = await Promise.all([
+      this._stats(ids.concat(ids.map((i) => filt[i]).filter(Boolean)), "hour", "change", { energy: "kWh" }, { t0, end }),
+      this._stats(G.soc, "hour", "mean", {}, { t0, end }),
+    ]);
+    if (token !== this._stoken) return;
+    this._sdeep = { t0, end, eres, sres, filt };
+    this._drawStorageDeep();
+  }
+
+  _drawStorageDeep() {
+    const d = this._sdeep;
+    const root = this._root;
+    if (!d || !root.getElementById("sranges")) return;
+    const { E, G } = this._keys();
+    const { t0, end, eres, sres, filt } = d;
+    const lang = this._hass.locale?.language || this._hass.language;
+    const tz = this._hass.config?.time_zone;
+    const num = (v, dec = 1) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const nDays = Math.max(1, Math.round((end - t0) / (24 * 3600e3)));
+    const key = localKeyFn(tz);
+    const tl = { summary: this._t("table"), time: this._t("time") };
+    // level by time of day: one row per day (up to 45 days) or per month
+    const heatBox = root.getElementById("soheat");
+    if (heatBox && G.soc.length) {
+      const perMonth = nDays > 45;
+      const rows = new Map(); // row -> {sum[24], n[24]}
+      for (const r of mergedRows(sres, G.soc[0], filt, "mean")) {
+        const k = key(r.start);
+        const row = perMonth ? k.day.slice(0, 7) : k.day;
+        if (!rows.has(row)) rows.set(row, { sum: Array(24).fill(0), n: Array(24).fill(0) });
+        const c = rows.get(row); c.sum[k.hour] += r.mean; c.n[k.hour] += 1;
+      }
+      const label = (row) => (perMonth ? new Intl.DateTimeFormat(lang, { month: "short", year: "2-digit" }).format(new Date(Number(row.slice(0, 4)), Number(row.slice(5, 7)) - 1, 15))
+        : new Intl.DateTimeFormat(lang, { day: "numeric", month: "numeric" }).format(new Date(Number(row.slice(0, 4)), Number(row.slice(5, 7)) - 1, Number(row.slice(8, 10)))));
+      root.getElementById("soheath").textContent = this._t("stoHeatDays").replace("{n}", String(nDays));
+      heatmap(heatBox, {
+        days: [...rows.keys()].sort().map((row) => ({ label: label(row), cells: rows.get(row).sum.map((v, h) => (rows.get(row).n[h] ? v / rows.get(row).n[h] : 0)) })),
+        colorVar: "--pva-bout", fmt: (v) => `${num(v, 0)} %`, hourLabel: (h) => `${String(h).padStart(2, "0")}:00`, empty: this._t("noData"), label: this._t("stoHeat"),
+      });
+    }
+    // what-if: the same hours with a storage of another size
+    const simBox = root.getElementById("sosimbox");
+    if (!simBox) return;
+    const flip = (inv) => (v) => (inv ? -v : v), nz = (v) => Math.max(v, 0);
+    const sumMap = (ids, fn = (v) => v) => {
+      const m = new Map();
+      for (const id of ids) for (const r of mergedRows(eres, id, filt, "change")) m.set(r.start, (m.get(r.start) || 0) + fn(r.change));
+      return m;
+    };
+    const prod = sumMap(E.prod), feed = sumMap(E.feed), imp = sumMap(G.impE), house = sumMap(G.houseE);
+    const sIn = new Map(sumMap(E.sin)), sOut = new Map(sumMap(E.sout));
+    for (const [ts, v] of sumMap(E.comb, (x) => nz(-flip(E.inv)(x)))) sIn.set(ts, (sIn.get(ts) || 0) + v);
+    for (const [ts, v] of sumMap(E.comb, (x) => nz(flip(E.inv)(x)))) sOut.set(ts, (sOut.get(ts) || 0) + v);
+    const haveLoad = G.houseE.length || (G.impE.length && E.feed.length);
+    const keys = [...prod.keys()].sort((a, b) => a - b);
+    // the consumption of an hour: the house sensor, otherwise what the energy balance says
+    const hours = keys.map((ts) => [prod.get(ts) || 0, G.houseE.length ? house.get(ts) || 0 : Math.max(0, (prod.get(ts) || 0) + (imp.get(ts) || 0) + (sOut.get(ts) || 0) - (feed.get(ts) || 0) - (sIn.get(ts) || 0))]);
+    simBox.hidden = !(haveLoad && hours.length >= 24 * 7);
+    if (simBox.hidden) return;
+    const gen = this._cfg.settings?.general || {};
+    const cap = gen.storage_capacity_kwh > 0 ? gen.storage_capacity_kwh : 0, minSoc = gen.battery_min_soc > 0 ? Math.min(gen.battery_min_soc, 100) : 0;
+    const usableNow = cap * (1 - minSoc / 100);
+    const tIn = [...sIn.values()].reduce((a, v) => a + v, 0), tOut = [...sOut.values()].reduce((a, v) => a + v, 0);
+    const eff = tIn > 20 && tOut > 0 ? Math.min(0.98, Math.max(0.7, tOut / tIn)) : 0.9;
+    const sizes = [...new Set([0, 2.5, 5, 7.5, 10, 12.5, 15, 20, 30, ...(usableNow > 0 ? [Math.round(usableNow * 10) / 10] : [])])].filter((c) => c <= Math.max(30, usableNow * 2)).sort((a, b) => a - b);
+    const load = hours.reduce((a, [, h]) => a + h, 0);
+    const results = sizes.map((c) => ({ c, ...simulateStorage(hours, c, eff) }));
+    const scale = nDays < 330 ? 365 / nDays : 1;
+    const numOf = (id) => { const v = parseFloat(this._hass.states[id]?.state); return Number.isNaN(v) ? null : v; };
+    const pImp = (G.priceImp && numOf(G.priceImp)) || gen.price_import || null, pFeed = (G.priceFeed && numOf(G.priceFeed)) || gen.price_feed_in || null;
+    const cats = sizes.map((c) => `${num(c, 1)}${usableNow > 0 && Math.abs(c - usableNow) < 0.06 ? " ★" : ""}`);
+    categoryBarChart(root.getElementById("sosimaut"), {
+      categories: cats, series: [{ name: this._t("autarky"), color: "--pva-pos", values: results.map((r) => (load > 0 ? (1 - r.imp / load) * 100 : null)) }],
+      fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: { ...tl, time: "kWh" }, label: this._t("stoSimAut"),
+    });
+    const benBox = root.getElementById("sosimbenbox");
+    benBox.hidden = !pImp;
+    if (pImp) categoryBarChart(root.getElementById("sosimben"), {
+      categories: cats, series: [{ name: this._t("stoSimBen"), color: "--pva-bout", values: results.map((r) => ((results[0].imp - r.imp) * pImp - (results[0].feed - r.feed) * (pFeed || 0)) * scale) }],
+      fmtValue: (v, axis) => `${num(v, axis ? 0 : 0)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: { ...tl, time: "kWh" }, label: this._t("stoSimBen"),
+    });
+    root.getElementById("sosimnote").textContent = this._t("stoSimNote").replace("{n}", String(nDays)).replace("{eff}", num(eff * 100, 0));
   }
 
   _drawStorage() {
@@ -247,6 +345,17 @@ export class StoragePart {
         categories, series: [{ name: this._t("storEff"), color: "--pva-bout", values: toArr(effs) }],
         fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: timeLabels, label: this._t("stoEffChart"),
       });
+    }
+    const cycBox = root.getElementById("socycbox");
+    if (cycBox) {
+      cycBox.hidden = !(rd.long && usable > 0 && tIn > 0);
+      if (!cycBox.hidden) {
+        const { categories, toArr } = this._monthAxis(rd, tz, fMon);
+        categoryBarChart(root.getElementById("socyc"), {
+          categories, series: [{ name: this._t("cycles"), color: "--pva-bin", values: toArr(new Map([...eIn].map(([ts, v]) => [ts, v / usable]))) }],
+          fmtValue: (v, axis) => `${num(v, 1)}${axis ? "" : ""}`, empty: this._t("noData"), tableLabels: timeLabels, label: this._t("stoCycChart"),
+        });
+      }
     }
     const histBox = root.getElementById("sosochist");
     if (histBox) {

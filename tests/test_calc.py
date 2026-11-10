@@ -1,10 +1,13 @@
 import custom_components.pv_assistant  # noqa: F401
 import custom_components.pv_assistant.config_flow  # noqa: F401
+from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant import config_entries
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.util import dt as dt_util
 from custom_components.pv_assistant.config_flow import PVAssistantConfigFlow
+from custom_components.pv_assistant.insight import best_window, feed_in_share, hourly_profile
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 DOMAIN = "pv_assistant"
@@ -108,4 +111,88 @@ async def test_rollover_and_reset(hass):
     # unavailable counter keeps the plausible value away: the sensor goes unknown instead of wrong
     hass.states.async_set("sensor.e_prod", "unavailable")
     await hass.async_block_till_done()
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+# ---------------------------------------------------------------- look-ahead sensors (insight.py)
+
+def test_profile_and_best_window():
+    shape = [0.0] * 6 + [1, 2, 4, 6, 7, 9, 9, 8, 6, 4, 2, 1] + [0.0] * 6  # 06:00 ... 17:00
+    hours = {f"2026-06-{d:02d}": [v * (1 + d % 3) for v in shape] for d in range(1, 8)}
+    assert hourly_profile(hours, "2026-06-01") is None  # no complete past day
+    profile, days = hourly_profile(hours, "2026-06-08")
+    assert days == 7 and abs(sum(profile) - 1) < 1e-9 and profile[0] == 0
+    start, energy = best_window(profile, 30.0)
+    assert start == 11  # the hours 11, 12 and 13 hold 9 + 9 + 8 of the units of the day (10 to 12 would be 7 + 9 + 9)
+    assert abs(energy - 30.0 * (9 + 9 + 8) / sum(shape)) < 1e-9
+    assert hourly_profile({"2026-06-01": [1.0] * 24, "2026-06-02": [1.0] * 24}, "2026-06-08") is None  # only two days
+
+
+def test_feed_in_share():
+    days = {"2026-06-01": {"production": 20.0, "feed_in": 5.0}, "2026-06-02": {"production": 10.0, "feed_in": 5.0}, "2026-06-03": {"production": 0.0, "feed_in": 0.0}}
+    share, n = feed_in_share(days, "2026-06-10")
+    assert n == 2 and abs(share - 10 / 30) < 1e-9
+    assert feed_in_share({}, "2026-06-10") is None
+
+
+async def test_surplus_and_storage_empty(hass):
+    put(hass, "sensor.feed_p", -1500, "W"); put(hass, "sensor.chg", 700, "W"); put(hass, "sensor.dis", 0, "W")
+    put(hass, "sensor.soc", 50, "%")
+    put(hass, "sensor.e_prod", 100, "kWh"); put(hass, "sensor.feed", 40, "kWh")
+    data = {
+        "production_energy_sensors": ["sensor.e_prod"], "feed_in_energy_sensor": "sensor.feed",
+        "feed_in_power_sensor": "sensor.feed_p", "invert_feed_in_power": True,
+        "storage_in_power_sensors": ["sensor.chg"], "storage_out_power_sensors": ["sensor.dis"], "battery_soc_sensor": "sensor.soc",
+    }
+    entry = await setup(hass, data)
+    hass.data[DOMAIN]["settings"] = {"general": {"storage_capacity_kwh": 10, "battery_min_soc": 10}}
+    async_dispatcher_send(hass, f"{DOMAIN}_settings_updated")
+    await hass.async_block_till_done()
+    surplus = val(hass, "pv_surplus_power")
+    assert float(surplus.state) == 2200 and surplus.attributes["charging_power"] == 700  # fed in 1500 + charging 700
+    assert val(hass, "storage_empty_at").state == "unknown"  # not discharging
+    put(hass, "sensor.chg", 0, "W"); put(hass, "sensor.dis", 2000, "W")
+    await hass.async_block_till_done()
+    empty = dt_util.parse_datetime(val(hass, "storage_empty_at").state)
+    # usable 10 kWh x (50 - 10) % = 4 kWh at 2 kW: 2 hours
+    assert abs((empty - dt_util.utcnow()).total_seconds() - 7200) < 60
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_history_and_tomorrow_sensors(hass):
+    put(hass, "sensor.e_prod", 100, "kWh"); put(hass, "sensor.feed", 40, "kWh"); put(hass, "sensor.fc_tom", 30, "kWh")
+    data = {"production_energy_sensors": ["sensor.e_prod"], "feed_in_energy_sensor": "sensor.feed", "forecast_tomorrow_energy_sensors": ["sensor.fc_tom"]}
+    entry = await setup(hass, data)
+    history = hass.data[DOMAIN]["history"]
+    assert val(hass, "expected_feed_in_tomorrow").state == "unknown" and val(hass, "best_window_tomorrow").state == "unknown"
+    # a day ends: production 10, feed-in 4 -> 40 % is fed in
+    counters = hass.data[DOMAIN]["daily"]
+    put(hass, "sensor.e_prod", 110, "kWh"); put(hass, "sensor.feed", 44, "kWh")
+    await hass.async_block_till_done()  # the filtered copies follow
+    counters._date = (dt_util.now().date() - timedelta(days=1)).isoformat()
+    counters.midnight(None)
+    await hass.async_block_till_done()
+    yesterday = (dt_util.now().date() - timedelta(days=1)).isoformat()
+    assert history.days[yesterday] == {"production": 10.0, "feed_in": 4.0}
+    assert abs(float(val(hass, "expected_feed_in_tomorrow").state) - 30 * 0.4) < 0.01
+    # hours: the energy of the hour that just ended is stored under that hour
+    t = dt_util.now().replace(minute=0, second=10, microsecond=0)
+    put(hass, "sensor.e_prod", 110, "kWh")
+    await hass.async_block_till_done()
+    history.hour_mark(t - timedelta(hours=1))
+    put(hass, "sensor.e_prod", 112.5, "kWh")
+    await hass.async_block_till_done()
+    history.hour_mark(t)
+    ended = t - timedelta(hours=1)
+    assert history.hours[ended.strftime("%Y-%m-%d")][ended.hour] == 2.5
+    # three days of hours make a profile: the best window is where the production was
+    for k in range(1, 4):
+        day = (dt_util.now().date() - timedelta(days=k)).isoformat()
+        history.hours[day] = [0.0] * 8 + [1, 3, 5, 5, 3, 1] + [0.0] * 10
+    history._save()
+    async_dispatcher_send(hass, "pv_assistant_history_updated")
+    await hass.async_block_till_done()
+    window = val(hass, "best_window_tomorrow")
+    start = dt_util.as_local(dt_util.parse_datetime(window.state))
+    assert start.hour == 9 and window.attributes["days"] >= 3  # the hours 9, 10 and 11 hold 3 + 5 + 5 units (the peak of the day)
     assert await hass.config_entries.async_unload(entry.entry_id)

@@ -282,3 +282,27 @@ export function shadingDips(m, maxW, groups, lat, lon, key) {
   }
   return out;
 }
+
+/**
+ * What-if for a storage: hours = [[production, consumption] ...] in kWh, capacity = usable kWh, efficiency = round trip (0..1).
+ * The surplus of an hour charges the storage, the deficit is drawn from it; the rest is fed in or bought. The storage starts empty,
+ * has no power limit and works on whole hours, so the result is a guide value.
+ */
+export function simulateStorage(hours, capacity, efficiency = 0.9) {
+  const eta = Math.sqrt(efficiency); // the loss is split evenly between charging and discharging
+  let soc = 0, imp = 0, feed = 0;
+  for (const [production, consumption] of hours) {
+    const net = production - consumption;
+    if (net >= 0) {
+      const charge = capacity > 0 ? Math.min(net, (capacity - soc) / eta) : 0;
+      soc += charge * eta;
+      feed += net - charge;
+    } else {
+      const need = -net;
+      const give = Math.min(need, soc * eta);
+      soc -= give / eta;
+      imp += need - give;
+    }
+  }
+  return { imp, feed };
+}
