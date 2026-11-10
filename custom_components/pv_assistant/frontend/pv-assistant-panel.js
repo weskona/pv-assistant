@@ -217,6 +217,9 @@ class PVAssistantPanel extends HTMLElement {
           .setrow .hint { grid-column:2; color:var(--secondary-text-color); font-size:.85em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
           .setsub { margin:14px 0 2px; font-weight:600; }
           .setgh { margin-bottom:8px; color:var(--secondary-text-color); font-size:.85em; }
+          .scnlist { margin:6px 0 0; padding-left:20px; color:var(--g-text); } .scnlist li { margin:6px 0; }
+          dl.scnterms { margin:6px 0 0; } dl.scnterms dt { font-weight:600; margin-top:10px; } dl.scnterms dd { margin:2px 0 0; color:var(--g-muted); }
+          details.scnhelp { margin-bottom:10px; }
           .setgroup { border:1px solid var(--g-line); border-radius:16px; padding:10px 14px; margin:8px 0; }
           .setgroup .ghead { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
           .setgroup .gtitle { font-weight:600; }
