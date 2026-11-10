@@ -336,3 +336,26 @@ export function suddenDrops(units, recent = 3, threshold = 0.85) {
   return out;
 }
 
+/**
+ * The option with the shortest payback: options = [{ gain (per year), invest, ... }]. Options that bring nothing or cost nothing
+ * are ignored; returns { ...option, payback } or null.
+ */
+export function bestPayback(options) {
+  let best = null;
+  for (const o of options) {
+    if (!(o.gain > 0) || !(o.invest > 0)) continue;
+    const payback = o.invest / o.gain;
+    if (!best || payback < best.payback) best = { ...o, payback };
+  }
+  return best;
+}
+
+/** "storage", "pv" or "none": the better of two best options by payback; an option over `limit` years does not count. */
+export function recommend(storage, pv, limit = 25) {
+  const ok = (o) => o && o.payback <= limit;
+  if (ok(storage) && ok(pv)) return pv.payback < storage.payback ? "pv" : "storage";
+  if (ok(storage)) return "storage";
+  if (ok(pv)) return "pv";
+  return "none";
+}
+
