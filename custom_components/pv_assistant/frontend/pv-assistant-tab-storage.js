@@ -23,13 +23,27 @@ export class StoragePart {
       <div id="soeffbox"><h3 class="ch">${esc(this._t("stoEffChart"))}</h3><div class="chart" id="soeff"></div></div>
       <div id="socycbox"><h3 class="ch">${esc(this._t("stoCycChart"))}</h3><div class="chart" id="socyc"></div></div>` : ""}${G.soc.length ? `
       <div id="soheatbox"><h3 class="ch" id="soheath">${esc(this._t("stoHeat"))}</h3><div class="chart" id="soheat"></div></div>` : ""}${has(E) && E.prod.length ? `
-      <div id="sosimbox"><h3 class="ch">${esc(this._t("stoSimAut"))}</h3><div class="chart" id="sosimaut"></div>
-      <div id="sosimbenbox"><h3 class="ch">${esc(this._t("stoSimBen"))}</h3><div class="chart" id="sosimben"></div></div>
+      <div id="sosimbox"><h3 class="ch">${esc(this._t("simTitle"))}</h3>
+      <div class="setcard" id="simform"><div class="setrow"><label for="simcap">${esc(this._t("simCap"))}</label><input type="number" id="simcap" min="0" step="0.5"></div>
+        <div class="setrow"><label for="simpow">${esc(this._t("simPower"))}</label><input type="number" id="simpow" min="0" step="0.5"></div>
+        <div class="setrow"><label for="simeff">${esc(this._t("simEff"))}</label><input type="number" id="simeff" min="50" max="100" step="1"></div>
+        <div class="setrow"><label for="simprice">${esc(this._t("simPrice"))}</label><input type="number" id="simprice" min="0" step="10"></div></div>
+      <div class="tiles" id="simtiles"></div><ul class="hints" id="simhints"></ul>
+      <h3 class="ch">${esc(this._t("stoSimAut"))}</h3><div class="chart" id="sosimaut"></div>
+      <div id="sosimbenbox"><h3 class="ch">${esc(this._t("stoSimBen"))}</h3><div class="chart" id="sosimben"></div>
+      <h3 class="ch">${esc(this._t("stoSimMarg"))}</h3><div class="chart" id="sosimmarg"></div></div>
       <p class="note" id="sosimnote"></p></div>` : ""}${G.soc.length ? `
       <h3 class="ch">${esc(this._t("stoSocHist"))}</h3><div class="chart" id="sosochist"></div>` : ""}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
     this._picker(ranges, () => this._srange, (v) => { this._srange = v; this._loadStorage(); });
+    for (const id of ["simcap", "simpow", "simeff", "simprice"]) {
+      box.querySelector(`#${id}`)?.addEventListener("input", () => {
+        this._simState = { cap: this._simNum("simcap"), power: this._simNum("simpow"), eff: this._simNum("simeff"), price: this._simNum("simprice") };
+        try { localStorage.setItem("pv_assistant_sim", JSON.stringify(this._simState)); } catch (e) { /* storage unavailable */ }
+        this._drawStorageSim();
+      });
+    }
   }
 
   async _loadStorage() {
@@ -105,7 +119,7 @@ export class StoragePart {
         colorVar: "--pva-bout", fmt: (v) => `${num(v, 0)} %`, hourLabel: (h) => `${String(h).padStart(2, "0")}:00`, empty: this._t("noData"), label: this._t("stoHeat"),
       });
     }
-    // what-if: the same hours with a storage of another size
+    // what-if: the same hours with a storage of another size (the form and the results are in _drawStorageSim)
     const simBox = root.getElementById("sosimbox");
     if (!simBox) return;
     const flip = (inv) => (v) => (inv ? -v : v), nz = (v) => Math.max(v, 0);
@@ -123,30 +137,99 @@ export class StoragePart {
     // the consumption of an hour: the house sensor, otherwise what the energy balance says
     const hours = keys.map((ts) => [prod.get(ts) || 0, G.houseE.length ? house.get(ts) || 0 : Math.max(0, (prod.get(ts) || 0) + (imp.get(ts) || 0) + (sOut.get(ts) || 0) - (feed.get(ts) || 0) - (sIn.get(ts) || 0))]);
     simBox.hidden = !(haveLoad && hours.length >= 24 * 7);
-    if (simBox.hidden) return;
+    if (simBox.hidden) { this._ssim = null; return; }
     const gen = this._cfg.settings?.general || {};
     const cap = gen.storage_capacity_kwh > 0 ? gen.storage_capacity_kwh : 0, minSoc = gen.battery_min_soc > 0 ? Math.min(gen.battery_min_soc, 100) : 0;
-    const usableNow = cap * (1 - minSoc / 100);
     const tIn = [...sIn.values()].reduce((a, v) => a + v, 0), tOut = [...sOut.values()].reduce((a, v) => a + v, 0);
-    const eff = tIn > 20 && tOut > 0 ? Math.min(0.98, Math.max(0.7, tOut / tIn)) : 0.9;
-    const sizes = [...new Set([0, 2.5, 5, 7.5, 10, 12.5, 15, 20, 30, ...(usableNow > 0 ? [Math.round(usableNow * 10) / 10] : [])])].filter((c) => c <= Math.max(30, usableNow * 2)).sort((a, b) => a - b);
-    const load = hours.reduce((a, [, h]) => a + h, 0);
-    const results = sizes.map((c) => ({ c, ...simulateStorage(hours, c, eff) }));
-    const scale = nDays < 330 ? 365 / nDays : 1;
     const numOf = (id) => { const v = parseFloat(this._hass.states[id]?.state); return Number.isNaN(v) ? null : v; };
-    const pImp = (G.priceImp && numOf(G.priceImp)) || gen.price_import || null, pFeed = (G.priceFeed && numOf(G.priceFeed)) || gen.price_feed_in || null;
-    const cats = sizes.map((c) => `${num(c, 1)}${usableNow > 0 && Math.abs(c - usableNow) < 0.06 ? " ★" : ""}`);
+    this._ssim = {
+      hours, nDays, usableNow: cap * (1 - minSoc / 100),
+      effMeasured: tIn > 20 && tOut > 0 ? Math.min(0.98, Math.max(0.7, tOut / tIn)) : 0.9,
+      // the hourly maxima are the limits that fit a model that works on whole hours
+      powerMeasured: Math.ceil(Math.max(0, ...sIn.values(), ...sOut.values()) * 10) / 10,
+      measuredImp: G.impE.length ? [...imp.values()].reduce((a, v) => a + v, 0) : null,
+      pImp: (G.priceImp && numOf(G.priceImp)) || gen.price_import || null, pFeed: (G.priceFeed && numOf(G.priceFeed)) || gen.price_feed_in || null,
+    };
+    if (!this._simState) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem("pv_assistant_sim") || "null"); } catch (e) { saved = null; }
+      const c = this._ssim;
+      this._simState = saved && Number.isFinite(saved.cap) ? saved : { cap: Math.round((c.usableNow || 10) * 10) / 10, power: c.powerMeasured, eff: Math.round(c.effMeasured * 100), price: 0 };
+      for (const [id, v] of [["simcap", this._simState.cap], ["simpow", this._simState.power], ["simeff", this._simState.eff], ["simprice", this._simState.price]]) {
+        const input = root.getElementById(id);
+        if (input) input.value = Number.isFinite(v) ? String(v) : "";
+      }
+    }
+    this._drawStorageSim();
+  }
+
+  _simNum(id) {
+    const v = parseFloat(this._root.getElementById(id)?.value);
+    return Number.isFinite(v) && v >= 0 ? v : 0;
+  }
+
+  // results of the scenario with the values of the form: key figures, check against the measurement and the charts over the size
+  _drawStorageSim() {
+    const c = this._ssim, root = this._root;
+    if (!c || !root.getElementById("sosimbox")) return;
+    const st = this._simState || { cap: 0, power: 0, eff: 90, price: 0 };
+    const lang = this._hass.locale?.language || this._hass.language;
+    const num = (v, dec = 1) => v.toLocaleString(lang, { maximumFractionDigits: dec });
+    const tl = { summary: this._t("table"), time: "kWh" };
+    const { hours, nDays, usableNow, pImp, pFeed } = c;
+    const eff = Math.min(1, Math.max(0.5, (st.eff || 90) / 100)), power = st.power || 0;
+    const scale = nDays < 330 ? 365 / nDays : 1;
+    const load = hours.reduce((a, [, h]) => a + h, 0), produced = hours.reduce((a, [p]) => a + p, 0);
+    const run = (size) => simulateStorage(hours, size, eff, power);
+    const base = run(0);
+    const benefit = (r) => (pImp ? ((base.imp - r.imp) * pImp - (base.feed - r.feed) * (pFeed || 0)) * scale : null);
+    const sc = run(st.cap);
+    const tiles = [
+      [`${num(load > 0 ? (1 - sc.imp / load) * 100 : 0, 0)} %`, this._t("autarky")],
+      [`${num(produced > 0 ? ((produced - sc.feed) / produced) * 100 : 0, 0)} %`, this._t("selfShare")],
+      [`${num(sc.imp * scale, 0)} kWh`, this._t("simImp")], [`${num(sc.feed * scale, 0)} kWh`, this._t("simFeed")],
+    ];
+    const ben = benefit(sc);
+    if (ben != null) tiles.push([`${num(ben, 0)} €`, this._t("simBen")]);
+    if (ben != null && st.cap > 1) tiles.push([`${num(ben - benefit(run(st.cap - 1)), 0)} €`, this._t("simMarg")]);
+    if (st.price > 0 && st.cap > 0) {
+      tiles.push([`${num(st.price * st.cap, 0)} €`, this._t("simInvest")]);
+      tiles.push([ben > 0 ? this._t("simYears").replace("{y}", num((st.price * st.cap) / ben, 1)) : "–", this._t("simPayback")]);
+    }
+    root.getElementById("simtiles").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+    // check: the same model with the real storage against the measured grid import
+    const hints = [];
+    if (usableNow > 0 && c.measuredImp > 0) {
+      const real = simulateStorage(hours, usableNow, c.effMeasured, c.powerMeasured);
+      const dev = ((real.imp - c.measuredImp) / c.measuredImp) * 100;
+      hints.push(this._t("simCalib").replace("{m}", num(c.measuredImp, 0)).replace("{s}", num(real.imp, 0)).replace("{d}", `${dev > 0 ? "+" : ""}${num(dev, 0)}`) + (Math.abs(dev) > 15 ? ` ${this._t("simCalibWarn")}` : ""));
+    }
+    root.getElementById("simhints").innerHTML = hints.map((h) => `<li class="info">${esc(h)}</li>`).join("");
+    // over the size: the usual steps plus the real and the scenario size
+    const steps = [0, 2.5, 5, 7.5, 10, 12.5, 15, 20, 30];
+    const real = usableNow > 0 ? Math.round(usableNow * 10) / 10 : null, mine = st.cap > 0 ? Math.round(st.cap * 10) / 10 : null;
+    const sizes = [...new Set([...steps, ...(real ? [real] : []), ...(mine ? [mine] : [])])].filter((v) => v <= Math.max(30, (real || 0) * 2, (mine || 0) * 1.5)).sort((a, b) => a - b);
+    const results = sizes.map((v) => run(v));
+    const cats = sizes.map((v) => `${num(v, 1)}${v === real ? " ★" : ""}${v === mine ? " ◆" : ""}`);
     categoryBarChart(root.getElementById("sosimaut"), {
       categories: cats, series: [{ name: this._t("autarky"), color: "--pva-pos", values: results.map((r) => (load > 0 ? (1 - r.imp / load) * 100 : null)) }],
-      fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: { ...tl, time: "kWh" }, label: this._t("stoSimAut"),
+      fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("stoSimAut"),
     });
     const benBox = root.getElementById("sosimbenbox");
     benBox.hidden = !pImp;
-    if (pImp) categoryBarChart(root.getElementById("sosimben"), {
-      categories: cats, series: [{ name: this._t("stoSimBen"), color: "--pva-bout", values: results.map((r) => ((results[0].imp - r.imp) * pImp - (results[0].feed - r.feed) * (pFeed || 0)) * scale) }],
-      fmtValue: (v, axis) => `${num(v, axis ? 0 : 0)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: { ...tl, time: "kWh" }, label: this._t("stoSimBen"),
-    });
-    root.getElementById("sosimnote").textContent = this._t("stoSimNote").replace("{n}", String(nDays)).replace("{eff}", num(eff * 100, 0));
+    if (pImp) {
+      const bens = results.map(benefit);
+      categoryBarChart(root.getElementById("sosimben"), {
+        categories: cats, series: [{ name: this._t("stoSimBen"), color: "--pva-bout", values: bens }],
+        fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("stoSimBen"),
+      });
+      // what the next kWh brings: the extra benefit of a step divided by its size
+      categoryBarChart(root.getElementById("sosimmarg"), {
+        categories: cats.slice(1), series: [{ name: this._t("stoSimMarg"), color: "--pva-s2", values: bens.slice(1).map((b, i) => (b - bens[i]) / (sizes[i + 1] - sizes[i])) }],
+        fmtValue: (v, axis) => `${num(v, axis ? 0 : 1)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("stoSimMarg"),
+      });
+    }
+    root.getElementById("sosimnote").textContent = this._t("stoSimNote").replace("{n}", String(nDays));
   }
 
   _drawStorage() {
