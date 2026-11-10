@@ -1,7 +1,7 @@
 // Unit tests of the pure helpers of the panel: node --test tests/js
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bestPayback, recommend, simulateStorage, suddenDrops } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
+import { bestPayback, recommend, simulateStorage, simulateStorages, suddenDrops } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
 
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 
@@ -67,18 +67,18 @@ test("a power limit slows charging and discharging", () => {
 });
 
 import * as scenariosTab from "../../custom_components/pv_assistant/frontend/pv-assistant-tab-scenarios.js";
-import { simulateStorage as simulate } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
+import { simulateStorage as simulate, simulateStorages as simulateMany } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
 
 // two identical days: 4 kWh of production per hour from 10 to 13 o'clock, a consumption of 0.5 kWh in every hour
 function scenarioPart() {
-  scenariosTab.init({ esc: (s) => s, mergedRows: () => [], categoryBarChart: () => {}, localKeyFn: () => () => ({}), simulateStorage: simulate });
+  scenariosTab.init({ esc: (s) => s, mergedRows: () => [], categoryBarChart: () => {}, localKeyFn: () => () => ({}), simulateStorage: simulate, simulateStorages: simulateMany });
   const part = new scenariosTab.ScenariosPart();
   const hod = [], hours = [];
   for (let d = 0; d < 2; d++) for (let h = 0; h < 24; h++) { hod.push(h); hours.push([h >= 10 && h <= 13 ? 4 : 0, 0.5]); }
-  part._scn = { hours, hod, nDays: 2, pImp: 0.3, pFeed: 0.1, peakKwp: 5 };
+  part._scn = { hours, hod, nDays: 2, pImp: 0.3, pFeed: 0.1, peakKwp: 5, usableNow: 0, effMeasured: 1, powerMeasured: 0 };
   return part;
 }
-const state = { cap: 0, power: 0, eff: 100, price: 0, pv: 0, pvprice: 0, load: 0, from: 10, len: 4 };
+const state = { addcap: 0, addpow: 0, addeff: 100, addprice: 0, addkwp: 0, addpct: 0, pvprice: 0, load: 0, from: 10, len: 4 };
 
 test("scenario: an extra load at noon is covered by PV, in the evening it comes from the grid", () => {
   const part = scenarioPart();
@@ -91,16 +91,17 @@ test("scenario: an extra load at noon is covered by PV, in the evening it comes 
   near(evening.extraCost / evening.extraYear, 0.3); // the grid price
 });
 
-test("scenario: more production raises the benefit, a storage covers the evening", () => {
+test("scenario: more production raises the gain, a new storage covers the evening", () => {
   const part = scenarioPart();
   const plain = part._simMetrics(state);
-  near(plain.benefit, 0);
-  const more = part._simMetrics({ ...state, pv: 50 });
-  assert.ok(more.benefit > 0 && more.feed > plain.feed);
-  const stored = part._simMetrics({ ...state, cap: 5 });
-  assert.ok(stored.benefit > 0 && stored.autarky > plain.autarky);
-  // the investment: 5 kWh at 700 plus 50 % of 5 kWp at 900
-  near(part._simMetrics({ ...state, cap: 5, price: 700, pv: 50, pvprice: 900 }).investment, 5 * 700 + 2.5 * 900);
+  near(plain.gain, 0); // nothing new: the plant as it is
+  const more = part._simMetrics({ ...state, addpct: 50 });
+  assert.ok(more.gain > 0 && more.feed > plain.feed);
+  near(part._simMetrics({ ...state, addkwp: 2.5 }).gain, more.gain); // 2.5 kWp of 5 kWp are 50 %
+  const stored = part._simMetrics({ ...state, addcap: 5 });
+  assert.ok(stored.gain > 0 && stored.autarky > plain.autarky);
+  // the investment: 5 kWh at 700 plus 2.5 kWp at 900
+  near(part._simMetrics({ ...state, addcap: 5, addprice: 700, addkwp: 2.5, pvprice: 900 }).investment, 5 * 700 + 2.5 * 900);
 });
 
 test("the best option is the one with the shortest payback, options without a gain are ignored", () => {
@@ -120,23 +121,43 @@ test("recommend: the shorter payback wins, an option over the limit does not cou
   assert.equal(recommend(null, null), "none");
 });
 
-test("scenario: the investment and the gain count only what is added to the existing storage", () => {
+test("scenario: a new storage works next to the existing one, with its own efficiency, and only the new one is paid", () => {
   const part = scenarioPart();
-  part._scn.usableNow = 3; // a storage of 3 kWh exists
-  const same = part._simMetrics({ ...state, cap: 3, price: 700 });
+  Object.assign(part._scn, { usableNow: 3, effMeasured: 1, powerMeasured: 0 }); // a storage of 3 kWh exists
+  const same = part._simMetrics({ ...state, addprice: 700 });
   near(same.gain, 0); near(same.investment, 0);
-  const more = part._simMetrics({ ...state, cap: 5, price: 700 });
-  near(more.investment, 2 * 700); // only the 2 added kWh
-  const cap3 = part._simMetrics({ ...state, cap: 3 }), cap5 = part._simMetrics({ ...state, cap: 5 });
-  near(more.gain, cap5.benefit - cap3.benefit); // against today's storage, not against none
-  assert.ok(more.benefit > more.gain);
-  part._scn.usableNow = 0;
-  const none = part._simMetrics({ ...state, cap: 5, price: 700 });
-  near(none.investment, 5 * 700); near(none.gain, none.benefit);
+  const more = part._simMetrics({ ...state, addcap: 2, addprice: 700 });
+  near(more.investment, 2 * 700); // only the 2 new kWh
+  const hours = part._scn.hours;
+  const today = simulateMany(hours, [{ capacity: 3, efficiency: 1 }]), both = simulateMany(hours, [{ capacity: 3, efficiency: 1 }, { capacity: 2, efficiency: 1 }]);
+  near(more.gain, (((today.imp - both.imp) * 0.3 - (today.feed - both.feed) * 0.1) * 365) / 2); // against today, scaled from 2 days to a year
+  // a new storage with 84 % brings less than one with 100 %
+  assert.ok(part._simMetrics({ ...state, addcap: 2, addeff: 84 }).gain < more.gain);
+  // no storage at all today: the whole new storage is the investment
+  Object.assign(part._scn, { usableNow: 0 });
+  near(part._simMetrics({ ...state, addcap: 5, addprice: 700 }).investment, 5 * 700);
 });
 
-test("the reset values are those of the plant: the storage size from the settings, the measured power and efficiency, nothing else", () => {
+test("two storages are filled and emptied in the order of the list", () => {
+  // 6 kWh of surplus, then 6 kWh of deficit: the first storage (2 kWh) is filled first, the rest goes into the second (10 kWh)
+  const r = simulateStorages([[6, 0], [0, 6]], [{ capacity: 2, efficiency: 1 }, { capacity: 10, efficiency: 1 }]);
+  near(r.feed, 0); near(r.imp, 0);
+  const small = simulateStorages([[6, 0], [0, 6]], [{ capacity: 2, efficiency: 1 }]);
+  near(small.feed, 4); near(small.imp, 4);
+  // an empty list or a storage without capacity is the plant without a storage
+  assert.deepEqual(simulateStorages([[6, 0], [0, 6]], []), { imp: 6, feed: 6 });
+  assert.deepEqual(simulateStorages([[6, 0], [0, 6]], [{ capacity: 0, efficiency: 1 }]), { imp: 6, feed: 6 });
+});
+
+test("the reset clears everything that is new", () => {
   const part = scenarioPart();
-  Object.assign(part._scn, { usableNow: 7.04, powerMeasured: 3.2, effMeasured: 0.913 });
-  assert.deepEqual(part._simFresh(), { pv: 0, pvprice: 0, load: 0, from: 10, len: 4, cap: 7, power: 3.2, eff: 91, price: 0 });
+  assert.deepEqual(part._simFresh(), { addcap: 0, addpow: 0, addeff: 90, addprice: 0, addkwp: 0, addpct: 0, pvprice: 0, load: 0, from: 10, len: 4 });
+});
+
+test("older saved scenarios (the whole storage) become what is new above the storage of the plant", () => {
+  const part = scenarioPart();
+  part._scn.usableNow = 7;
+  const migrated = part._simMigrate({ cap: 12, power: 3, eff: 90, price: 700, pv: 20, pvprice: 900, load: 5, from: 11, len: 3 });
+  assert.deepEqual(migrated, { addcap: 5, addpow: 3, addeff: 90, addprice: 700, addkwp: 0, addpct: 20, pvprice: 900, load: 5, from: 11, len: 3 });
+  assert.equal(part._simMigrate({ addcap: 4 }).addcap, 4); // the new format stays
 });

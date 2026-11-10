@@ -114,8 +114,8 @@ export const T = {
     pkLast7: "Letzte 7 Tage", pkLast30: "Letzte 30 Tage", pkLast90: "Letzte 90 Tage", pkLast12m: "Letzte 12 Monate", pkLast: "Letzte {n} Tage", pkSince: "seit",
     pkNow: "Zum aktuellen Zeitraum springen", pkDate: "Datum wählen", pkThisWeek: "Diese Woche", pkThisMonth: "Dieser Monat", pkThisYear: "Dieses Jahr",
     stoHeat: "Ladestand nach Uhrzeit (Ø in %)", stoHeatDays: "Ladestand nach Uhrzeit (Ø in %, letzte {n} Tage)", stoCycChart: "Speicher-Zyklen je Monat",
-    stoSimAut: "Autarkie mit anderer Speichergröße (%)", stoSimBen: "Nutzen pro Jahr gegenüber heute ohne Speicher (€)",
-    stoSimNote: "Simulation mit den Stundenwerten der letzten {n} Tage, auf 12 Monate hochgerechnet. ★ = deine heutige nutzbare Größe, ◆ = die Größe aus dem Rechner. Annahmen: der Speicher startet leer, Stundenwerte statt Minuten, der Hausverbrauch kommt vom Hausverbrauchssensor oder aus der Energiebilanz. Ein Richtwert, kein Angebot.",
+    
+    
     // consumption tab
     consumptionTab: "Verbrauch", conProfile: "Tagesverlauf: Werktag und Wochenende (Ø kWh je Stunde)", conHeat: "Verbrauch nach Uhrzeit (kWh je Stunde)",
     conDays: "Verbrauch je Tag (kWh)", conMonths: "Verbrauch je Monat (kWh)", conGridHour: "Netzbezug nach Uhrzeit (Ø kWh je Stunde)",
@@ -132,52 +132,52 @@ export const T = {
     repButton: "Monatsbericht als CSV herunterladen", repDone: "{n} Monate exportiert.", repNone: "Keine Daten für den Bericht.",
     repMonth: "Monat", repProd: "Erzeugung (kWh)", repFeed: "Einspeisung (kWh)", repImport: "Netzbezug (kWh)", repHouse: "Verbrauch (kWh)", repStoreIn: "In Speicher (kWh)",
     repStoreOut: "Aus Speicher (kWh)", repDirect: "Direkt verbraucht (kWh)", repSelf: "Eigenverbrauchsquote (%)", repAutarky: "Autarkie (%)", repSavings: "Ersparnis", repRevenue: "Einspeiseerlös", repBenefit: "Nutzen",
-    simTitle: "Szenario-Rechner", simCap: "Nutzbare Größe (kWh)", simPower: "Max. Lade- und Entladeleistung (kW, 0 = unbegrenzt)", simEff: "Wirkungsgrad (%)", simPrice: "Preis je kWh Speicher (€, für die Amortisation)",
-    simImp: "Netzbezug pro Jahr", simFeed: "Einspeisung pro Jahr", simBen: "Nutzen pro Jahr (gegenüber heute ohne Speicher)", simMarg: "Zusatznutzen der letzten kWh (€ pro Jahr)", simInvest: "Investition", simPayback: "Amortisation", simYears: "{y} Jahre",
-    stoSimMarg: "Zusatznutzen je weitere kWh Speicher (€ pro Jahr)",
+    simTitle: "Szenario-Rechner", 
+    simImp: "Netzbezug pro Jahr", simFeed: "Einspeisung pro Jahr", simMarg: "Zusatznutzen der letzten kWh (€ pro Jahr)", simYears: "{y} Jahre",
+    
     simCalib: "Prüfung: gemessener Netzbezug {m} kWh, Simulation mit deiner heutigen Größe {s} kWh ({d} % Abweichung).", simCalibWarn: "Die Abweichung ist größer als 15 %; die Zahlen sind dann nur grobe Richtwerte (Leistungsspitzen, Laden aus dem Netz oder ein anderes Verhalten des Speichers).",
-    simPv: "Mehr Erzeugung (%)", simPvPrice: "Preis je kWp zusätzlicher PV (€)", simLoad: "Zusätzlicher Verbrauch (kWh pro Tag)", simFrom: "… ab Uhrzeit (0 bis 23)", simLen: "… über Stunden",
-    simPvKwp: "≈ +{k} kWp bei {p} kWp heute", simSave: "Szenario speichern", simSaved: "Gespeicherte Szenarien", simName: "Szenario", simLoadBtn: "Laden", simDel: "Löschen", simPerDay: "Tag",
+    simLoad: "Zusätzlicher Verbrauch (kWh pro Tag)", simFrom: "… ab Uhrzeit (0 bis 23)", simLen: "… über Stunden",
+    simSave: "Szenario speichern", simSaved: "Gespeicherte Szenarien", simName: "Szenario", simLoadBtn: "Laden", simDel: "Löschen", simPerDay: "Tag",
     simExtraYear: "Zusatzverbrauch pro Jahr", simExtraPv: "davon aus PV und Speicher gedeckt", simExtraCost: "Kosten des Zusatzverbrauchs pro Jahr", simExtraKwh: "Kosten je kWh des Zusatzverbrauchs",
-    simMatrixAut: "Autarkie: Speichergröße und mehr Erzeugung", simMatrixBen: "Nutzen pro Jahr (€): Speichergröße und mehr Erzeugung", simMatrixRows: "Speicher (kWh) / PV",
+    
     simNote2: "Mehr Erzeugung skaliert die gemessene Erzeugung, ein Zusatzverbrauch (zum Beispiel Wallbox oder Wärmepumpe) wird gleichmäßig über das Zeitfenster jedes Tages verteilt. Der Nutzen rechnet Speicher und mehr Erzeugung ohne den Zusatzverbrauch, dessen Kosten stehen getrennt. Die Matrix zeigt Speichergröße gegen mehr Erzeugung ohne Zusatzverbrauch; der Rahmen markiert den Rechner. Gespeichert werden bis zu 5 Szenarien im Browser.",
     scenariosTab: "Szenarien",
     // explanation in the scenarios tab
     scnIntroTitle: "So funktioniert der Rechner",
-    scnIntro1: "Der Rechner nimmt die gemessenen Stundenwerte deiner Anlage (Erzeugung und Verbrauch der letzten Monate, der Zeitraum ist oben wählbar) und rechnet nach, wie es gewesen wäre, wenn du etwas änderst: einen anderen Speicher, mehr PV oder einen zusätzlichen Verbraucher.",
-    scnIntro2: "Unten stehen die Eingabefelder, vorbelegt mit deinen heutigen Werten. Ändere ein Feld, die Zahlen darunter rechnen sofort neu. Felder, die du nicht brauchst, lässt du auf 0. „Auf meine Anlage zurücksetzen“ stellt alle Felder wieder auf die Werte deiner Anlage (Speichergröße aus den Einstellungen, gemessene Leistung und Wirkungsgrad) und löscht Zusatzverbrauch, mehr PV und Preise; gespeicherte Szenarien bleiben.",
-    scnIntro3: "Der Nutzen ist die Ersparnis gegenüber deiner heutigen Anlage ohne Speicher; der Zusatznutzen gegenüber heute zeigt, was die Änderung gegenüber deinem jetzigen Speicher bringt (zum Beispiel 12 statt 7 kWh). Beides rechnet pro Jahr: weniger Strom aus dem Netz zu deinem Strompreis, mehr oder weniger Einspeisung zu deiner Vergütung (Preise aus den Einstellungen oder von den Preis-Sensoren).",
+    scnIntro1: "Der Rechner nimmt die gemessenen Stundenwerte deiner Anlage (Erzeugung und Verbrauch der letzten Monate, der Zeitraum ist oben wählbar) und rechnet nach, wie es gewesen wäre, wenn etwas dazukäme: ein zusätzlicher Speicher, mehr PV oder ein neuer Verbraucher.",
+    
+    
     scnIntro4: "Die Diagramme zeigen dasselbe für viele Speichergrößen auf einmal, die Matrix zusätzlich gegen mehr PV. So siehst du, ab welcher Größe es sich kaum noch lohnt. Mit „Szenario speichern“ hältst du bis zu 5 Varianten fest und vergleichst sie nebeneinander.",
     scnIntro5: "Es ist eine Simulation mit Stundenwerten und damit ein Richtwert, kein Angebot. Die Zeile „Prüfung“ zeigt, wie gut sie deine heutige Anlage trifft.",
     scnQuestionsTitle: "Typische Fragen",
-    scnQBigger: "Lohnt sich ein größerer Speicher?", scnQBiggerText: "Größe und Preis je kWh eintragen. Schau auf die Amortisation und auf das Diagramm „Zusatznutzen je weitere kWh Speicher“: Sinkt er stark, bringt mehr Kapazität kaum noch etwas.",
+    
     scnQWallbox: "Was bringt eine Wallbox oder Wärmepumpe?", scnQWallboxText: "Den Zusatzverbrauch in kWh pro Tag eintragen, dazu Beginn und Dauer. Probiere mittags und abends: Die Kosten je kWh zeigen, wie viel davon PV und Speicher decken.",
-    scnQPv: "Lohnt sich mehr PV?", scnQPvText: "Mehr Erzeugung in Prozent eintragen und den Preis je kWp ergänzen. Nutzen und Amortisation zeigen es, die Matrix zeigt das Zusammenspiel mit dem Speicher.",
-    scnQCompare: "Kann ich Varianten vergleichen?", scnQCompareText: "Mit „Szenario speichern“ legst du die Eingaben ab. Bis zu 5 Szenarien stehen nebeneinander, du kannst sie jederzeit laden oder löschen.",
+    
+    scnQCompare: "Kann ich Varianten vergleichen?", 
     scnTermsTitle: "Was bedeuten die Zahlen?",
     scnTermAut: "Autarkie", scnTermAutText: "Anteil des Verbrauchs, der nicht aus dem Netz kommt.",
     scnTermSelf: "Eigenverbrauchsquote", scnTermSelfText: "Anteil der erzeugten PV-Energie, der nicht eingespeist wird, also im Haus verbraucht oder im Speicher gelandet ist.",
     scnTermYear: "Netzbezug und Einspeisung pro Jahr", scnTermYearText: "Die Energie, die du im Szenario in einem Jahr aus dem Netz kaufen würdest und einspeisen würdest. Der gewählte Zeitraum ist auf 12 Monate hochgerechnet.",
-    scnTermBen: "Nutzen pro Jahr", scnTermBenText: "Was Speicher und mehr PV gegenüber heute ohne Speicher bringen: weniger Netzbezug mal Strompreis, abzüglich der Einspeisevergütung, die dafür entfällt, zuzüglich der zusätzlichen Einspeisung bei mehr PV. Ohne den Zusatzverbrauch gerechnet, dessen Kosten stehen getrennt.",
-    scnTermMarg: "Zusatznutzen der letzten kWh", scnTermMargText: "Was die letzte kWh Speichergröße im Szenario pro Jahr bringt (Vergleich mit einer um 1 kWh kleineren Variante). Wird der Wert klein, lohnt mehr Kapazität kaum noch.",
-    scnTermInvest: "Investition und Amortisation", scnTermInvestText: "Was die Änderung kostet: die zusätzliche Speichergröße (nur der Teil über deinem heutigen Speicher) mal Preis je kWh, dazu die PV-Erweiterung mal Preis je kWp, und die Jahre, die der Zusatznutzen braucht, um das zu bezahlen.",
+    
+    
+    
     scnTermExtra: "Zusatzverbrauch", scnTermExtraText: "Ein Verbraucher, den es heute nicht gibt, etwa eine Wallbox. Der Rechner zeigt, wie viel davon PV und Speicher decken, was er pro Jahr und je kWh kostet. Mittags kostet eine kWh nur die entgangene Einspeisevergütung, abends den vollen Bezugspreis.",
     scnTermCheck: "Prüfung", scnTermCheckText: "Mit deiner heutigen Größe wird der Netzbezug nachgerechnet und mit dem gemessenen verglichen. Eine kleine Abweichung heißt: Das Modell passt zu deiner Anlage. Über 15 % heißt: nur grobe Richtwerte.",
-    scnTermMatrix: "Matrix", scnTermMatrixText: "Autarkie und Nutzen für fünf Speichergrößen gegen mehr PV, ohne Zusatzverbrauch. Der Rahmen markiert die Werte aus dem Rechner.",
-    scnTermMarks: "★ und ◆", scnTermMarksText: "★ ist deine heutige nutzbare Speichergröße, ◆ die Größe im Rechner.",
-    simCapHint: "Nutzbare Kapazität (Gesamtkapazität minus Mindest-Ladestand). Vorbelegt mit deinem Wert aus den Einstellungen; 0 = ohne Speicher.",
-    simPowerHint: "Wie schnell der Speicher laden und entladen kann. Vorbelegt mit dem höchsten gemessenen Stundenwert; 0 = keine Grenze.",
-    simEffHint: "Anteil der geladenen Energie, der wieder herauskommt. Vorbelegt mit dem gemessenen Wert (meist 85 bis 95 %).",
-    simPriceHint: "Nur für Investition und Amortisation; 0 = nicht rechnen.",
-    simPvHint: "Wie viel mehr Erzeugung als heute, zum Beispiel 30 für +30 %.",
-    simPvPriceHint: "Preis je kWp der Erweiterung; braucht die Peaks in den Einstellungen.",
+    scnTermMatrix: "Matrix", 
+    
+    
+    
+    
+    
+    
+    
     simLoadHint: "Energie eines zusätzlichen Verbrauchers pro Tag, zum Beispiel 10 für ein Elektroauto; 0 = keiner.",
     simFromHint: "Wann der Verbraucher beginnt (Stunde 0 bis 23).",
     simLenHint: "Über wie viele Stunden die Energie gleichmäßig verteilt wird.",
     scnQWhich: "Mehr PV oder ein größerer Speicher?", scnQWhichText: "Das zeigt die Empfehlung gleich unter den Eingabefeldern: Sie rechnet von deiner heutigen Anlage aus einige Schritte für den Speicher (+2,5, +5, +10 kWh) und für die PV (+10, +25, +50 %) und nennt die Erweiterung mit der kürzesten Amortisation. Trage deine Preise ein, sonst rechnet sie mit Annahmen.",
-    scnTermGain: "Zusatznutzen gegenüber heute", scnTermGainText: "Was das Szenario pro Jahr mehr bringt als deine heutige Anlage mit deinem jetzigen Speicher. Erhöhst du von 7 auf 12 kWh, ist das der Gewinn dieser 5 kWh.",
+    
     scnTermRec: "Empfehlung", scnTermRecText: "Der Vergleich einer Speicher- und einer PV-Erweiterung von deiner heutigen Anlage aus nach Amortisation. Was länger als 25 Jahre braucht, zählt nicht. Sie beruht auf den Daten des gewählten Zeitraums und deinen Preisen.",
-    simGain: "Zusatznutzen gegenüber heute (€ pro Jahr)", simInvestExt: "Investition (nur die Erweiterung)", simPaybackExt: "Amortisation der Erweiterung", simGainShort: "Zusatznutzen", simInvestShort: "Investition",
+    simGainShort: "Zusatznutzen", simInvestShort: "Investition",
     recTitle: "Empfehlung", recWin_pv: "Mehr PV lohnt sich eher: Sie amortisiert sich schneller als ein größerer Speicher.", recWin_storage: "Ein größerer Speicher lohnt sich eher: Er amortisiert sich schneller als mehr PV.",
     recWin_none: "Keine der beiden Erweiterungen amortisiert sich bei diesen Annahmen in {y} Jahren.",
     recStorage: "Speicher +{k} kWh: bringt rund {g} pro Jahr bei {i} Investition, Amortisation {y}.", recStorageNone: "Speicher: auch +{k} kWh bringen nur {g} pro Jahr, das trägt die Investition nicht.",
@@ -185,7 +185,36 @@ export const T = {
     recPvNoPeak: "PV: ohne die Peaks der Strings in den Einstellungen lässt sich die Größe einer Erweiterung nicht in kWp und Kosten umrechnen.",
     recAssumed: "Annahme, weil kein Preis eingetragen ist: {s} je kWh Speicher und {p} je kWp PV. Trage deine Preise oben ein, die Empfehlung rechnet dann damit.",
     recNote: "Verglichen werden Schritte von deiner heutigen Anlage aus, mit deinen Werten für Leistung und Wirkungsgrad und ohne Zusatzverbrauch. Zusammen wirken Speicher und PV anders als einzeln: Mehr PV macht einen größeren Speicher wertvoller, die Matrix weiter unten zeigt das.",
-    simReset: "Auf meine Anlage zurücksetzen",
+    
+    // scenario calculator: what is new is entered, the plant as it is comes from the measurements and the settings
+    simGroupStorage: "Neuer Speicher (kommt zu deinem dazu)", simGroupPv: "Neue PV", simGroupLoad: "Neuer Verbraucher",
+    simCap: "Nutzbare Kapazität (kWh)", simEff: "Wirkungsgrad, Roundtrip (%)", simPower: "Max. Lade- und Entladeleistung (kW, 0 = unbegrenzt)", simPrice: "Preis je kWh (€)",
+    simKwp: "Zusätzliche PV (kWp)", simPv: "Oder: mehr Erzeugung (%)", simPvPrice: "Preis je kWp (€)",
+    simCapHint: "Nutzbare Kapazität des neuen Speichers allein, nicht die Summe mit deinem alten. 0 = kein neuer Speicher.",
+    simEffHint: "Roundtrip-Wirkungsgrad des neuen Speichers, zum Beispiel 84 laut Datenblatt. Dein bestehender Speicher rechnet mit seinem gemessenen Wert.",
+    simPowerHint: "Wie schnell der neue Speicher laden und entladen kann; 0 = keine Grenze.",
+    simPriceHint: "Nur für Investition und Amortisation; 0 = nicht rechnen.",
+    simKwpHint: "Nennleistung der neuen Module. Der Ertrag wird wie bei deiner bestehenden PV angenommen, also mit gleicher Ausrichtung.",
+    simPvHint: "Nur nötig, weil die Peaks der Strings in den Einstellungen fehlen: wie viel mehr Erzeugung als heute, zum Beispiel 30 für +30 %.",
+    simPvPriceHint: "Preis je kWp der neuen PV.",
+    simKwpPct: "≈ +{p} % gegenüber heute.",
+    simToday: "Deine Anlage heute (aus den Messwerten und den Einstellungen, hier ist nichts einzutragen):", simTodayStorage: "Speicher {c} kWh nutzbar, Wirkungsgrad {e} %, Leistung bis {p} kW.",
+    simTodayNoStorage: "kein Speicher eingetragen.", simTodayPv: "PV {k} kWp.", simTodayNoPeak: "PV-Größe unbekannt (die Peaks der Strings fehlen in den Einstellungen).",
+    simNothing: "nichts Neues", simReset: "Auf meine Anlage zurücksetzen",
+    simGain: "Zusatznutzen gegenüber heute (€ pro Jahr)", simInvest: "Investition (nur das Neue)", simPayback: "Amortisation",
+    stoSimAut: "Autarkie mit zusätzlichem Speicher (%)", stoSimBen: "Zusatznutzen pro Jahr gegenüber heute (€)", stoSimMarg: "Zusatznutzen je weitere kWh des neuen Speichers (€ pro Jahr)",
+    stoSimNote: "Simulation mit den Stundenwerten der letzten {n} Tage, auf 12 Monate hochgerechnet. ◆ = die Größe aus dem Rechner. Annahmen: Der Überschuss lädt zuerst deinen bestehenden, dann den neuen Speicher, entladen wird in derselben Reihenfolge; die Speicher starten leer, Stundenwerte statt Minuten, der Hausverbrauch kommt vom Hausverbrauchssensor oder aus der Energiebilanz. Ein Richtwert, kein Angebot.",
+    simMatrixAut: "Autarkie: zusätzlicher Speicher und mehr PV", simMatrixBen: "Zusatznutzen pro Jahr (€): zusätzlicher Speicher und mehr PV", simMatrixRows: "Neuer Speicher (kWh) / PV",
+    scnIntro2: "Unten trägst du nur ein, was neu dazukommt: einen zusätzlichen Speicher (Kapazität, Wirkungsgrad, Leistung), zusätzliche PV (kWp) oder einen neuen Verbraucher. Deine bestehende Anlage übernimmt der Rechner selbst aus den Messwerten und den Einstellungen, sie steht als „Deine Anlage heute“ über den Feldern. Felder, die du nicht brauchst, lässt du auf 0; „Auf meine Anlage zurücksetzen“ löscht alle Eingaben (gespeicherte Szenarien bleiben).",
+    scnIntro3: "Der Zusatznutzen zeigt, was das Neue pro Jahr gegenüber deiner heutigen Anlage bringt: weniger Strom aus dem Netz zu deinem Strompreis, mehr oder weniger Einspeisung zu deiner Vergütung (Preise aus den Einstellungen oder von den Preis-Sensoren). Neuer und bestehender Speicher arbeiten zusammen: Der Überschuss lädt zuerst den bestehenden, dann den neuen Speicher, entladen wird in derselben Reihenfolge.",
+    scnQBigger: "Lohnt sich ein zusätzlicher Speicher?", scnQBiggerText: "Kapazität, Wirkungsgrad und Preis des neuen Speichers eintragen, zum Beispiel 5 kWh mit 84 % (nur den neuen, nichts umrechnen). Schau auf Zusatznutzen und Amortisation und auf das Diagramm „Zusatznutzen je weitere kWh“: Sinkt er stark, bringt mehr Kapazität kaum noch etwas.",
+    scnQPv: "Lohnt sich mehr PV?", scnQPvText: "Die zusätzlichen kWp und den Preis je kWp eintragen. Zusatznutzen und Amortisation zeigen es, die Matrix zeigt das Zusammenspiel mit einem zusätzlichen Speicher.",
+    scnQCompareText: "Mit „Szenario speichern“ legst du die Eingaben ab. Bis zu 5 Szenarien stehen nebeneinander, du kannst sie jederzeit laden oder löschen.",
+    scnTermGain: "Zusatznutzen gegenüber heute", scnTermGainText: "Was das Neue pro Jahr mehr bringt als deine heutige Anlage mit deinem jetzigen Speicher: weniger Netzbezug mal Strompreis, abzüglich der Einspeisevergütung, die dafür entfällt, zuzüglich der zusätzlichen Einspeisung bei mehr PV. Ohne den Zusatzverbrauch gerechnet, dessen Kosten stehen getrennt.",
+    scnTermMarg: "Zusatznutzen der letzten kWh", scnTermMargText: "Was die letzte kWh des neuen Speichers pro Jahr bringt (Vergleich mit einem um 1 kWh kleineren neuen Speicher). Wird der Wert klein, lohnt mehr Kapazität kaum noch.",
+    scnTermInvest: "Investition und Amortisation", scnTermInvestText: "Was das Neue kostet: Kapazität des neuen Speichers mal Preis je kWh plus zusätzliche kWp mal Preis je kWp, und die Jahre, die der Zusatznutzen braucht, um das zu bezahlen. Dein bestehender Speicher zählt nicht.",
+    scnTermMatrixText: "Autarkie und Zusatznutzen für fünf Größen des neuen Speichers gegen mehr PV, ohne Zusatzverbrauch. Der Rahmen markiert die Werte aus dem Rechner.",
+    scnTermMarks: "◆", scnTermMarksText: "Die Größe des neuen Speichers im Rechner.",
   },
   en: {
     title: "PV Assistant", energy: "Energy sensors (kWh)", power: "Power sensors (W)",
@@ -301,8 +330,8 @@ export const T = {
     pkLast7: "Last 7 days", pkLast30: "Last 30 days", pkLast90: "Last 90 days", pkLast12m: "Last 12 months", pkLast: "Last {n} days", pkSince: "since",
     pkNow: "Jump to the current period", pkDate: "Choose a date", pkThisWeek: "This week", pkThisMonth: "This month", pkThisYear: "This year",
     stoHeat: "Level by time of day (avg. in %)", stoHeatDays: "Level by time of day (avg. in %, last {n} days)", stoCycChart: "Storage cycles per month",
-    stoSimAut: "Self-sufficiency with another storage size (%)", stoSimBen: "Benefit per year compared with today without a storage (€)",
-    stoSimNote: "Simulation with the hourly values of the last {n} days, scaled to 12 months. ★ = your current usable size, ◆ = the size from the calculator. Assumptions: the storage starts empty, hours instead of minutes, the consumption comes from the house consumption sensor or the energy balance. A guide value, not an offer.",
+    
+    
     // consumption tab
     consumptionTab: "Consumption", conProfile: "Course of the day: working days and weekends (avg. kWh per hour)", conHeat: "Consumption by time of day (kWh per hour)",
     conDays: "Consumption per day (kWh)", conMonths: "Consumption per month (kWh)", conGridHour: "Grid import by time of day (avg. kWh per hour)",
@@ -319,52 +348,52 @@ export const T = {
     repButton: "Download the monthly report as CSV", repDone: "{n} months exported.", repNone: "No data for the report.",
     repMonth: "Month", repProd: "Production (kWh)", repFeed: "Feed-in (kWh)", repImport: "Grid import (kWh)", repHouse: "Consumption (kWh)", repStoreIn: "Into storage (kWh)",
     repStoreOut: "From storage (kWh)", repDirect: "Used directly (kWh)", repSelf: "Self-consumption rate (%)", repAutarky: "Self-sufficiency (%)", repSavings: "Savings", repRevenue: "Feed-in revenue", repBenefit: "Benefit",
-    simTitle: "Scenario calculator", simCap: "Usable size (kWh)", simPower: "Max. charge and discharge power (kW, 0 = unlimited)", simEff: "Efficiency (%)", simPrice: "Price per kWh of storage (€, for the payback)",
-    simImp: "Grid import per year", simFeed: "Feed-in per year", simBen: "Benefit per year (compared with today without a storage)", simMarg: "Extra benefit of the last kWh (€ per year)", simInvest: "Investment", simPayback: "Payback", simYears: "{y} years",
-    stoSimMarg: "Extra benefit per further kWh of storage (€ per year)",
+    simTitle: "Scenario calculator", 
+    simImp: "Grid import per year", simFeed: "Feed-in per year", simMarg: "Extra benefit of the last kWh (€ per year)", simYears: "{y} years",
+    
     simCalib: "Check: measured grid import {m} kWh, simulation with your current size {s} kWh ({d} % deviation).", simCalibWarn: "The deviation is larger than 15 %; the numbers are then only rough guide values (power peaks, charging from the grid or a different behavior of the storage).",
-    simPv: "More production (%)", simPvPrice: "Price per kWp of extra PV (€)", simLoad: "Extra consumption (kWh per day)", simFrom: "… from hour (0 to 23)", simLen: "… over hours",
-    simPvKwp: "≈ +{k} kWp on {p} kWp today", simSave: "Save the scenario", simSaved: "Saved scenarios", simName: "Scenario", simLoadBtn: "Load", simDel: "Delete", simPerDay: "day",
+    simLoad: "Extra consumption (kWh per day)", simFrom: "… from hour (0 to 23)", simLen: "… over hours",
+    simSave: "Save the scenario", simSaved: "Saved scenarios", simName: "Scenario", simLoadBtn: "Load", simDel: "Delete", simPerDay: "day",
     simExtraYear: "Extra consumption per year", simExtraPv: "of it covered by PV and storage", simExtraCost: "Cost of the extra consumption per year", simExtraKwh: "Cost per kWh of the extra consumption",
-    simMatrixAut: "Self-sufficiency: storage size and more production", simMatrixBen: "Benefit per year (€): storage size and more production", simMatrixRows: "Storage (kWh) / PV",
+    
     simNote2: "More production scales the measured production, an extra consumption (for example a wallbox or a heat pump) is spread evenly over the time window of every day. The benefit counts storage and more production without the extra consumption, whose cost is shown separately. The matrix shows storage size against more production without the extra consumption; the frame marks the calculator. Up to 5 scenarios are saved in the browser.",
     scenariosTab: "Scenarios",
     // explanation in the scenarios tab
     scnIntroTitle: "How the calculator works",
-    scnIntro1: "The calculator takes the measured hourly values of your plant (production and consumption of the last months, the range is selectable above) and works out what would have happened if you changed something: another storage, more PV or an additional consumer.",
-    scnIntro2: "The input fields are below, filled with your current values. Change a field and the numbers below recalculate at once. Leave the fields you do not need at 0. “Reset to my plant” puts all fields back to the values of your plant (storage size from the settings, measured power and efficiency) and clears extra consumption, more PV and prices; saved scenarios stay.",
-    scnIntro3: "The benefit is the saving against your plant as it is today without a storage; the extra benefit against today shows what the change brings compared with your current storage (for example 12 instead of 7 kWh). Both are calculated per year: less power from the grid at your electricity price, more or less feed-in at your tariff (prices from the settings or the price sensors).",
+    scnIntro1: "The calculator takes the measured hourly values of your plant (production and consumption of the last months, the range is selectable above) and works out what would have happened if something was added: an additional storage, more PV or a new consumer.",
+    
+    
     scnIntro4: "The charts show the same for many storage sizes at once, the matrix also against more PV. That shows from which size it hardly pays off. With “Save the scenario” you keep up to 5 variants and compare them side by side.",
     scnIntro5: "It is a simulation with hourly values and therefore a guide value, not an offer. The line “Check” shows how well it matches your plant today.",
     scnQuestionsTitle: "Typical questions",
-    scnQBigger: "Is a bigger storage worth it?", scnQBiggerText: "Enter the size and the price per kWh. Look at the payback and at the chart “Extra benefit per further kWh of storage”: if it falls steeply, more capacity hardly brings anything.",
+    
     scnQWallbox: "What does a wallbox or a heat pump bring?", scnQWallboxText: "Enter the extra consumption in kWh per day, plus the start and the duration. Try noon and evening: the cost per kWh shows how much of it PV and storage cover.",
-    scnQPv: "Is more PV worth it?", scnQPvText: "Enter more production in percent and add the price per kWp. Benefit and payback show it, the matrix shows how it works together with the storage.",
-    scnQCompare: "Can I compare variants?", scnQCompareText: "“Save the scenario” stores the inputs. Up to 5 scenarios stand side by side, you can load or delete them at any time.",
+    
+    scnQCompare: "Can I compare variants?", 
     scnTermsTitle: "What do the numbers mean?",
     scnTermAut: "Self-sufficiency", scnTermAutText: "The share of the consumption that does not come from the grid.",
     scnTermSelf: "Self-consumption rate", scnTermSelfText: "The share of the produced PV energy that is not fed in, so it is used in the house or ended up in the storage.",
     scnTermYear: "Grid import and feed-in per year", scnTermYearText: "The energy you would buy from the grid and feed in during a year in the scenario. The selected range is scaled to 12 months.",
-    scnTermBen: "Benefit per year", scnTermBenText: "What storage and more PV bring compared with today without a storage: less grid import times the electricity price, minus the feed-in tariff that is lost, plus the additional feed-in with more PV. Calculated without the extra consumption, whose cost is shown separately.",
-    scnTermMarg: "Extra benefit of the last kWh", scnTermMargText: "What the last kWh of storage size brings per year in the scenario (compared with a variant 1 kWh smaller). When the value gets small, more capacity hardly pays off.",
-    scnTermInvest: "Investment and payback", scnTermInvestText: "What the change costs: the additional storage size (only the part above your current storage) times the price per kWh, plus the PV extension times the price per kWp, and the years the extra benefit needs to pay for it.",
+    
+    
+    
     scnTermExtra: "Extra consumption", scnTermExtraText: "A consumer that does not exist today, such as a wallbox. The calculator shows how much of it PV and storage cover and what it costs per year and per kWh. At noon a kWh only costs the feed-in tariff that is lost, in the evening the full import price.",
     scnTermCheck: "Check", scnTermCheckText: "With your current size the grid import is recalculated and compared with the measured one. A small deviation means the model fits your plant. Over 15 % means only rough guide values.",
-    scnTermMatrix: "Matrix", scnTermMatrixText: "Self-sufficiency and benefit for five storage sizes against more PV, without the extra consumption. The frame marks the values of the calculator.",
-    scnTermMarks: "★ and ◆", scnTermMarksText: "★ is your current usable storage size, ◆ the size in the calculator.",
-    simCapHint: "Usable capacity (total capacity minus the minimum level). Filled with your value from the settings; 0 = without a storage.",
-    simPowerHint: "How fast the storage can charge and discharge. Filled with the highest measured hourly value; 0 = no limit.",
-    simEffHint: "The share of the charged energy that comes back out. Filled with the measured value (usually 85 to 95 %).",
-    simPriceHint: "Only for the investment and the payback; 0 = do not calculate.",
-    simPvHint: "How much more production than today, for example 30 for +30 %.",
-    simPvPriceHint: "Price per kWp of the extension; needs the peaks in the settings.",
+    scnTermMatrix: "Matrix", 
+    
+    
+    
+    
+    
+    
+    
     simLoadHint: "Energy of an additional consumer per day, for example 10 for an electric car; 0 = none.",
     simFromHint: "When the consumer starts (hour 0 to 23).",
     simLenHint: "Over how many hours the energy is spread evenly.",
     scnQWhich: "More PV or a bigger storage?", scnQWhichText: "The recommendation right below the input fields shows it: starting from your plant as it is today it tries some steps for the storage (+2.5, +5, +10 kWh) and for the PV (+10, +25, +50 %) and names the extension with the shortest payback. Enter your prices, otherwise it uses assumptions.",
-    scnTermGain: "Extra benefit against today", scnTermGainText: "What the scenario brings per year compared with your plant today with your current storage. If you raise the storage from 7 to 12 kWh, this is the gain of those 5 kWh.",
+    
     scnTermRec: "Recommendation", scnTermRecText: "The comparison of a storage extension and a PV extension from your plant as it is today, by payback. What takes longer than 25 years does not count. It is based on the data of the selected range and your prices.",
-    simGain: "Extra benefit against today (€ per year)", simInvestExt: "Investment (only the extension)", simPaybackExt: "Payback of the extension", simGainShort: "Extra benefit", simInvestShort: "Investment",
+    simGainShort: "Extra benefit", simInvestShort: "Investment",
     recTitle: "Recommendation", recWin_pv: "More PV is the better choice: it pays back faster than a bigger storage.", recWin_storage: "A bigger storage is the better choice: it pays back faster than more PV.",
     recWin_none: "Neither extension pays back within {y} years with these assumptions.",
     recStorage: "Storage +{k} kWh: brings about {g} per year for {i} of investment, payback {y}.", recStorageNone: "Storage: even +{k} kWh only brings {g} per year, which does not carry the investment.",
@@ -372,6 +401,35 @@ export const T = {
     recPvNoPeak: "PV: without the peaks of the strings in the settings the size of an extension cannot be converted into kWp and cost.",
     recAssumed: "Assumption because no price is entered: {s} per kWh of storage and {p} per kWp of PV. Enter your prices above and the recommendation uses them.",
     recNote: "Steps are compared from your plant as it is today, with your values for power and efficiency and without the extra consumption. Storage and PV act differently together than alone: more PV makes a bigger storage more valuable, the matrix further down shows that.",
-    simReset: "Reset to my plant",
+    
+    // scenario calculator: what is new is entered, the plant as it is comes from the measurements and the settings
+    simGroupStorage: "New storage (added to yours)", simGroupPv: "New PV", simGroupLoad: "New consumer",
+    simCap: "Usable capacity (kWh)", simEff: "Efficiency, round trip (%)", simPower: "Max. charge and discharge power (kW, 0 = unlimited)", simPrice: "Price per kWh (€)",
+    simKwp: "Additional PV (kWp)", simPv: "Or: more production (%)", simPvPrice: "Price per kWp (€)",
+    simCapHint: "Usable capacity of the new storage alone, not the sum with your old one. 0 = no new storage.",
+    simEffHint: "Round-trip efficiency of the new storage, for example 84 from the data sheet. Your existing storage calculates with its measured value.",
+    simPowerHint: "How fast the new storage can charge and discharge; 0 = no limit.",
+    simPriceHint: "Only for the investment and the payback; 0 = do not calculate.",
+    simKwpHint: "Rated power of the new modules. The yield is assumed to be that of your existing PV, so with the same orientation.",
+    simPvHint: "Only needed because the peaks of the strings are missing in the settings: how much more production than today, for example 30 for +30 %.",
+    simPvPriceHint: "Price per kWp of the new PV.",
+    simKwpPct: "≈ +{p} % compared with today.",
+    simToday: "Your plant today (from the measurements and the settings, nothing to enter here):", simTodayStorage: "storage {c} kWh usable, efficiency {e} %, power up to {p} kW.",
+    simTodayNoStorage: "no storage entered.", simTodayPv: "PV {k} kWp.", simTodayNoPeak: "PV size unknown (the peaks of the strings are missing in the settings).",
+    simNothing: "nothing new", simReset: "Reset to my plant",
+    simGain: "Extra benefit against today (€ per year)", simInvest: "Investment (only the new)", simPayback: "Payback",
+    stoSimAut: "Self-sufficiency with an additional storage (%)", stoSimBen: "Extra benefit per year against today (€)", stoSimMarg: "Extra benefit per further kWh of the new storage (€ per year)",
+    stoSimNote: "Simulation with the hourly values of the last {n} days, scaled to 12 months. ◆ = the size from the calculator. Assumptions: the surplus charges your existing storage first, then the new one, discharging is in the same order; the storages start empty, hours instead of minutes, the consumption comes from the house consumption sensor or the energy balance. A guide value, not an offer.",
+    simMatrixAut: "Self-sufficiency: additional storage and more PV", simMatrixBen: "Extra benefit per year (€): additional storage and more PV", simMatrixRows: "New storage (kWh) / PV",
+    scnIntro2: "Below you only enter what is new: an additional storage (capacity, efficiency, power), additional PV (kWp) or a new consumer. The calculator takes your existing plant from the measurements and the settings itself, it is shown as “Your plant today” above the fields. Leave the fields you do not need at 0; “Reset to my plant” clears all inputs (saved scenarios stay).",
+    scnIntro3: "The extra benefit shows what the new things bring per year compared with your plant as it is today: less power from the grid at your electricity price, more or less feed-in at your tariff (prices from the settings or the price sensors). The new and the existing storage work together: the surplus charges the existing one first, then the new one, discharging is in the same order.",
+    scnQBigger: "Is an additional storage worth it?", scnQBiggerText: "Enter capacity, efficiency and price of the new storage, for example 5 kWh with 84 % (only the new one, nothing to convert). Look at the extra benefit and the payback and at the chart “Extra benefit per further kWh”: if it falls steeply, more capacity hardly brings anything.",
+    scnQPv: "Is more PV worth it?", scnQPvText: "Enter the additional kWp and the price per kWp. Extra benefit and payback show it, the matrix shows how it works together with an additional storage.",
+    scnQCompareText: "“Save the scenario” stores the inputs. Up to 5 scenarios stand side by side, you can load or delete them at any time.",
+    scnTermGain: "Extra benefit against today", scnTermGainText: "What the new things bring per year compared with your plant today with your current storage: less grid import times the electricity price, minus the feed-in tariff that is lost, plus the additional feed-in with more PV. Calculated without the extra consumption, whose cost is shown separately.",
+    scnTermMarg: "Extra benefit of the last kWh", scnTermMargText: "What the last kWh of the new storage brings per year (compared with a new storage 1 kWh smaller). When the value gets small, more capacity hardly pays off.",
+    scnTermInvest: "Investment and payback", scnTermInvestText: "What the new things cost: capacity of the new storage times the price per kWh plus the additional kWp times the price per kWp, and the years the extra benefit needs to pay for it. Your existing storage does not count.",
+    scnTermMatrixText: "Self-sufficiency and extra benefit for five sizes of the new storage against more PV, without the extra consumption. The frame marks the values of the calculator.",
+    scnTermMarks: "◆", scnTermMarksText: "The size of the new storage in the calculator.",
   },
 };
