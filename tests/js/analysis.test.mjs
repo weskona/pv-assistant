@@ -1,7 +1,7 @@
 // Unit tests of the pure helpers of the panel: node --test tests/js
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { simulateStorage, suddenDrops } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
+import { bestPayback, recommend, simulateStorage, suddenDrops } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
 
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 
@@ -101,4 +101,36 @@ test("scenario: more production raises the benefit, a storage covers the evening
   assert.ok(stored.benefit > 0 && stored.autarky > plain.autarky);
   // the investment: 5 kWh at 700 plus 50 % of 5 kWp at 900
   near(part._simMetrics({ ...state, cap: 5, price: 700, pv: 50, pvprice: 900 }).investment, 5 * 700 + 2.5 * 900);
+});
+
+test("the best option is the one with the shortest payback, options without a gain are ignored", () => {
+  const best = bestPayback([{ id: "a", gain: 100, invest: 3000 }, { id: "b", gain: 200, invest: 4000 }, { id: "c", gain: 0, invest: 100 }, { id: "d", gain: 50, invest: 0 }]);
+  assert.equal(best.id, "b");
+  near(best.payback, 20);
+  assert.equal(bestPayback([{ gain: -5, invest: 100 }]), null);
+  assert.equal(bestPayback([]), null);
+});
+
+test("recommend: the shorter payback wins, an option over the limit does not count", () => {
+  assert.equal(recommend({ payback: 12 }, { payback: 8 }), "pv");
+  assert.equal(recommend({ payback: 8 }, { payback: 12 }), "storage");
+  assert.equal(recommend({ payback: 30 }, { payback: 9 }), "pv");
+  assert.equal(recommend({ payback: 30 }, { payback: 40 }), "none");
+  assert.equal(recommend(null, { payback: 20 }), "pv");
+  assert.equal(recommend(null, null), "none");
+});
+
+test("scenario: the investment and the gain count only what is added to the existing storage", () => {
+  const part = scenarioPart();
+  part._scn.usableNow = 3; // a storage of 3 kWh exists
+  const same = part._simMetrics({ ...state, cap: 3, price: 700 });
+  near(same.gain, 0); near(same.investment, 0);
+  const more = part._simMetrics({ ...state, cap: 5, price: 700 });
+  near(more.investment, 2 * 700); // only the 2 added kWh
+  const cap3 = part._simMetrics({ ...state, cap: 3 }), cap5 = part._simMetrics({ ...state, cap: 5 });
+  near(more.gain, cap5.benefit - cap3.benefit); // against today's storage, not against none
+  assert.ok(more.benefit > more.gain);
+  part._scn.usableNow = 0;
+  const none = part._simMetrics({ ...state, cap: 5, price: 700 });
+  near(none.investment, 5 * 700); near(none.gain, none.benefit);
 });
