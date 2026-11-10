@@ -12,8 +12,47 @@ const SIM_FIELDS = [["simcap", "cap"], ["simpow", "power"], ["simeff", "eff"], [
   ["simload", "load"], ["simfrom", "from"], ["simlen", "len"]];
 const SIM_DEFAULTS = { pv: 0, pvprice: 0, load: 0, from: 10, len: 4 };
 const MAX_SAVED = 5;
+// the rows of the form: [input id, label text, hint text, attributes]
+const SIM_ROWS = [
+  ["simcap", "simCap", "simCapHint", 'min="0" step="0.5"'], ["simpow", "simPower", "simPowerHint", 'min="0" step="0.5"'],
+  ["simeff", "simEff", "simEffHint", 'min="50" max="100" step="1"'], ["simprice", "simPrice", "simPriceHint", 'min="0" step="10"'],
+  ["simpv", "simPv", "simPvHint", 'min="0" step="5"'], ["simpvprice", "simPvPrice", "simPvPriceHint", 'min="0" step="50"'],
+  ["simload", "simLoad", "simLoadHint", 'min="0" step="1"'], ["simfrom", "simFrom", "simFromHint", 'min="0" max="23" step="1"'],
+  ["simlen", "simLen", "simLenHint", 'min="1" max="24" step="1"'],
+];
+// the terms and the typical questions that are explained on the tab: [text key of the term, text key of the explanation]
+const TERMS = [
+  ["scnTermAut", "scnTermAutText"],
+  ["scnTermSelf", "scnTermSelfText"],
+  ["scnTermYear", "scnTermYearText"],
+  ["scnTermBen", "scnTermBenText"],
+  ["scnTermMarg", "scnTermMargText"],
+  ["scnTermInvest", "scnTermInvestText"],
+  ["scnTermExtra", "scnTermExtraText"],
+  ["scnTermCheck", "scnTermCheckText"],
+  ["scnTermMatrix", "scnTermMatrixText"],
+  ["scnTermMarks", "scnTermMarksText"],
+];
+const QUESTIONS = [
+  ["scnQBigger", "scnQBiggerText"],
+  ["scnQWallbox", "scnQWallboxText"],
+  ["scnQPv", "scnQPvText"],
+  ["scnQCompare", "scnQCompareText"],
+];
+const STEPS = ["scnIntro1", "scnIntro2", "scnIntro3", "scnIntro4", "scnIntro5"];
 
 export class ScenariosPart {
+  // the explanation on top of the tab: how it works, what the numbers mean, typical questions
+  _scenarioHelp() {
+    const t = (k) => esc(this._t(k));
+    const steps = STEPS.map((k) => `<li>${t(k)}</li>`).join("");
+    const terms = TERMS.map(([k, text]) => `<dt>${t(k)}</dt><dd>${t(text)}</dd>`).join("");
+    const questions = QUESTIONS.map(([k, text]) => `<dt>${t(k)}</dt><dd>${t(text)}</dd>`).join("");
+    return `<details class="setcard scnhelp" open><summary><h3>${t("scnIntroTitle")}</h3></summary><ol class="scnlist">${steps}</ol></details>
+      <details class="setcard scnhelp"><summary><h3>${t("scnQuestionsTitle")}</h3></summary><dl class="scnterms">${questions}</dl></details>
+      <details class="setcard scnhelp"><summary><h3>${t("scnTermsTitle")}</h3></summary><dl class="scnterms">${terms}</dl></details>`;
+  }
+
   _buildScenarios() {
     const { E, G } = this._keys();
     const box = this._root.getElementById("scn");
@@ -23,17 +62,10 @@ export class ScenariosPart {
     if (!this._scrange) this._scrange = "y12";
     box.innerHTML = `<div class="filters" id="scranges"></div>
       <p class="empty" id="scnempty" hidden>${esc(this._t("noData"))}</p>
-      <div id="sosimbox"><h3 class="ch">${esc(this._t("simTitle"))}</h3>
+      <div id="sosimbox">${this._scenarioHelp()}<h3 class="ch">${esc(this._t("simTitle"))}</h3>
       <div class="setcard" id="simform">
-        <div class="setrow"><label for="simcap">${esc(this._t("simCap"))}</label><input type="number" id="simcap" min="0" step="0.5"></div>
-        <div class="setrow"><label for="simpow">${esc(this._t("simPower"))}</label><input type="number" id="simpow" min="0" step="0.5"></div>
-        <div class="setrow"><label for="simeff">${esc(this._t("simEff"))}</label><input type="number" id="simeff" min="50" max="100" step="1"></div>
-        <div class="setrow"><label for="simprice">${esc(this._t("simPrice"))}</label><input type="number" id="simprice" min="0" step="10"></div>
-        <div class="setrow"><label for="simpv">${esc(this._t("simPv"))}</label><input type="number" id="simpv" min="0" step="5"><span class="hint" id="simpvhint"></span></div>
-        <div class="setrow"><label for="simpvprice">${esc(this._t("simPvPrice"))}</label><input type="number" id="simpvprice" min="0" step="50"></div>
-        <div class="setrow"><label for="simload">${esc(this._t("simLoad"))}</label><input type="number" id="simload" min="0" step="1"></div>
-        <div class="setrow"><label for="simfrom">${esc(this._t("simFrom"))}</label><input type="number" id="simfrom" min="0" max="23" step="1"></div>
-        <div class="setrow"><label for="simlen">${esc(this._t("simLen"))}</label><input type="number" id="simlen" min="1" max="24" step="1"></div>
+        ${SIM_ROWS.map(([id, label, hint, attrs]) => `<div class="setrow"><label for="${id}">${esc(this._t(label))}</label><input type="number" id="${id}" ${attrs}>
+          <span class="hint">${esc(this._t(hint))}${id === "simpv" ? ' <b id="simpvhint"></b>' : ""}</span></div>`).join("")}
         <div class="setbar"><button class="setbtn" id="simsave">${esc(this._t("simSave"))}</button></div></div>
       <div class="tiles" id="simtiles"></div><ul class="hints" id="simhints"></ul>
       <h3 class="ch">${esc(this._t("stoSimAut"))}</h3><div class="chart" id="sosimaut"></div>
