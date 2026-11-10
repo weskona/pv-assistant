@@ -2,32 +2,36 @@
 // Part of the panel class: the methods are added to the PVAssistantPanel prototype by pv-assistant-panel.js (so `this` is the
 // panel). Shared helpers are handed over by init(ctx) because the modules are loaded with the ?v=<version> of the panel.
 
-let esc, mergedRows, categoryBarChart, localKeyFn, simulateStorage, bestPayback, recommend;
+let esc, mergedRows, categoryBarChart, localKeyFn, simulateStorage, simulateStorages, bestPayback, recommend;
 export function init(ctx) {
-  ({ esc, mergedRows, categoryBarChart, localKeyFn, simulateStorage, bestPayback, recommend } = ctx);
+  ({ esc, mergedRows, categoryBarChart, localKeyFn, simulateStorage, simulateStorages, bestPayback, recommend } = ctx);
 }
 
-// the fields of the scenario calculator: [input id, key in the state]
-const SIM_FIELDS = [["simcap", "cap"], ["simpow", "power"], ["simeff", "eff"], ["simprice", "price"], ["simpv", "pv"], ["simpvprice", "pvprice"],
-  ["simload", "load"], ["simfrom", "from"], ["simlen", "len"]];
-const SIM_DEFAULTS = { pv: 0, pvprice: 0, load: 0, from: 10, len: 4 };
+// the fields of the scenario calculator, all of them describe what is NEW: [input id, key in the state]
+const SIM_FIELDS = [["simcap", "addcap"], ["simpow", "addpow"], ["simeff", "addeff"], ["simprice", "addprice"], ["simkwp", "addkwp"], ["simpv", "addpct"],
+  ["simpvprice", "pvprice"], ["simload", "load"], ["simfrom", "from"], ["simlen", "len"]];
+// nothing added: the efficiency of a new storage starts at a usual value
+const SIM_DEFAULTS = { addcap: 0, addpow: 0, addeff: 90, addprice: 0, addkwp: 0, addpct: 0, pvprice: 0, load: 0, from: 10, len: 4 };
 const MAX_SAVED = 5;
 // prices that the recommendation assumes when none are entered (storage per kWh, PV per kWp) and the longest payback that counts
 const DEFAULT_STORAGE_PRICE = 600, DEFAULT_PV_PRICE = 1200, PAYBACK_LIMIT = 25;
-// the rows of the form: [input id, label text, hint text, attributes]
-const SIM_ROWS = [
-  ["simcap", "simCap", "simCapHint", 'min="0" step="0.5"'], ["simpow", "simPower", "simPowerHint", 'min="0" step="0.5"'],
-  ["simeff", "simEff", "simEffHint", 'min="50" max="100" step="1"'], ["simprice", "simPrice", "simPriceHint", 'min="0" step="10"'],
-  ["simpv", "simPv", "simPvHint", 'min="0" step="5"'], ["simpvprice", "simPvPrice", "simPvPriceHint", 'min="0" step="50"'],
-  ["simload", "simLoad", "simLoadHint", 'min="0" step="1"'], ["simfrom", "simFrom", "simFromHint", 'min="0" max="23" step="1"'],
-  ["simlen", "simLen", "simLenHint", 'min="1" max="24" step="1"'],
+// the form: groups of rows [input id, label text, hint text, attributes]
+const SIM_GROUPS = [
+  ["simGroupStorage", [
+    ["simcap", "simCap", "simCapHint", 'min="0" step="0.5"'], ["simeff", "simEff", "simEffHint", 'min="50" max="100" step="1"'],
+    ["simpow", "simPower", "simPowerHint", 'min="0" step="0.5"'], ["simprice", "simPrice", "simPriceHint", 'min="0" step="10"']]],
+  ["simGroupPv", [
+    ["simkwp", "simKwp", "simKwpHint", 'min="0" step="0.5"'], ["simpv", "simPv", "simPvHint", 'min="0" step="5"'],
+    ["simpvprice", "simPvPrice", "simPvPriceHint", 'min="0" step="50"']]],
+  ["simGroupLoad", [
+    ["simload", "simLoad", "simLoadHint", 'min="0" step="1"'], ["simfrom", "simFrom", "simFromHint", 'min="0" max="23" step="1"'],
+    ["simlen", "simLen", "simLenHint", 'min="1" max="24" step="1"']]],
 ];
 // the terms and the typical questions that are explained on the tab: [text key of the term, text key of the explanation]
 const TERMS = [
   ["scnTermAut", "scnTermAutText"],
   ["scnTermSelf", "scnTermSelfText"],
   ["scnTermYear", "scnTermYearText"],
-  ["scnTermBen", "scnTermBenText"],
   ["scnTermGain", "scnTermGainText"],
   ["scnTermRec", "scnTermRecText"],
   ["scnTermMarg", "scnTermMargText"],
@@ -68,9 +72,10 @@ export class ScenariosPart {
     box.innerHTML = `<div class="filters" id="scranges"></div>
       <p class="empty" id="scnempty" hidden>${esc(this._t("noData"))}</p>
       <div id="sosimbox">${this._scenarioHelp()}<h3 class="ch">${esc(this._t("simTitle"))}</h3>
+      <p class="note" id="simtoday"></p>
       <div class="setcard" id="simform">
-        ${SIM_ROWS.map(([id, label, hint, attrs]) => `<div class="setrow"><label for="${id}">${esc(this._t(label))}</label><input type="number" id="${id}" ${attrs}>
-          <span class="hint">${esc(this._t(hint))}${id === "simpv" ? ' <b id="simpvhint"></b>' : ""}</span></div>`).join("")}
+        ${SIM_GROUPS.map(([group, rows]) => `<h4 class="setsub">${esc(this._t(group))}</h4>${rows.map(([id, label, hint, attrs]) => `<div class="setrow" id="${id}row"><label for="${id}">${esc(this._t(label))}</label><input type="number" id="${id}" ${attrs}>
+          <span class="hint">${esc(this._t(hint))}${id === "simkwp" ? ' <b id="simpvhint"></b>' : ""}</span></div>`).join("")}`).join("")}
         <div class="setbar"><button class="setbtn" id="simsave">${esc(this._t("simSave"))}</button><button class="setbtn" id="simreset">${esc(this._t("simReset"))}</button></div></div>
       <div class="setcard" id="simrec" hidden></div>
       <div class="tiles" id="simtiles"></div><ul class="hints" id="simhints"></ul>
@@ -157,17 +162,24 @@ export class ScenariosPart {
     if (!this._simState) {
       let saved = null;
       try { saved = JSON.parse(localStorage.getItem("pv_assistant_sim") || "null"); } catch (e) { saved = null; }
-      // the first time a storage is suggested when there is none, so that the charts show something
-      const fresh = this._simFresh();
-      this._simSetState(saved && Number.isFinite(saved.cap) ? { ...SIM_DEFAULTS, ...saved } : { ...fresh, cap: fresh.cap || 10 }, false);
+      // the first time an example is suggested (5 kWh), so that the charts show something; the reset clears it
+      this._simSetState(saved ? this._simMigrate(saved) : { ...SIM_DEFAULTS, addcap: 5 }, false);
     }
     this._drawScenarioSim();
   }
 
-  // the values of the plant as it is: the usable size of the storage, the measured power and efficiency, no extras, no prices
+  // nothing added: the plant as it is
   _simFresh() {
-    const c = this._scn;
-    return { ...SIM_DEFAULTS, cap: Math.round(c.usableNow * 10) / 10, power: c.powerMeasured, eff: Math.round(c.effMeasured * 100), price: 0 };
+    return { ...SIM_DEFAULTS };
+  }
+
+  // older versions described the whole storage (size, power, efficiency, price, more production in percent): what is new is the part
+  // above the storage of the plant
+  _simMigrate(st) {
+    if (st.addcap !== undefined) return { ...SIM_DEFAULTS, ...st };
+    const today = this._scn?.usableNow || 0;
+    return { ...SIM_DEFAULTS, addcap: Math.max((st.cap || 0) - today, 0), addpow: st.power || 0, addeff: st.eff || SIM_DEFAULTS.addeff, addprice: st.price || 0,
+      addpct: st.pv || 0, pvprice: st.pvprice || 0, load: st.load || 0, from: st.from ?? SIM_DEFAULTS.from, len: st.len || SIM_DEFAULTS.len };
   }
 
   // puts the values into the form, remembers them and (unless it is the first drawing) calculates again
@@ -186,48 +198,52 @@ export class ScenariosPart {
     return Number.isFinite(v) && v >= 0 ? v : 0;
   }
 
-  // the key figures of a scenario: more production, an extra load on top of the house consumption and a storage, on the hours of the range
+  // the key figures of a scenario: a new storage next to the one of the plant, more production and an extra load, on the hours of the range
   _simMetrics(st) {
     const c = this._scn;
     const { hours, hod, nDays, pImp, pFeed, peakKwp } = c;
-    const eff = Math.min(1, Math.max(0.5, (st.eff || 90) / 100)), power = st.power || 0;
     const scale = nDays < 330 ? 365 / nDays : 1;
-    const pvF = 1 + (st.pv || 0) / 100;
+    // the storage of the plant (measured) and the new one (as entered); the surplus fills the plant's storage first
+    const existing = { capacity: c.usableNow, efficiency: c.effMeasured, maxPower: c.powerMeasured };
+    const added = st.addcap > 0 ? { capacity: st.addcap, efficiency: Math.min(1, Math.max(0.5, (st.addeff || 90) / 100)), maxPower: st.addpow || 0 } : null;
+    const storages = added ? [existing, added] : [existing];
+    // new PV: in kWp when the peaks of the plant are known, otherwise in percent; the yield is that of the existing PV
+    const newKwp = peakKwp > 0 ? (st.addkwp > 0 ? st.addkwp : (peakKwp * (st.addpct || 0)) / 100) : 0;
+    const pvF = 1 + (peakKwp > 0 ? newKwp / peakKwp : (st.addpct || 0) / 100);
     const len = Math.min(24, Math.max(1, Math.round(st.len || 1))), from = Math.min(23, Math.max(0, Math.round(st.from || 0)));
     const perHour = st.load > 0 ? st.load / len : 0;
     const inWindow = (h) => ((h - from + 24) % 24) < len;
     const build = (withExtra) => hours.map(([p, h], i) => [p * pvF, h + (withExtra && inWindow(hod[i]) ? perHour : 0)]);
-    const base = simulateStorage(hours, 0, eff, power); // today's plant without a storage: the reference
-    const noExtra = simulateStorage(build(false), st.cap, eff, power);
+    const base = simulateStorages(hours, []); // today's plant without any storage
+    const today = simulateStorages(hours, [existing]); // today's plant as it is
+    const noExtra = simulateStorages(build(false), storages);
     const withExtraHours = build(true);
-    const run = perHour > 0 ? simulateStorage(withExtraHours, st.cap, eff, power) : noExtra;
+    const run = perHour > 0 ? simulateStorages(withExtraHours, storages) : noExtra;
     const load = withExtraHours.reduce((a, [, h]) => a + h, 0), produced = withExtraHours.reduce((a, [p]) => a + p, 0);
     const extraTotal = perHour > 0 ? withExtraHours.reduce((a, [, h], i) => a + (h - hours[i][1]), 0) : 0;
     const money = (r) => (pImp ? ((base.imp - r.imp) * pImp - (base.feed - r.feed) * (pFeed || 0)) * scale : null);
-    // an existing storage is paid for: only the part that is added to it counts as investment, and its own benefit is subtracted
-    const today = c.usableNow > 0 ? c.usableNow : 0;
-    const investment = (st.price > 0 ? st.price * Math.max(st.cap - today, 0) : 0) + (st.pvprice > 0 && peakKwp > 0 ? st.pvprice * peakKwp * (st.pv || 0) / 100 : 0);
-    const benefit = money(noExtra); // storage and more production, without the extra load
-    const gain = benefit == null ? null : benefit - (today > 0 ? money(simulateStorage(hours, today, eff, power)) : 0); // against today's plant with its storage
+    const investment = (st.addprice > 0 ? st.addprice * (st.addcap || 0) : 0) + (st.pvprice > 0 ? st.pvprice * newKwp : 0);
+    // what the new things bring, without the extra load (whose cost is shown separately), against today's plant
+    const gain = pImp ? money(noExtra) - money(today) : null;
     return {
       autarky: load > 0 ? (1 - run.imp / load) * 100 : 0, self: produced > 0 ? ((produced - run.feed) / produced) * 100 : 0,
-      imp: run.imp * scale, feed: run.feed * scale, benefit, gain, investment, payback: investment > 0 && gain > 0 ? investment / gain : null,
+      imp: run.imp * scale, feed: run.feed * scale, gain, investment, payback: investment > 0 && gain > 0 ? investment / gain : null, newKwp,
       extraYear: extraTotal * scale,
       extraPv: extraTotal > 0 ? Math.max(0, 1 - (run.imp - noExtra.imp) / extraTotal) * 100 : null,
       extraCost: extraTotal > 0 && pImp ? ((run.imp - noExtra.imp) * pImp + (noExtra.feed - run.feed) * (pFeed || 0)) * scale : null,
     };
   }
 
-  // which is the better investment from today's plant: a bigger storage or more PV (steps of 2.5, 5 and 10 kWh against 10, 25 and 50 %)
+  // which is the better investment from today's plant: a new storage or more PV (steps of 2.5, 5 and 10 kWh against 10, 25 and 50 %)
   _simRecommend(st) {
     const c = this._scn;
     if (!c.pImp) return null;
-    const today = { ...st, cap: c.usableNow, pv: 0, load: 0 };
-    const storagePrice = st.price > 0 ? st.price : DEFAULT_STORAGE_PRICE, pvPrice = st.pvprice > 0 ? st.pvprice : DEFAULT_PV_PRICE;
-    const storage = [2.5, 5, 10].map((kwh) => ({ kind: "storage", kwh, invest: kwh * storagePrice, gain: this._simMetrics({ ...today, cap: c.usableNow + kwh }).gain }));
-    const pv = c.peakKwp > 0 ? [10, 25, 50].map((pct) => ({ kind: "pv", pct, kwp: (c.peakKwp * pct) / 100, invest: ((c.peakKwp * pct) / 100) * pvPrice, gain: this._simMetrics({ ...today, pv: pct }).gain })) : [];
+    const base = { ...SIM_DEFAULTS, addeff: st.addeff, addpow: st.addpow }; // nothing new, but the efficiency and power of the new storage
+    const storagePrice = st.addprice > 0 ? st.addprice : DEFAULT_STORAGE_PRICE, pvPrice = st.pvprice > 0 ? st.pvprice : DEFAULT_PV_PRICE;
+    const storage = [2.5, 5, 10].map((kwh) => ({ kind: "storage", kwh, invest: kwh * storagePrice, gain: this._simMetrics({ ...base, addcap: kwh }).gain }));
+    const pv = c.peakKwp > 0 ? [10, 25, 50].map((pct) => ({ kind: "pv", pct, kwp: (c.peakKwp * pct) / 100, invest: ((c.peakKwp * pct) / 100) * pvPrice, gain: this._simMetrics({ ...base, addpct: pct }).gain })) : [];
     const bestS = bestPayback(storage), bestP = bestPayback(pv);
-    return { bestS, bestP, winner: recommend(bestS, bestP, PAYBACK_LIMIT), storagePrice, pvPrice, assumedS: !(st.price > 0), assumedP: !(st.pvprice > 0), noPeak: !(c.peakKwp > 0),
+    return { bestS, bestP, winner: recommend(bestS, bestP, PAYBACK_LIMIT), storagePrice, pvPrice, assumedS: !(st.addprice > 0), assumedP: !(st.pvprice > 0), noPeak: !(c.peakKwp > 0),
       topS: storage.at(-1), topP: pv.at(-1) };
   }
 
@@ -246,21 +262,27 @@ export class ScenariosPart {
   _drawScenarioSim() {
     const c = this._scn, root = this._root;
     if (!c || !root.getElementById("sosimbox")) return;
-    const st = this._simState || { ...SIM_DEFAULTS, cap: 0, power: 0, eff: 90, price: 0 };
+    const st = this._simState || { ...SIM_DEFAULTS };
     const lang = this._hass.locale?.language || this._hass.language;
     const num = (v, dec = 1) => v.toLocaleString(lang, { maximumFractionDigits: dec });
     const tl = { summary: this._t("table"), time: "kWh" };
     const { hours, nDays, usableNow, pImp, peakKwp } = c;
     const m = this._simMetrics(st);
     const years = (v) => (v == null ? "–" : this._t("simYears").replace("{y}", num(v, 1)));
+    // the plant as it is: nothing to enter, the new things are added to it
+    const today = [usableNow > 0 ? this._t("simTodayStorage").replace("{c}", num(usableNow, 1)).replace("{e}", num(c.effMeasured * 100, 0)).replace("{p}", num(c.powerMeasured, 1)) : this._t("simTodayNoStorage"),
+      peakKwp > 0 ? this._t("simTodayPv").replace("{k}", num(peakKwp, 1)) : this._t("simTodayNoPeak")].join(" ");
+    root.getElementById("simtoday").textContent = `${this._t("simToday")} ${today}`;
+    // the new PV is entered in kWp when the peaks of the plant are known, otherwise in percent
+    root.getElementById("simkwprow").hidden = !(peakKwp > 0);
+    root.getElementById("simpvrow").hidden = peakKwp > 0;
     const hint = root.getElementById("simpvhint");
-    if (hint) hint.textContent = peakKwp > 0 && st.pv > 0 ? this._t("simPvKwp").replace("{k}", num((peakKwp * st.pv) / 100, 1)).replace("{p}", num(peakKwp, 1)) : "";
+    if (hint) hint.textContent = peakKwp > 0 && m.newKwp > 0 ? this._t("simKwpPct").replace("{p}", num((m.newKwp / peakKwp) * 100, 0)) : "";
     const tiles = [[`${num(m.autarky, 0)} %`, this._t("autarky")], [`${num(m.self, 0)} %`, this._t("selfShare")],
       [`${num(m.imp, 0)} kWh`, this._t("simImp")], [`${num(m.feed, 0)} kWh`, this._t("simFeed")]];
-    if (m.benefit != null) tiles.push([`${num(m.benefit, 0)} €`, this._t("simBen")]);
-    if (m.gain != null && usableNow > 0 && (Math.abs(st.cap - usableNow) > 0.05 || st.pv > 0)) tiles.push([`${m.gain > 0 ? "+" : ""}${num(m.gain, 0)} €`, this._t("simGain")]);
-    if (m.benefit != null && st.cap > 1) tiles.push([`${num(m.benefit - this._simMetrics({ ...st, cap: st.cap - 1, load: 0 }).benefit, 0)} €`, this._t("simMarg")]);
-    if (m.investment > 0) tiles.push([`${num(m.investment, 0)} €`, this._t(usableNow > 0 ? "simInvestExt" : "simInvest")], [years(m.payback), this._t(usableNow > 0 ? "simPaybackExt" : "simPayback")]);
+    if (m.gain != null) tiles.push([`${m.gain > 0 ? "+" : ""}${num(m.gain, 0)} €`, this._t("simGain")]);
+    if (m.gain != null && st.addcap > 1) tiles.push([`${num(m.gain - this._simMetrics({ ...st, addcap: st.addcap - 1, load: 0 }).gain, 0)} €`, this._t("simMarg")]);
+    if (m.investment > 0) tiles.push([`${num(m.investment, 0)} €`, this._t("simInvest")], [years(m.payback), this._t("simPayback")]);
     if (m.extraYear > 0) {
       tiles.push([`${num(m.extraYear, 0)} kWh`, this._t("simExtraYear")], [`${num(m.extraPv, 0)} %`, this._t("simExtraPv")]);
       if (m.extraCost != null) tiles.push([`${num(m.extraCost, 0)} €`, this._t("simExtraCost")], [`${num(m.extraCost / m.extraYear, 3)} €`, this._t("simExtraKwh")]);
@@ -290,13 +312,13 @@ export class ScenariosPart {
       hints.push(this._t("simCalib").replace("{m}", num(c.measuredImp, 0)).replace("{s}", num(real.imp, 0)).replace("{d}", `${dev > 0 ? "+" : ""}${num(dev, 0)}`) + (Math.abs(dev) > 15 ? ` ${this._t("simCalibWarn")}` : ""));
     }
     root.getElementById("simhints").innerHTML = hints.map((h) => `<li class="info">${esc(h)}</li>`).join("");
-    // over the size: the usual steps plus the real and the scenario size (more production and the extra load come along)
+    // over the size of the new storage: the usual steps plus the size of the calculator (the new PV and the extra load come along)
     const steps = [0, 2.5, 5, 7.5, 10, 12.5, 15, 20, 30];
-    const real = usableNow > 0 ? Math.round(usableNow * 10) / 10 : null, mine = st.cap > 0 ? Math.round(st.cap * 10) / 10 : null;
-    const sizes = [...new Set([...steps, ...(real ? [real] : []), ...(mine ? [mine] : [])])].filter((v) => v <= Math.max(30, (real || 0) * 2, (mine || 0) * 1.5)).sort((a, b) => a - b);
-    const at = (size, extra = {}) => this._simMetrics({ ...st, cap: size, ...extra });
+    const mine = st.addcap > 0 ? Math.round(st.addcap * 10) / 10 : null;
+    const sizes = [...new Set([...steps, ...(mine ? [mine] : [])])].filter((v) => v <= Math.max(30, (mine || 0) * 1.5)).sort((a, b) => a - b);
+    const at = (size, extra = {}) => this._simMetrics({ ...st, addcap: size, ...extra });
     const results = sizes.map((v) => at(v));
-    const cats = sizes.map((v) => `${num(v, 1)}${v === real ? " ★" : ""}${v === mine ? " ◆" : ""}`);
+    const cats = sizes.map((v) => `+${num(v, 1)}${v === mine ? " ◆" : ""}`);
     categoryBarChart(root.getElementById("sosimaut"), {
       categories: cats, series: [{ name: this._t("autarky"), color: "--pva-pos", values: results.map((r) => r.autarky) }],
       fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("stoSimAut"),
@@ -304,7 +326,7 @@ export class ScenariosPart {
     const benBox = root.getElementById("sosimbenbox");
     benBox.hidden = !pImp;
     if (pImp) {
-      const bens = results.map((r) => r.benefit);
+      const bens = results.map((r) => r.gain);
       categoryBarChart(root.getElementById("sosimben"), {
         categories: cats, series: [{ name: this._t("stoSimBen"), color: "--pva-bout", values: bens }],
         fmtValue: (v, axis) => `${num(v, 0)}${axis ? "" : " €"}`, empty: this._t("noData"), tableLabels: tl, label: this._t("stoSimBen"),
@@ -317,30 +339,32 @@ export class ScenariosPart {
     }
     // matrix: storage size against more production (without the extra load), the cell of the calculator is framed
     const rowsKwh = [0, 5, 10, 15, 20], cols = [0, 25, 50, 100];
+    const myPct = peakKwp > 0 ? (m.newKwp / peakKwp) * 100 : st.addpct || 0; // the new PV of the calculator in percent
     const matrix = (field, fmt) => {
-      const grid = rowsKwh.map((r) => cols.map((cpv) => at(r, { pv: cpv, load: 0 })[field]));
+      const grid = rowsKwh.map((r) => cols.map((cpv) => at(r, { addpct: cpv, addkwp: 0, load: 0 })[field]));
       const flat = grid.flat().filter((v) => v != null), lo = Math.min(...flat), hi = Math.max(...flat);
       const head = `<tr><th>${esc(this._t("simMatrixRows"))}</th>${cols.map((cpv) => `<th>+${cpv} %${peakKwp > 0 ? ` (${num((peakKwp * cpv) / 100, 1)} kWp)` : ""}</th>`).join("")}</tr>`;
       const body = grid.map((row, ri) => `<tr><th>${esc(num(rowsKwh[ri], 1))}</th>${row.map((v, ci) => {
-        const level = hi > lo ? (v - lo) / (hi - lo) : 0, mark = rowsKwh[ri] === st.cap && cols[ci] === st.pv;
+        const level = hi > lo ? (v - lo) / (hi - lo) : 0, mark = rowsKwh[ri] === st.addcap && Math.abs(cols[ci] - myPct) < 0.5;
         return `<td style="background:color-mix(in srgb, var(--pva-pos) ${Math.round(8 + level * 52)}%, transparent)${mark ? ";outline:2px solid var(--g-accent)" : ""}">${esc(fmt(v))}</td>`;
       }).join("")}</tr>`).join("");
       return `<table class="dtable"><thead>${head}</thead><tbody>${body}</tbody></table>`;
     };
     root.getElementById("simmat1").innerHTML = matrix("autarky", (v) => `${num(v, 0)} %`);
     root.getElementById("simmat2box").hidden = !pImp;
-    if (pImp) root.getElementById("simmat2").innerHTML = matrix("benefit", (v) => `${num(v, 0)} €`);
+    if (pImp) root.getElementById("simmat2").innerHTML = matrix("gain", (v) => `${num(v, 0)} €`);
     // saved scenarios side by side
     let saved = [];
     try { saved = JSON.parse(localStorage.getItem("pv_assistant_sim_saved") || "[]"); } catch (e) { saved = []; }
     const savedBox = root.getElementById("simsavedbox");
     savedBox.hidden = !saved.length;
     if (saved.length) {
-      const name = (x) => `${num(x.cap, 1)} kWh${x.power > 0 ? ` · ${num(x.power, 1)} kW` : ""}${x.pv > 0 ? ` · +${num(x.pv, 0)} %` : ""}${x.load > 0 ? ` · +${num(x.load, 0)} kWh/${this._t("simPerDay")}` : ""}`;
+      const name = (x) => [x.addcap > 0 ? `+${num(x.addcap, 1)} kWh${x.addeff ? ` (${num(x.addeff, 0)} %)` : ""}` : "", x.addkwp > 0 ? `+${num(x.addkwp, 1)} kWp` : x.addpct > 0 ? `+${num(x.addpct, 0)} % PV` : "", x.load > 0 ? `+${num(x.load, 0)} kWh/${this._t("simPerDay")}` : ""].filter(Boolean).join(" · ") || this._t("simNothing");
       const head = ["simName", "autarky", "selfShare", "simImp", "simFeed", "simGainShort", "simInvestShort", "simPayback"].map((k) => `<th>${esc(this._t(k))}</th>`).join("") + "<th></th>";
       const rows = saved.map((x, i) => {
-        const r = this._simMetrics({ ...SIM_DEFAULTS, ...x.st });
-        return `<tr><th>${esc(name({ ...SIM_DEFAULTS, ...x.st }))}</th><td>${num(r.autarky, 0)} %</td><td>${num(r.self, 0)} %</td><td>${num(r.imp, 0)}</td><td>${num(r.feed, 0)}</td>`
+        const st2 = this._simMigrate(x.st);
+        const r = this._simMetrics(st2);
+        return `<tr><th>${esc(name(st2))}</th><td>${num(r.autarky, 0)} %</td><td>${num(r.self, 0)} %</td><td>${num(r.imp, 0)}</td><td>${num(r.feed, 0)}</td>`
           + `<td>${r.gain == null ? "–" : `${num(r.gain, 0)} €`}</td><td>${r.investment > 0 ? `${num(r.investment, 0)} €` : "–"}</td><td>${esc(years(r.payback))}</td>`
           + `<td><button class="setbtn" data-load="${i}">${esc(this._t("simLoadBtn"))}</button> <button class="setbtn" data-del="${i}">${esc(this._t("simDel"))}</button></td></tr>`;
       }).join("");
@@ -352,7 +376,7 @@ export class ScenariosPart {
           saved.splice(idx, 1);
           try { localStorage.setItem("pv_assistant_sim_saved", JSON.stringify(saved)); } catch (e) { /* storage unavailable */ }
         } else {
-          this._simSetState({ ...SIM_DEFAULTS, ...saved[idx].st }, false);
+          this._simSetState(this._simMigrate(saved[idx].st), false);
         }
         this._drawScenarioSim();
       }));

@@ -284,29 +284,43 @@ export function shadingDips(m, maxW, groups, lat, lon, key) {
 }
 
 /**
- * What-if for a storage: hours = [[production, consumption] ...] in kWh, capacity = usable kWh, efficiency = round trip (0..1),
- * maxPower = limit for charging and discharging in kW (0 = none).
- * The surplus of an hour charges the storage, the deficit is drawn from it; the rest is fed in or bought. The storage starts empty
- * and works on whole hours, so the result is a guide value.
+ * What-if for storages: hours = [[production, consumption] ...] in kWh, storages = [{ capacity (usable kWh), efficiency (round trip,
+ * 0..1), maxPower (kW for charging and discharging, 0 = none) }]. The surplus of an hour charges the storages in the order of the list,
+ * the deficit is drawn from them in the same order; the rest is fed in or bought. The storages start empty and work on whole hours, so
+ * the result is a guide value.
  */
-export function simulateStorage(hours, capacity, efficiency = 0.9, maxPower = 0) {
-  const eta = Math.sqrt(efficiency); // the loss is split evenly between charging and discharging
-  const limit = maxPower > 0 ? maxPower : Infinity; // one hour: kW are kWh
-  let soc = 0, imp = 0, feed = 0;
+export function simulateStorages(hours, storages) {
+  const units = storages.filter((s) => s.capacity > 0).map((s) => ({
+    cap: s.capacity, eta: Math.sqrt(s.efficiency ?? 0.9), // the loss is split evenly between charging and discharging
+    limit: s.maxPower > 0 ? s.maxPower : Infinity, soc: 0, // one hour: kW are kWh
+  }));
+  let imp = 0, feed = 0;
   for (const [production, consumption] of hours) {
     const net = production - consumption;
     if (net >= 0) {
-      const charge = capacity > 0 ? Math.min(net, (capacity - soc) / eta, limit) : 0;
-      soc += charge * eta;
-      feed += net - charge;
+      let rest = net;
+      for (const u of units) {
+        const charge = Math.min(rest, (u.cap - u.soc) / u.eta, u.limit);
+        u.soc += charge * u.eta;
+        rest -= charge;
+      }
+      feed += rest;
     } else {
-      const need = -net;
-      const give = Math.min(need, soc * eta, limit);
-      soc -= give / eta;
-      imp += need - give;
+      let need = -net;
+      for (const u of units) {
+        const give = Math.min(need, u.soc * u.eta, u.limit);
+        u.soc -= give / u.eta;
+        need -= give;
+      }
+      imp += need;
     }
   }
   return { imp, feed };
+}
+
+/** One storage: see simulateStorages. */
+export function simulateStorage(hours, capacity, efficiency = 0.9, maxPower = 0) {
+  return simulateStorages(hours, [{ capacity, efficiency, maxPower }]);
 }
 
 /**
