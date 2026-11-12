@@ -56,6 +56,7 @@ export async function setupMock({ lang, nowMs, analysisUrl }) {
   const house = new Float32Array(n), imp = new Float32Array(n), feed = new Float32Array(n);
   const batIn = new Float32Array(n), batOut = new Float32Array(n), soc = new Float32Array(n), price = new Float32Array(n);
   let stored = CAP * 0.3;
+  const soh = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const t = ts(i), p = local(t), hour = +p.hour;
     const c = cloudOf(t), jitter = c > 0.75 ? 0.97 + 0.06 * rand() : 0.8 + 0.4 * rand();
@@ -80,20 +81,22 @@ export async function setupMock({ lang, nowMs, analysisUrl }) {
     const winter = 0.5 + 0.5 * Math.cos(((+p.month - 1) / 12) * 2 * Math.PI);
     base *= (0.85 + 0.35 * winter) * 1.35;
     house[i] = base * (0.8 + 0.4 * rand()) + (rand() < 0.04 ? 1500 : 0);
-    // storage and grid
+    // storage and grid: the usable capacity fades by 6 % over the whole time, the level and the health sensor follow it
+    const capNow = CAP * (1 - 0.06 * (i / n));
+    stored = Math.min(stored, capNow);
     const surplus = pv - house[i];
     let cIn = 0, out = 0;
     if (surplus > 0) {
-      cIn = Math.min(surplus, BAT_W, ((CAP - stored) * 1000) / ETA);
+      cIn = Math.min(surplus, BAT_W, ((capNow - stored) * 1000) / ETA);
       stored += (cIn * ETA) / 1000;
       feed[i] = surplus - cIn;
     } else {
       const need = -surplus;
-      out = Math.min(need, BAT_W, (stored - CAP * MIN_SOC / 100) * 1000 * ETA);
+      out = Math.min(need, BAT_W, Math.max(0, stored - capNow * MIN_SOC / 100) * 1000 * ETA);
       stored -= out / ETA / 1000;
       imp[i] = need - out;
     }
-    batIn[i] = cIn; batOut[i] = out; soc[i] = (stored / CAP) * 100;
+    batIn[i] = cIn; batOut[i] = out; soc[i] = (stored / capNow) * 100; soh[i] = 100 * (capNow / CAP);
     price[i] = 0.3 + (hour >= 17 && hour <= 20 ? 0.09 : 0) - (hour <= 5 ? 0.07 : 0) - (hour >= 11 && hour <= 14 ? 0.04 : 0) + 0.02 * Math.sin(i / 37);
   }
   const hourOf = (t) => Math.floor((t - start) / H);
@@ -110,6 +113,7 @@ export async function setupMock({ lang, nowMs, analysisUrl }) {
   power("sensor.battery_charge_power", batIn); energy("sensor.battery_charged_energy", batIn.map((v) => v / 1000));
   power("sensor.battery_discharge_power", batOut); energy("sensor.battery_discharged_energy", batOut.map((v) => v / 1000));
   series["sensor.battery_level"] = { kind: "level", arr: soc };
+  series["sensor.battery_health"] = { kind: "level", arr: soh };
   series["sensor.solar_irradiance"] = { kind: "power", arr: irr };
   series["sensor.grid_price"] = { kind: "level", arr: price };
   // cumulative counters at the start of every hour
@@ -179,10 +183,10 @@ export async function setupMock({ lang, nowMs, analysisUrl }) {
       "sensor.house_power": label("House power", "Hausverbrauch Leistung"), "sensor.house_energy": label("House energy", "Hausverbrauch Energie"),
       "sensor.battery_charge_power": label("Battery charging power", "Batterie Ladeleistung"), "sensor.battery_charged_energy": label("Battery charged", "Batterie geladen"),
       "sensor.battery_discharge_power": label("Battery discharging power", "Batterie Entladeleistung"), "sensor.battery_discharged_energy": label("Battery discharged", "Batterie entladen"),
-      "sensor.battery_level": label("Battery level", "Batterie Ladestand"), "sensor.solar_irradiance": label("Solar irradiance", "Sonneneinstrahlung"), "sensor.grid_price": label("Electricity price", "Strompreis"),
+      "sensor.battery_level": label("Battery level", "Batterie Ladestand"), "sensor.battery_health": label("Battery health", "Batterie Gesundheit"), "sensor.solar_irradiance": label("Solar irradiance", "Sonneneinstrahlung"), "sensor.grid_price": label("Electricity price", "Strompreis"),
     }[id];
     if (s.kind === "energy") put(id, cum[id][iNow], "kWh", { name: nm });
-    else if (id === "sensor.battery_level") put(id, s.arr[iNow], "%", { name: nm });
+    else if (id === "sensor.battery_level" || id === "sensor.battery_health") put(id, s.arr[iNow], "%", { name: nm });
     else if (id === "sensor.grid_price") put(id, s.arr[iNow], "€/kWh", { name: nm });
     else put(id, s.arr[iNow], "W", { name: nm });
   }
@@ -212,7 +216,7 @@ export async function setupMock({ lang, nowMs, analysisUrl }) {
     house_power_sensors: ["sensor.house_power"], house_energy_sensors: ["sensor.house_energy"],
     storage_in_power_sensors: ["sensor.battery_charge_power"], storage_out_power_sensors: ["sensor.battery_discharge_power"],
     storage_in_energy_sensors: ["sensor.battery_charged_energy"], storage_out_energy_sensors: ["sensor.battery_discharged_energy"],
-    battery_soc_sensor: "sensor.battery_level", irradiance_sensor: "sensor.solar_irradiance", price_import: "sensor.grid_price",
+    battery_soc_sensor: "sensor.battery_level", battery_soh_sensor: "sensor.battery_health", irradiance_sensor: "sensor.solar_irradiance", price_import: "sensor.grid_price",
     forecast_today_energy_sensors: ["sensor.forecast_today"], forecast_tomorrow_energy_sensors: ["sensor.forecast_tomorrow"], forecast_remaining_energy_sensors: ["sensor.forecast_remaining"],
     filtered: {},
     settings: {

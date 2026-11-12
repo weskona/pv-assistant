@@ -245,3 +245,9 @@ async def test_backfill_makes_the_sensors_work_from_the_first_day(hass):
     assert abs(float(val(hass, "expected_feed_in_tomorrow").state) - 30 * (9 + 4 * 7.2) / (99 + 4 * 18)) < 0.01
     assert await hass.config_entries.async_unload(entry.entry_id)
 
+
+
+def test_config_flow_offers_the_battery_health_sensor():
+    from custom_components.pv_assistant.config_flow import _grid_schema
+
+    assert "battery_soh_sensor" in [str(key) for key in _grid_schema({}).schema]

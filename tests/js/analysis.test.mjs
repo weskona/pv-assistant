@@ -1,7 +1,7 @@
 // Unit tests of the pure helpers of the panel: node --test tests/js
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bestPayback, recommend, simulateStorage, simulateStorages, suddenDrops } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
+import { bestPayback, estimateCapacity, idleLoss, recommend, simulateStorage, simulateStorages, suddenDrops } from "../../custom_components/pv_assistant/frontend/pv-assistant-analysis.js";
 
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 
@@ -160,4 +160,50 @@ test("older saved scenarios (the whole storage) become what is new above the sto
   const migrated = part._simMigrate({ cap: 12, power: 3, eff: 90, price: 700, pv: 20, pvprice: 900, load: 5, from: 11, len: 3 });
   assert.deepEqual(migrated, { addcap: 5, addpow: 3, addeff: 90, addprice: 700, addkwp: 0, addpct: 20, pvprice: 900, load: 5, from: 11, len: 3 });
   assert.equal(part._simMigrate({ addcap: 4 }).addcap, 4); // the new format stays
+});
+
+// a storage of 10 kWh with a round trip of 81 % (0.9 per direction): it charges 2 kWh per hour (20 points), discharges 2 kWh per hour
+function storageDay(capacity, startTs) {
+  const rows = [];
+  let soc = 10;
+  for (let h = 0; h < 24; h++) {
+    const charging = h >= 10 && h < 14, discharging = h >= 18 && h < 22;
+    rows.push({ ts: startTs + h * 3600e3, soc, inKwh: charging ? 2 : 0, outKwh: discharging ? 2 : 0 });
+    // the mean level of the next hour lies between the energy of this and the next hour: build it from the energy of this hour
+    soc += charging ? ((2 * 0.9) / capacity) * 100 : discharging ? -(2 / 0.9 / capacity) * 100 : 0;
+  }
+  return rows;
+}
+
+test("the capacity is estimated from hours with charging only or discharging only", () => {
+  const rows = [];
+  for (let d = 0; d < 20; d++) rows.push(...storageDay(10, Date.UTC(2026, 5, 1 + d)));
+  const est = estimateCapacity(rows, () => "2026-06", 0.81);
+  assert.equal(est.size, 1);
+  assert.ok(Math.abs(est.get("2026-06").capacity - 10) < 0.6, `${est.get("2026-06").capacity}`);
+  // an aged storage of 8 kWh gives a smaller estimate
+  const aged = [];
+  for (let d = 0; d < 20; d++) aged.push(...storageDay(8, Date.UTC(2026, 5, 1 + d)));
+  assert.ok(estimateCapacity(aged, () => "x", 0.81).get("x").capacity < est.get("2026-06").capacity - 1.2);
+});
+
+test("too few usable hours give no estimate, and the buckets are separated", () => {
+  const few = storageDay(10, Date.UTC(2026, 5, 1));
+  assert.equal(estimateCapacity(few, () => "m", 0.81).size, 0);
+  const rows = [];
+  for (let d = 0; d < 10; d++) rows.push(...storageDay(10, Date.UTC(2026, 5, 1 + d)));
+  for (let d = 0; d < 10; d++) rows.push(...storageDay(8, Date.UTC(2026, 6, 1 + d)));
+  const est = estimateCapacity(rows, (ts) => new Date(ts).toISOString().slice(0, 7), 0.81);
+  assert.ok(est.get("2026-06").capacity > est.get("2026-07").capacity);
+});
+
+test("the idle loss is the mean fall of the level in hours without charging and discharging", () => {
+  const rows = [];
+  for (let h = 0; h < 48; h++) rows.push({ ts: Date.UTC(2026, 5, 1) + h * 3600e3, soc: 80 - h * 0.125, inKwh: 0, outKwh: 0 }); // 3 points per day
+  const loss = idleLoss(rows);
+  assert.ok(Math.abs(loss.perDay - 3) < 1e-6 && loss.n === 47);
+  assert.equal(idleLoss(rows.slice(0, 10)), null); // too few hours
+  // hours in which the storage works are not counted
+  const busy = rows.map((r, i) => ({ ...r, inKwh: i % 2 ? 1 : 0 }));
+  assert.equal(idleLoss(busy), null);
 });

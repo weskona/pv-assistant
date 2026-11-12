@@ -29,7 +29,7 @@ Home Assistant integration with its own sidebar panel for the PV energy flow: pr
 1. **Energy sensors (kWh):** production (several), feed-in (one), optional storage in / out / combined (several, combined sensors with switchable sign, default positive = from storage).
 2. **Power sensors (W):** same layout; switches for negative feed-in and negative storage values. With differently oriented strings use one sensor per string, not a total sensor.
 3. **Forecast (optional):** energy sensors for today, tomorrow and rest of today (for example Forecast.Solar or Solcast).
-4. **Grid, consumption and prices (optional):** grid import, house consumption (including wallbox, heat pump etc.), battery level, irradiance, electricity price and feed-in tariff (sensor or `input_number`).
+4. **Grid, consumption and prices (optional):** grid import, house consumption (including wallbox, heat pump etc.), battery level, battery health (SoH), irradiance, electricity price and feed-in tariff (sensor or `input_number`).
 
 ### The panel
 | Tab | Content |
@@ -41,7 +41,7 @@ Home Assistant integration with its own sidebar panel for the PV energy flow: pr
 | History | power, effective power and energy charts for today up to 12 months, key figures such as autarky, self-consumption, savings, CO₂ |
 | Balance | use of the PV production and coverage of the consumption as stacked bars, self-sufficiency and self-consumption per day or month |
 | Consumption | base load, working days against weekends, consumption and grid import by time of day, highest grid import |
-| Storage | level, storage power, charged and discharged energy, efficiency, storage benefit and losses, cycles, usable capacity |
+| Storage | level, storage power, charged and discharged energy, efficiency, storage benefit and losses, cycles, usable capacity, health (SoH, estimated capacity, idle loss) |
 | Forecast | forecast vs actual per day or month, deviation, hit rate, best time for large consumers, quality by forecast size |
 | Economics | benefit per month, cumulative benefit against the plant cost with payback date, storage benefit |
 | Yearly overview | monthly production against the average, year forecast, change against last year, benefit, payback, trend, hint on degradation |
@@ -81,7 +81,7 @@ Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: E
 1. **Energiesensoren (kWh):** Erzeugung (mehrere), Einspeisung (einer), optional Speicher rein / raus / kombiniert (mehrere, Kombisensoren mit umschaltbarem Vorzeichen, Standard positiv = aus Speicher).
 2. **Leistungssensoren (W):** gleicher Aufbau; Schalter für negative Einspeisung und negative Speicherwerte. Bei verschieden ausgerichteten Strings je String einen Sensor verwenden, keinen Gesamtsensor.
 3. **Prognose (optional):** Energiesensoren für heute, morgen und Rest heute (z. B. Forecast.Solar oder Solcast).
-4. **Netz, Verbrauch und Preise (optional):** Netzbezug, Hausverbrauch (inkl. Wallbox, Wärmepumpe usw.), Batterie-Ladestand, Einstrahlung, Strompreis und Einspeisevergütung (Sensor oder `input_number`).
+4. **Netz, Verbrauch und Preise (optional):** Netzbezug, Hausverbrauch (inkl. Wallbox, Wärmepumpe usw.), Batterie-Ladestand, Batteriegesundheit (SoH), Einstrahlung, Strompreis und Einspeisevergütung (Sensor oder `input_number`).
 
 ### Das Panel
 | Tab | Inhalt |
@@ -93,7 +93,7 @@ Home-Assistant-Integration mit eigenem Sidebar-Panel für den PV-Energiefluss: E
 | Verlauf | Leistungs-, Effektivleistungs- und Energiediagramme von heute bis 12 Monate, Kennzahlen wie Autarkie, Eigenverbrauch, Ersparnis, CO₂ |
 | Energiebilanz | Verwendung der PV-Erzeugung und Deckung des Verbrauchs als gestapelte Balken, Autarkie und Eigenverbrauch je Tag oder Monat |
 | Verbrauch | Grundlast, Werktage gegen Wochenende, Verbrauch und Netzbezug nach Uhrzeit, höchster Netzbezug |
-| Speicher | Ladestand, Speicherleistung, geladene und entladene Energie, Wirkungsgrad, Speicher-Nutzen und -Verluste, Zyklen, nutzbare Kapazität |
+| Speicher | Ladestand, Speicherleistung, geladene und entladene Energie, Wirkungsgrad, Speicher-Nutzen und -Verluste, Zyklen, nutzbare Kapazität, Gesundheit (SoH, geschätzte Kapazität, Verlust im Leerlauf) |
 | Prognose | Prognose gegen Ist je Tag oder Monat, Abweichung, Trefferquote, beste Zeit für Großverbraucher, Güte nach Prognosegröße |
 | Wirtschaft | Nutzen je Monat, kumulierter Nutzen gegen die Anlagenkosten mit Amortisationsdatum, Speicher-Nutzen |
 | Jahresübersicht | Monatserzeugung gegen den Schnitt, Jahresprognose, Veränderung zum Vorjahr, Nutzen, Amortisation, Trend, Hinweis auf Degradation |

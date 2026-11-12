@@ -31,6 +31,7 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_BATTERY_SOC,
+    CONF_BATTERY_SOH,
     CONF_GRID_IMPORT_ENERGY,
     CONF_GRID_IMPORT_POWER,
     CONF_HOUSE_ENERGY,
@@ -81,7 +82,7 @@ _KEYS = {
 }
 _FORECAST = (CONF_FORECAST_TODAY, CONF_FORECAST_TOMORROW, CONF_FORECAST_REMAINING)
 _GRID_MULTI = (CONF_GRID_IMPORT_ENERGY, CONF_GRID_IMPORT_POWER, CONF_HOUSE_ENERGY, CONF_HOUSE_POWER)
-_GRID_SINGLE = (CONF_BATTERY_SOC, CONF_IRRADIANCE, CONF_PRICE_IMPORT, CONF_PRICE_FEED_IN)
+_GRID_SINGLE = (CONF_BATTERY_SOC, CONF_BATTERY_SOH, CONF_IRRADIANCE, CONF_PRICE_IMPORT, CONF_PRICE_FEED_IN)
 _OPTIONAL = tuple(k for keys in _KEYS.values() for k in keys[2:5]) + _FORECAST + _GRID_MULTI + _GRID_SINGLE
 
 
@@ -156,6 +157,7 @@ def _grid_schema(d: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_HOUSE_ENERGY, description=sv(CONF_HOUSE_ENERGY)): _sensor("energy", True),
             vol.Optional(CONF_HOUSE_POWER, description=sv(CONF_HOUSE_POWER)): _sensor("power", True),
             vol.Optional(CONF_BATTERY_SOC, description=sv(CONF_BATTERY_SOC)): _sensor("battery", False),
+            vol.Optional(CONF_BATTERY_SOH, description=sv(CONF_BATTERY_SOH)): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
             vol.Optional(CONF_IRRADIANCE, description=sv(CONF_IRRADIANCE)): _sensor("irradiance", False),
             vol.Optional(CONF_PRICE_IMPORT, description=sv(CONF_PRICE_IMPORT)): price,
             vol.Optional(CONF_PRICE_FEED_IN, description=sv(CONF_PRICE_FEED_IN)): price,
