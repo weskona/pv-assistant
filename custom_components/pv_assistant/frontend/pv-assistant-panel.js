@@ -423,7 +423,7 @@ class PVAssistantPanel extends HTMLElement {
     const G = {
       impE: list(c.grid_import_energy_sensors), impP: list(c.grid_import_power_sensors),
       houseE: list(c.house_energy_sensors), houseP: list(c.house_power_sensors),
-      soc: list(c.battery_soc_sensor), irr: list(c.irradiance_sensor),
+      soc: list(c.battery_soc_sensor), soh: list(c.battery_soh_sensor), irr: list(c.irradiance_sensor),
       priceImp: c.price_import || null, priceFeed: c.price_feed_in || null,
     };
     return { P: g("power"), E: g("energy"), G };
@@ -502,6 +502,7 @@ const modulesReady = Promise.all([
   import(`./pv-assistant-range.js${version}`),
   import(`./pv-assistant-tab-history.js${version}`),
   import(`./pv-assistant-tab-storage.js${version}`),
+  import(`./pv-assistant-storage-health.js${version}`),
   import(`./pv-assistant-tab-forecast.js${version}`),
   import(`./pv-assistant-tab-years.js${version}`),
   import(`./pv-assistant-tab-power.js${version}`),

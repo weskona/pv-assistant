@@ -373,3 +373,51 @@ export function recommend(storage, pv, limit = 25) {
   return "none";
 }
 
+const HOUR = 3600e3;
+const median1 = (v) => { const s = [...v].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+/**
+ * Usable capacity of a storage from the hourly values: rows = [{ ts, soc (mean level in %), inKwh, outKwh }] sorted by time,
+ * bucketOf(ts) names the bucket (for example the month), efficiency = round trip (0..1).
+ * The level is a mean per hour, so the difference of two neighbouring hours belongs to the energy between the middle of the two
+ * hours. Only pairs of hours with charging only or discharging only and a change of at least 2 points count; the energy is
+ * converted with the efficiency of one direction. Returns Map bucket -> { capacity (kWh for 0 to 100 %), n } for buckets with at
+ * least `minPairs` pairs (the median of the pairs, so that single odd hours do not matter).
+ */
+export function estimateCapacity(rows, bucketOf, efficiency = 0.92, minPairs = 8) {
+  const eta = Math.sqrt(efficiency);
+  const perBucket = new Map();
+  for (let i = 0; i + 1 < rows.length; i++) {
+    const a = rows[i], b = rows[i + 1];
+    if (b.ts - a.ts !== HOUR || a.soc == null || b.soc == null) continue;
+    const d = b.soc - a.soc;
+    const charging = a.inKwh > 0.2 && b.inKwh > 0.2 && a.outKwh < 0.02 && b.outKwh < 0.02;
+    const discharging = a.outKwh > 0.2 && b.outKwh > 0.2 && a.inKwh < 0.02 && b.inKwh < 0.02;
+    let capacity = null;
+    if (charging && d >= 2) capacity = (0.5 * (a.inKwh + b.inKwh) * eta * 100) / d;
+    else if (discharging && d <= -2) capacity = (0.5 * (a.outKwh + b.outKwh) * 100) / (eta * -d);
+    if (capacity == null) continue;
+    const key = bucketOf(a.ts);
+    if (!perBucket.has(key)) perBucket.set(key, []);
+    perBucket.get(key).push(capacity);
+  }
+  const out = new Map();
+  for (const [key, list] of perBucket) if (list.length >= minPairs) out.set(key, { capacity: median1(list), n: list.length });
+  return out;
+}
+
+/**
+ * Loss of a storage that neither charges nor discharges: the mean change of the level in hours in a row without any charging or
+ * discharging, as points per day (positive = loss). Returns { perDay, n } or null with fewer than `minPairs` such pairs.
+ */
+export function idleLoss(rows, minPairs = 24) {
+  const changes = [];
+  for (let i = 0; i + 1 < rows.length; i++) {
+    const a = rows[i], b = rows[i + 1];
+    if (b.ts - a.ts !== HOUR || a.soc == null || b.soc == null || a.soc < 15) continue; // near the lower limit the level cannot fall
+    if (a.inKwh < 0.02 && a.outKwh < 0.02 && b.inKwh < 0.02 && b.outKwh < 0.02) changes.push(b.soc - a.soc);
+  }
+  if (changes.length < minPairs) return null;
+  return { perDay: (-changes.reduce((x, y) => x + y, 0) / changes.length) * 24, n: changes.length };
+}
+

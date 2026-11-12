@@ -24,6 +24,7 @@ export class StoragePart {
       <div id="socycbox"><h3 class="ch">${esc(this._t("stoCycChart"))}</h3><div class="chart" id="socyc"></div></div>` : ""}${G.soc.length ? `
       <div id="soheatbox"><h3 class="ch" id="soheath">${esc(this._t("stoHeat"))}</h3><div class="chart" id="soheat"></div></div>` : ""}${G.soc.length ? `
       <h3 class="ch">${esc(this._t("stoSocHist"))}</h3><div class="chart" id="sosochist"></div>` : ""}
+      ${this._storageHealthMarkup()}
       <p class="note" id="sonote"></p>`;
     const ranges = box.querySelector("#sranges");
     this._picker(ranges, () => this._srange, (v) => { this._srange = v; this._loadStorage(); });
@@ -52,6 +53,7 @@ export class StoragePart {
     this._sdata = { rd, pres, eres, filt, smax, smin, pmax, pmin };
     this._drawStorage();
     this._loadStorageDeep(rd, token);
+    this._loadStorageHealth();
   }
 
   // hourly values for the level heat map: the range, at least 30 days, at most the last 12 months
@@ -322,6 +324,17 @@ export class StoragePart {
         series: [{ name: this._t("stoSocHist"), color: "--pva-bout", values: n ? bands.map((v) => (v / n) * 100) : [] }],
         fmtValue: (v, axis) => `${num(v, axis ? 0 : 1)}${axis ? "" : " %"}`, empty: this._t("noData"), tableLabels: timeLabels, label: this._t("stoSocHist"),
       });
+    }
+    // hints of aging in long ranges: the peak power fell, the level no longer reaches the full state
+    if (rd.long) {
+      const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+      const thirds = (vals) => { const k = Math.floor(vals.length / 3); return k >= 2 ? [mean(vals.slice(0, k)), mean(vals.slice(-k))] : null; };
+      const peakAll = new Map();
+      for (const m of [peakIn, peakOut]) for (const [ts, v] of m) peakAll.set(ts, Math.max(peakAll.get(ts) || 0, v));
+      const pk = thirds([...peakAll].sort((a, b) => a[0] - b[0]).map(([, v]) => v).filter((v) => v > 0));
+      if (pk && pk[0] >= 500 && pk[1] < pk[0] * 0.85) stoNotes.push(this._t("stoPeakDrop").replace("{a}", num(pk[0], 0)).replace("{b}", num(pk[1], 0)));
+      const top = thirds(socMaxRows.map((r) => r.max).filter((v) => v != null));
+      if (top && top[0] >= 99 && top[1] < 97) stoNotes.push(this._t("stoNoFull").replace("{a}", num(top[0], 0)).replace("{b}", num(top[1], 0)));
     }
     const note = root.getElementById("sonote");
     note.textContent = [tIn > 0 && tOut > 0 ? this._t("stoNote") : "", !(cap > 0) && tIn > 0 ? this._t("stoNoCap") : "", ...stoNotes].filter(Boolean).join(" ");

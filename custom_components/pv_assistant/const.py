@@ -24,6 +24,7 @@ CONF_GRID_IMPORT_POWER = "grid_import_power_sensors"  # list, power bought from 
 CONF_HOUSE_ENERGY = "house_energy_sensors"  # list, house consumption energy (kWh)
 CONF_HOUSE_POWER = "house_power_sensors"  # list, house consumption power (W)
 CONF_BATTERY_SOC = "battery_soc_sensor"  # single, battery level (%)
+CONF_BATTERY_SOH = "battery_soh_sensor"  # single, battery state of health (%), the value of the manufacturer
 CONF_IRRADIANCE = "irradiance_sensor"  # single, solar irradiance (W/m2)
 CONF_PRICE_IMPORT = "price_import"  # sensor / input_number, price per kWh bought from the grid
 CONF_PRICE_FEED_IN = "price_feed_in"  # sensor / input_number, feed-in tariff per kWh

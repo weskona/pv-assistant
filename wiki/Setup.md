@@ -25,6 +25,7 @@ Energy sensors for **today**, **tomorrow** and **rest of today** (for example Fo
 - **Grid import** (energy and/or power)
 - **House consumption** (energy and/or power): the total consumption behind the meter including wallbox, heat pump etc., in the same scope as the grid import. If the wallbox is measured separately add its sensor as well (sensors are summed).
 - **Battery level** (%)
+- **Battery health** (SoH, %): the state of health that the manufacturer or the inverter reports, for the health section of the Storage tab (pick a sensor with a unit and a state class, so that it has a long-term statistic)
 - **Irradiance** (W/m², pyranometer or weather station) for the performance ratio. Not a forecast sensor.
 - **Electricity price** and **feed-in tariff** (sensor or `input_number`, €/kWh)
 
@@ -57,6 +58,7 @@ Energiesensoren für **heute**, **morgen** und **Rest heute** (z. B. Forecast.So
 - **Netzbezug** (Energie und/oder Leistung)
 - **Hausverbrauch** (Energie und/oder Leistung): den Gesamtverbrauch hinter dem Zähler inklusive Wallbox, Wärmepumpe usw., im selben Umfang wie den Netzbezug. Wird die Wallbox separat gemessen, ihren Sensor zusätzlich eintragen (Sensoren werden addiert).
 - **Batterie-Ladestand** (%)
+- **Batteriegesundheit** (SoH, %): der Gesundheitszustand, den Hersteller oder Wechselrichter melden, für den Gesundheitsbereich des Speicher-Tabs (wähle einen Sensor mit Einheit und State-Class, damit er eine Langzeitstatistik hat)
 - **Einstrahlung** (W/m², Pyranometer oder Wetterstation) für die Performance Ratio. Kein Prognose-Sensor.
 - **Strompreis** und **Einspeisevergütung** (Sensor oder `input_number`, €/kWh)
 
