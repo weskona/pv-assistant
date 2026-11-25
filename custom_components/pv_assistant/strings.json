@@ -200,6 +200,9 @@
       },
       "storage_roundtrip_total": {
         "name": "Storage round-trip efficiency (total)"
+      },
+      "storage_cycles": {
+        "name": "Storage charge cycles"
       }
     }
   }
