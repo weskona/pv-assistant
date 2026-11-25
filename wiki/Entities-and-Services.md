@@ -19,6 +19,7 @@ The integration creates sensors that you can use in automations, templates and d
 | Self-sufficiency today | % | feed-in and grid import energy sensors (the house consumption sensor is used if there is one) |
 | Savings today, Feed-in revenue today, Benefit today | currency | feed-in energy sensor and prices (price sensors or the settings) |
 | Storage usable energy | kWh | battery level sensor, storage capacity and minimum level in the settings |
+| Storage round-trip efficiency (total) | % | storage-in and storage-out energy sensors: everything discharged divided by everything charged over the whole time (attributes `charged_kwh`, `discharged_kwh`) |
 | Forecast reached today | % | forecast-today sensors and production energy sensors |
 | PV surplus power | W | feed-in power sensor (and storage charging power if there is one): what the house does not use, for automations (attribute `charging_power`) |
 | Storage empty at | time | battery level sensor, storage capacity in the settings and a storage discharge power sensor: when the storage is empty at the current discharge power (unknown while it does not discharge) |
@@ -61,6 +62,7 @@ Die Integration legt Sensoren an, die du in Automationen, Templates und Dashboar
 | Autarkie heute | % | Einspeise- und Netzbezug-Energiesensoren (ein Hausverbrauchssensor wird genutzt, wenn vorhanden) |
 | Ersparnis heute, Einspeiseerlös heute, Nutzen heute | Währung | Einspeise-Energiesensor und Preise (Preis-Sensoren oder Einstellungen) |
 | Speicher nutzbare Energie | kWh | Ladestand-Sensor, Speicherkapazität und Mindest-Ladestand in den Einstellungen |
+| Speicher-Wirkungsgrad gesamt (Roundtrip) | % | Energiesensoren für Speicher rein und raus: alles Entladene geteilt durch alles Geladene über die gesamte Zeit (Attribute `charged_kwh`, `discharged_kwh`) |
 | Prognose erreicht heute | % | Prognose-heute-Sensoren und Erzeugungs-Energiesensoren |
 | PV-Überschuss | W | Einspeise-Leistungssensor (und Lade-Leistung des Speichers, falls vorhanden): was das Haus nicht verbraucht, für Automationen (Attribut `charging_power`) |
 | Speicher leer um | Zeit | Ladestand-Sensor, Speicherkapazität in den Einstellungen und ein Entlade-Leistungssensor: wann der Speicher bei der aktuellen Entladeleistung leer ist (unbekannt, solange er nicht entlädt) |

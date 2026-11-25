@@ -2,7 +2,7 @@
 
 Power and effective power of the whole system and of every plant (inverter with its
 strings), the production, feed-in, self-consumption, autarky and benefit of the current
-day, the usable energy of the storage and the share of the forecast that was reached.
+day, the usable energy of the storage, its round-trip efficiency over the whole time and the share of the forecast that was reached.
 They use the filtered energy sensors where they exist. The values of the day are
 counted from the value of the counters at midnight (kept over restarts).
 """
@@ -328,6 +328,41 @@ class StorageUsableSensor(CalcSensor):
         return capacity * max(level - (general.get("battery_min_soc") or 0), 0.0) / 100
 
 
+class StorageRoundtripSensor(CalcSensor):
+    """Round-trip efficiency of the storage over the whole time: everything that was discharged divided by everything that was charged.
+
+    Uses the total counters of the storage (the filtered copies where they exist). Over a long time the level at the start and at the
+    end hardly matters, so the value is the efficiency of the storage including its own losses.
+    """
+
+    _attr_translation_key = "storage_roundtrip_total"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    def __init__(self, entry: ConfigEntry) -> None:
+        super().__init__(entry, "storage_roundtrip_total", as_list(entry.data.get(CONF_STORAGE_IN_ENERGY)) + as_list(entry.data.get(CONF_STORAGE_OUT_ENERGY)))
+
+    def _totals(self) -> tuple[float, float] | None:
+        """(charged, discharged) in kWh; None while a counter has no value."""
+        counters: DayCounters = self.hass.data[DOMAIN]["daily"]
+        charged = [kwh(counters.resolve(i)) for i in as_list(self._entry.data.get(CONF_STORAGE_IN_ENERGY))]
+        discharged = [kwh(counters.resolve(i)) for i in as_list(self._entry.data.get(CONF_STORAGE_OUT_ENERGY))]
+        if None in charged or None in discharged:
+            return None
+        return float(sum(charged)), float(sum(discharged))
+
+    def _compute(self) -> float | None:
+        totals = self._totals()
+        if totals is None or totals[0] <= 0:
+            return None
+        return totals[1] / totals[0] * 100
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        totals = self._totals()
+        return {"charged_kwh": round(totals[0], 2), "discharged_kwh": round(totals[1], 2)} if totals else {}
+
+
 class DailySensor(CalcSensor):
     """A value of the current day (see daily_values). Energy and money count from 0 at midnight."""
 
@@ -408,6 +443,8 @@ async def async_setup_calc(hass: HomeAssistant, entry: ConfigEntry, async_add_en
             entities.append(ForecastReachedSensor(entry))
     if data.get(CONF_BATTERY_SOC):
         entities.append(StorageUsableSensor(entry))
+    if data.get(CONF_STORAGE_IN_ENERGY) and data.get(CONF_STORAGE_OUT_ENERGY):
+        entities.append(StorageRoundtripSensor(entry))
     async_add_entities(entities)
 
     # plants come and go with the settings: new ones are added when the settings are saved
