@@ -197,6 +197,12 @@
       },
       "best_window_tomorrow": {
         "name": "Bestes Fenster morgen"
+      },
+      "storage_roundtrip_total": {
+        "name": "Speicher-Wirkungsgrad gesamt (Roundtrip)"
+      },
+      "storage_cycles": {
+        "name": "Speicher-Ladezyklen"
       }
     }
   }

@@ -79,6 +79,10 @@ async def test_all(hass):
     assert abs(float(val(hass, "feed_in_revenue_today").state) - 0.4) < 0.01
     assert abs(float(val(hass, "benefit_today").state) - 2.2) < 0.01
     assert abs(float(val(hass, "forecast_reached_today").state) - 10 / 30 * 100) < 0.01
+    rt = val(hass, "storage_round_trip_efficiency_total")
+    assert abs(float(rt.state) - 18 / 23 * 100) < 0.01
+    assert rt.attributes["charged_kwh"] == 23 and rt.attributes["discharged_kwh"] == 18
+    assert abs(float(val(hass, "storage_charge_cycles").state) - 2.3) < 0.01   # 23 kWh charged, 10 kWh capacity
     assert val(hass, "benefit_today").attributes["unit_of_measurement"] == "EUR"
     assert val(hass, "production_today").attributes["last_reset"]
     # unit conversion: Wh counter
